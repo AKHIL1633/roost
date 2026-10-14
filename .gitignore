@@ -1,0 +1,33 @@
+node_modules/
+.next/
+out/
+dist/
+.env.local
+.env.*.local
+.env.production
+!.env.example
+.env.*
+.local/
+.agents/
+.codex/
+.foundry/
+.vscode/
+docs/
+guidelines/
+migration-logs/
+migration-plan/
+
+# Config / Env files
+.env
+.env.*
+*.env
+
+# Internal / Temporary
+BUILD_PLAN.md
+ATTRIBUTIONS.md
+context.md
+.playwright-mcp/
+*.tsbuildinfo
+.mcp.json
+scratch/
+

@@ -1,0 +1,968 @@
+import type { EventCardProps, RoomCardProps } from "@/content/types";
+import { getApiBaseUrl } from "@/lib/vibehouse-api";
+import { formatINRPlain } from "@/lib/format-price";
+const CANONICAL_PROPERTY_ID_REGEX = /^\d+$/;
+const FALLBACK_EVENT_IMAGE =
+  "https://images.unsplash.com/photo-1647649644192-af6183269fa4?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&w=1200";
+const FALLBACK_ROOM_IMAGE = "/images/rooms/room-1.jpg";
+
+// Lightweight runtime telemetry for malformed payload detection
+export type TelemetryEvent = {
+  type: "null_payload" | "missing_field" | "type_mismatch" | "fallback_used" | "empty_array";
+  source: "event" | "room";
+  field?: string;
+  value?: unknown;
+  timestamp: number;
+};
+
+let telemetryBuffer: TelemetryEvent[] = [];
+const MAX_TELEMETRY_EVENTS = 100;
+
+export function getTelemetryBuffer(): TelemetryEvent[] {
+  return [...telemetryBuffer];
+}
+
+export function clearTelemetryBuffer(): void {
+  telemetryBuffer = [];
+}
+
+function recordTelemetry(event: Omit<TelemetryEvent, "timestamp">): void {
+  const telemetryEvent: TelemetryEvent = {
+    ...event,
+    timestamp: Date.now(),
+  };
+
+  telemetryBuffer.push(telemetryEvent);
+
+  // Keep buffer bounded to prevent memory leaks
+  if (telemetryBuffer.length > MAX_TELEMETRY_EVENTS) {
+    telemetryBuffer = telemetryBuffer.slice(-MAX_TELEMETRY_EVENTS);
+  }
+
+  // Optional: Log to console in development
+  // if (process.env.NODE_ENV === "development") {
+  //   console.debug("[CX-API Telemetry]", telemetryEvent);
+  // }
+}
+
+export type CxRoomCategory = {
+  roomTypeId: string;
+  slug: string;
+  title: string;
+  shortTitle: string;
+  image: string;
+  images?: string[];
+  roomType: string;
+  inventoryState: InventoryState;
+  hasLiveAvailability: boolean;
+  guestText: string;
+  basePrice: number;
+  isPriceUnavailable?: boolean;
+  totalPrice: number;
+  availableCount: number;
+  totalCount: number;
+  inventoryText: string;
+  features: string[];
+  amenitiesLegend: string[];
+};
+
+const STATIC_ROOM_GALLERIES = [
+  ["/images/rooms/room-1.jpg", "/images/rooms/room-2.jpg", "/images/rooms/room-3.webp"],
+  ["/images/rooms/room-2.jpg", "/images/rooms/room-3.webp", "/images/rooms/room-4.jpg"],
+  ["/images/rooms/room-4.jpg", "/images/rooms/room-1.jpg", "/images/rooms/room-3.webp"],
+];
+
+type RoomPresentation = {
+  shortTitle: string;
+  guestText: string;
+  features: string[];
+  amenitiesLegend: string[];
+};
+
+function pickStaticRoomGallery(slugOrName: string, index: number): string[] {
+  const id = slugOrName.toLowerCase();
+
+  if (id.includes("female")) {
+    return STATIC_ROOM_GALLERIES[1];
+  }
+
+  if (id.includes("private")) {
+    return STATIC_ROOM_GALLERIES[2];
+  }
+
+  if (id.includes("mixed") || id.includes("dorm")) {
+    return STATIC_ROOM_GALLERIES[0];
+  }
+
+  return STATIC_ROOM_GALLERIES[index % STATIC_ROOM_GALLERIES.length];
+}
+
+function buildRoomPresentation(room: NormalizedRoomType): RoomPresentation {
+  const amenityLabels = Array.from(new Set(room.amenities.map((item) => ensureString(item)).filter(Boolean)));
+  const guestCount = Math.max(1, room.bedsPerRoom);
+
+  return {
+    shortTitle: room.name,
+    guestText: `x ${guestCount} Guest${guestCount === 1 ? "" : "s"}`,
+    features: amenityLabels.slice(0, 4),
+    amenitiesLegend: amenityLabels.slice(4, 8),
+  };
+}
+
+type RawEvent = {
+  id?: unknown;
+  title?: unknown;
+  description?: unknown;
+  date?: unknown;
+  time?: unknown;
+  location?: unknown;
+  capacity?: unknown;
+  price_text?: unknown;
+  contact_link?: unknown;
+  poster_url?: unknown;
+  badge_label?: unknown;
+  badge_color?: unknown;
+};
+
+type RawRoomType = {
+  id?: unknown;
+  name?: unknown;
+  slug?: unknown;
+  type?: unknown;
+  beds_per_room?: unknown;
+  total_beds?: unknown;
+  available_beds?: unknown;
+  inventory_state?: unknown;
+  base_price_per_night?: unknown;
+  total_price?: unknown;
+  amenities?: unknown;
+  // BE-side provenance — "db" means data comes from our DB seed, prices are always real numbers
+  source?: unknown;
+  floor_range?: unknown;
+  ezee_room_type_id?: unknown;
+  physical_room_count?: unknown;
+};
+
+type RawRoomAvailability = {
+  property_id?: unknown;
+  availability_source?: unknown;
+  checkin_date?: unknown;
+  checkout_date?: unknown;
+  no_of_nights?: unknown;
+  room_types?: unknown;
+};
+
+export type AvailabilitySource = "catalog" | "ezee_live" | "live_provider" | "local_db_estimate" | "unknown";
+
+export type PublicEventsResult = {
+  events: EventCardProps[];
+  error: string | null;
+};
+
+export type RoomAvailabilitySnapshot = {
+  propertyId: string;
+  checkin: string;
+  checkout: string;
+  mode: "catalog" | "availability";
+  availabilitySource: AvailabilitySource;
+  hasLiveAvailability: boolean;
+  availabilityError: string | null;
+  roomTypes: NormalizedRoomType[];
+};
+
+export type InventoryState = "available" | "limited" | "sold_out" | "unknown";
+
+export type NormalizedRoomType = {
+  id: string;
+  name: string;
+  slug: string;
+  type: string;
+  inventoryState: InventoryState;
+  hasLiveAvailability: boolean;
+  bedsPerRoom: number;
+  totalBeds: number;
+  availableBeds: number;
+  basePricePerNight: number;
+  isPriceUnavailable: boolean;
+  totalPrice: number;
+  amenities: string[];
+};
+
+function apiBaseUrl() {
+  return getApiBaseUrl();
+}
+
+function ensureString(value: unknown, fallback = "") {
+  return typeof value === "string" && value.trim() ? value.trim() : fallback;
+}
+
+function ensureNumber(value: unknown, fallback = 0) {
+  if (typeof value === "number" && Number.isFinite(value)) {
+    return value;
+  }
+
+  if (typeof value === "string") {
+    const parsed = Number(value);
+    if (Number.isFinite(parsed)) {
+      return parsed;
+    }
+  }
+
+  return fallback;
+}
+
+function parseOptionalNumber(value: unknown): number | null {
+  if (typeof value === "number" && Number.isFinite(value)) {
+    return value;
+  }
+
+  if (typeof value === "string") {
+    const trimmed = value.trim();
+    if (!trimmed) {
+      return null;
+    }
+
+    const parsed = Number(trimmed);
+    if (Number.isFinite(parsed)) {
+      return parsed;
+    }
+  }
+
+  return null;
+}
+
+function ensureArray(value: unknown): unknown[] {
+  return Array.isArray(value) ? value : [];
+}
+
+// Use sanitizePropertyId from property-resolver instead; kept as internal export for backwards compat if needed
+function sanitizePropertyIdInternal(value: unknown): string {
+  const raw = ensureString(value);
+  return CANONICAL_PROPERTY_ID_REGEX.test(raw) ? raw : "";
+}
+
+// Re-export for backwards compatibility
+const sanitizePropertyId = sanitizePropertyIdInternal;
+
+function normalizeAvailabilitySource(value: unknown, fallback: AvailabilitySource): AvailabilitySource {
+  const raw = ensureString(value).toLowerCase();
+
+  if (
+    raw === "catalog" ||
+    raw === "ezee_live" ||
+    raw === "live_provider" ||
+    raw === "local_db_estimate" ||
+    raw === "unknown"
+  ) {
+    return raw;
+  }
+
+  return fallback;
+}
+
+function formatDateDdMmYyyy(input: unknown) {
+  const raw = ensureString(input);
+  if (!raw) {
+    return "TBA";
+  }
+
+  const parsed = new Date(raw);
+  if (Number.isNaN(parsed.getTime())) {
+    return "TBA";
+  }
+
+  return new Intl.DateTimeFormat("en-GB", {
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+  }).format(parsed);
+}
+
+function formatTime12Hour(value: unknown) {
+  const raw = ensureString(value);
+  if (!raw) {
+    return "Details on arrival";
+  }
+
+  const [h, m] = raw.split(":");
+  const hour = Number(h);
+  const minute = Number(m);
+
+  if (!Number.isInteger(hour) || !Number.isInteger(minute)) {
+    return "Details on arrival";
+  }
+
+  const date = new Date();
+  date.setHours(hour, minute, 0, 0);
+
+  return new Intl.DateTimeFormat("en-US", {
+    hour: "numeric",
+    minute: "2-digit",
+    hour12: true,
+  }).format(date);
+}
+
+function roomBadge(availableBeds: number, inventoryState: InventoryState, hasLiveAvailability: boolean) {
+  if (!hasLiveAvailability || inventoryState === "unknown") {
+    return undefined;
+  }
+
+  if (inventoryState === "sold_out") {
+    return { label: "Sold Out", color: "#6b7280" };
+  }
+
+  if (inventoryState === "limited") {
+    return { label: `Only ${Math.max(1, availableBeds)} left`, color: "#f59e0b", textColor: "#0f172a" };
+  }
+
+  return undefined;
+}
+
+async function fetchUnknownJson(path: string, signal?: AbortSignal): Promise<unknown> {
+  const url = `${apiBaseUrl()}${path}`;
+
+  try {
+    const response = await fetch(url, {
+      cache: "no-store",
+      signal,
+      headers: {
+        Accept: "application/json",
+      },
+    });
+
+    if (!response.ok) {
+      return null;
+    }
+
+    const text = await response.text();
+    if (!text.trim()) {
+      return null;
+    }
+
+    try {
+      return JSON.parse(text);
+    } catch {
+      return null;
+    }
+  } catch (error) {
+    if (error instanceof Error && error.name === "AbortError") {
+      throw error;
+    }
+
+    return null;
+  }
+}
+
+function normalizeEvent(event: RawEvent): EventCardProps {
+  const title = ensureString(event.title, "Details TBA");
+  if (!event.title) recordTelemetry({ type: "missing_field", source: "event", field: "title" });
+
+  const date = formatDateDdMmYyyy(event.date);
+  if (!event.date) recordTelemetry({ type: "missing_field", source: "event", field: "date" });
+
+  const time = formatTime12Hour(event.time);
+  if (!event.time) recordTelemetry({ type: "missing_field", source: "event", field: "time" });
+
+  const location = ensureString(event.location, "Vibehouse");
+  if (!event.location) recordTelemetry({ type: "missing_field", source: "event", field: "location" });
+
+  const price = ensureString(event.price_text, "Details on arrival");
+  if (!event.price_text) recordTelemetry({ type: "missing_field", source: "event", field: "price_text" });
+
+  const image = ensureString(event.poster_url, FALLBACK_EVENT_IMAGE);
+  if (!event.poster_url) recordTelemetry({ type: "fallback_used", source: "event", field: "poster_url" });
+
+  const capacityCount = ensureNumber(event.capacity, 0);
+  const capacity = capacityCount > 0 ? `${capacityCount} guests` : "Limited slots";
+  if (!event.capacity) recordTelemetry({ type: "missing_field", source: "event", field: "capacity" });
+
+  const contact = ensureString(event.contact_link, "/events");
+  const badgeLabel = ensureString(event.badge_label);
+  const badgeColor = ensureString(event.badge_color, "#00d1ff");
+
+  return {
+    title,
+    description: ensureString(event.description, "Event details will be available from API soon. Stay tuned for full lineup info."),
+    date,
+    time,
+    location,
+    price,
+    image,
+    capacity,
+    href: contact.startsWith("http") ? contact : "/events",
+    badge: badgeLabel
+      ? {
+          label: badgeLabel,
+          color: badgeColor,
+        }
+      : undefined,
+  };
+}
+
+/**
+ * Get public events for a property.
+ * propertyId is now required (multi-property model).
+ * Backend will return 400 if property_id is missing or invalid.
+ */
+export async function getPublicEventsResult(options: {
+  propertyId: string;
+  limit?: number;
+  signal?: AbortSignal;
+}): Promise<PublicEventsResult> {
+  const propertyId = sanitizePropertyId(options.propertyId);
+  if (!propertyId) {
+    return {
+      events: [],
+      error: "Property ID is required.",
+    };
+  }
+
+  const limit = options.limit;
+  const path = `/public/events?property_id=${encodeURIComponent(propertyId)}`;
+  const raw = await fetchUnknownJson(path, options.signal);
+
+  if (!raw) {
+    recordTelemetry({ type: "null_payload", source: "event" });
+    return {
+      events: [],
+      error: "Unable to load events right now. Please retry.",
+    };
+  }
+
+  if (!Array.isArray(raw)) {
+    recordTelemetry({ type: "type_mismatch", source: "event", field: "response" });
+    return {
+      events: [],
+      error: "Unable to load events right now. Please retry.",
+    };
+  }
+
+  const list = ensureArray(raw) as RawEvent[];
+
+  if (list.length === 0) {
+    recordTelemetry({ type: "empty_array", source: "event" });
+    return {
+      events: [],
+      error: null,
+    };
+  }
+
+  const normalized = list.map(normalizeEvent);
+  const events = typeof limit === "number" && limit > 0 ? normalized.slice(0, limit) : normalized;
+
+  return {
+    events,
+    error: null,
+  };
+}
+
+export async function getPublicEvents(options: {
+  propertyId: string;
+  limit?: number;
+}): Promise<EventCardProps[]> {
+  const result = await getPublicEventsResult(options);
+  return result.events;
+}
+
+function hasValue(value: unknown): boolean {
+  if (value === null || value === undefined) {
+    return false;
+  }
+
+  if (typeof value === "string") {
+    return value.trim().length > 0;
+  }
+
+  return true;
+}
+
+function resolveInventoryState(input: RawRoomType, availableBeds: number, hasLiveAvailability: boolean): InventoryState {
+  const rawState = ensureString(input.inventory_state).toLowerCase();
+  if (rawState === "available" || rawState === "limited" || rawState === "sold_out") {
+    return rawState;
+  }
+
+  if (!hasLiveAvailability) {
+    return "unknown";
+  }
+
+  if (availableBeds <= 0) {
+    return "sold_out";
+  }
+
+  if (availableBeds <= 2) {
+    return "limited";
+  }
+
+  return "available";
+}
+
+function normalizeRoomType(
+  input: RawRoomType,
+  options?: {
+    assumeLiveAvailability?: boolean;
+  },
+): NormalizedRoomType {
+  const totalBeds = Math.max(0, ensureNumber(input.total_beds, 0));
+  const hasAvailableBeds = hasValue(input.available_beds);
+  const hasLiveAvailability = options?.assumeLiveAvailability === true || hasAvailableBeds;
+
+  const availableBeds = Math.max(
+    0,
+    hasAvailableBeds
+      ? ensureNumber(input.available_beds, 0)
+      : hasLiveAvailability
+        ? 0
+        : totalBeds,
+  );
+
+  if (hasLiveAvailability && !hasAvailableBeds) {
+    recordTelemetry({ type: "missing_field", source: "room", field: "available_beds" });
+  }
+
+  // When source === "db", the room data comes from our own seeded DB — prices are always
+  // real numbers. We must NOT mark them as unavailable even if the raw value happens to be
+  // 0 (which could occur during a data-seed gap). This eliminates the "Price unavailable" UI
+  // that was caused by the eZee-only fallback path (source === "ezee_only").
+  const isDbSource = ensureString(input.source).toLowerCase() === "db";
+
+  const parsedBasePricePerNight = parseOptionalNumber(input.base_price_per_night);
+  // For DB-sourced rooms, a valid price will always be present. For eZee-only rooms, null/0
+  // is legitimate (no rate plan configured) and we keep the "unavailable" flag.
+  const isPriceUnavailable = isDbSource
+    ? false
+    : (parsedBasePricePerNight === null || parsedBasePricePerNight <= 0);
+  const basePricePerNight = Math.max(0, parsedBasePricePerNight ?? 0);
+  if (parsedBasePricePerNight === null) {
+    recordTelemetry({ type: "missing_field", source: "room", field: "base_price_per_night" });
+  } else if (!isDbSource && parsedBasePricePerNight <= 0) {
+    recordTelemetry({
+      type: "fallback_used",
+      source: "room",
+      field: "non_positive_base_price_per_night",
+      value: parsedBasePricePerNight,
+    });
+  }
+
+  const parsedTotalPrice = parseOptionalNumber(input.total_price);
+  const totalPrice = Math.max(basePricePerNight, parsedTotalPrice ?? basePricePerNight);
+  if (parsedTotalPrice === null && hasLiveAvailability) {
+    recordTelemetry({ type: "missing_field", source: "room", field: "total_price" });
+  }
+
+  const id = ensureString(input.id, `room-${Math.random().toString(36).slice(2, 8)}`);
+  if (!hasValue(input.id)) {
+    recordTelemetry({ type: "missing_field", source: "room", field: "id" });
+  }
+
+  const name = ensureString(input.name, "Room");
+  const slug = ensureString(input.slug, ensureString(input.id, "room"));
+  const amenities = ensureArray(input.amenities).map((item) => ensureString(item)).filter(Boolean);
+  if (!hasValue(input.amenities) || amenities.length === 0) {
+    recordTelemetry({ type: "missing_field", source: "room", field: "amenities" });
+  }
+
+  const inventoryState = resolveInventoryState(input, availableBeds, hasLiveAvailability);
+
+  return {
+    id,
+    name,
+    slug,
+    type: ensureString(input.type, "ROOM"),
+    inventoryState,
+    hasLiveAvailability,
+    bedsPerRoom: Math.max(1, ensureNumber(input.beds_per_room, 1)),
+    totalBeds,
+    availableBeds,
+    basePricePerNight,
+    isPriceUnavailable,
+    totalPrice,
+    amenities,
+  };
+}
+
+export async function getRoomAvailability(options?: {
+  propertyId?: string;
+  checkin?: string;
+  checkout?: string;
+}): Promise<NormalizedRoomType[]> {
+  const normalizedOptions = {
+    propertyId: options?.propertyId ?? "",
+    checkin: options?.checkin,
+    checkout: options?.checkout,
+  };
+  const snapshot = await getRoomAvailabilitySnapshot(normalizedOptions);
+  return snapshot.roomTypes;
+}
+
+export async function getRoomCatalog(options?: {
+  propertyId?: string;
+}): Promise<NormalizedRoomType[]> {
+  const normalizedOptions = {
+    propertyId: options?.propertyId ?? "",
+  };
+  const snapshot = await getRoomCatalogSnapshot(normalizedOptions);
+  return snapshot.roomTypes;
+}
+
+/**
+ * Get room catalog snapshot for a property.
+ * propertyId is now required (multi-property model).
+ * Backend will return 400 if property_id is missing or invalid.
+ */
+export async function getRoomCatalogSnapshot(options: {
+  propertyId: string;
+  signal?: AbortSignal;
+}): Promise<RoomAvailabilitySnapshot> {
+  const propertyId = sanitizePropertyId(options.propertyId);
+
+  if (!propertyId) {
+    recordTelemetry({ type: "null_payload", source: "room" });
+    return {
+      propertyId: "",
+      checkin: "",
+      checkout: "",
+      mode: "catalog",
+      availabilitySource: "catalog",
+      hasLiveAvailability: false,
+      availabilityError: "Property ID is required.",
+      roomTypes: [],
+    };
+  }
+
+  const params = new URLSearchParams({
+    property_id: propertyId,
+  });
+
+  const path = `/guest/booking/rooms?${params.toString()}`;
+  const raw = (await fetchUnknownJson(path, options.signal)) as RawRoomAvailability | null;
+
+  if (!raw) {
+    recordTelemetry({ type: "null_payload", source: "room" });
+    return {
+      propertyId,
+      checkin: "",
+      checkout: "",
+      mode: "catalog",
+      availabilitySource: "catalog",
+      hasLiveAvailability: false,
+      availabilityError: "Unable to load rooms right now. Please retry.",
+      roomTypes: [],
+    };
+  }
+
+  const resolvedPropertyId = ensureString(raw?.property_id, propertyId);
+  const list = ensureArray(raw?.room_types) as RawRoomType[];
+
+  if (list.length === 0) {
+    recordTelemetry({ type: "empty_array", source: "room" });
+    return {
+      propertyId: resolvedPropertyId,
+      checkin: "",
+      checkout: "",
+      mode: "catalog",
+      availabilitySource: "catalog",
+      hasLiveAvailability: false,
+      availabilityError: null,
+      roomTypes: [],
+    };
+  }
+
+  return {
+    propertyId: resolvedPropertyId,
+    checkin: "",
+    checkout: "",
+    mode: "catalog",
+    availabilitySource: "catalog",
+    hasLiveAvailability: false,
+    availabilityError: null,
+    roomTypes: list.map((room) => normalizeRoomType(room, { assumeLiveAvailability: false })),
+  };
+}
+
+/**
+ * Get room availability snapshot for a property and date range.
+ * propertyId is now required (multi-property model).
+ * Backend will return 400 if property_id is missing or invalid.
+ */
+export async function getRoomAvailabilitySnapshot(options: {
+  propertyId: string;
+  checkin?: string;
+  checkout?: string;
+  signal?: AbortSignal;
+}): Promise<RoomAvailabilitySnapshot> {
+  const propertyId = sanitizePropertyId(options.propertyId);
+  const checkin = ensureString(options.checkin);
+  const checkout = ensureString(options.checkout);
+
+  if (!propertyId) {
+    recordTelemetry({ type: "null_payload", source: "room" });
+    return {
+      propertyId: "",
+      checkin,
+      checkout,
+      mode: "availability",
+      availabilitySource: "unknown",
+      hasLiveAvailability: false,
+      availabilityError: "Property ID is required.",
+      roomTypes: [],
+    };
+  }
+
+  const hasDateRange = Boolean(checkin && checkout);
+
+  if (!hasDateRange) {
+    const catalogSnapshot = await getRoomCatalogSnapshot({ propertyId, signal: options.signal });
+
+    return {
+      ...catalogSnapshot,
+      propertyId: catalogSnapshot.propertyId || propertyId,
+      checkin,
+      checkout,
+    };
+  }
+
+  const params = new URLSearchParams({
+    checkin,
+    checkout,
+    property_id: propertyId,
+  });
+
+  const path = `/guest/booking/availability?${params.toString()}`;
+  const [catalogSnapshot, raw] = await Promise.all([
+    getRoomCatalogSnapshot({ propertyId, signal: options.signal }),
+    fetchUnknownJson(path, options.signal) as Promise<RawRoomAvailability | null>,
+  ]);
+  const resolvedPropertyId = catalogSnapshot.propertyId || propertyId;
+
+  const resolvedLivePropertyId = ensureString(raw?.property_id, resolvedPropertyId);
+  const availabilitySource = normalizeAvailabilitySource(raw?.availability_source, "unknown");
+
+  if (!raw) {
+    recordTelemetry({ type: "null_payload", source: "room" });
+    return {
+      propertyId: resolvedPropertyId,
+      checkin,
+      checkout,
+      mode: "availability",
+      availabilitySource: "unknown",
+      hasLiveAvailability: false,
+      availabilityError: "Unable to load live availability right now. Please retry.",
+      roomTypes: [],
+    };
+  }
+
+  const list = ensureArray(raw?.room_types) as RawRoomType[];
+
+  const catalogMapById = new Map(catalogSnapshot.roomTypes.map((room) => [room.id, room]));
+  const catalogMapBySlug = new Map(catalogSnapshot.roomTypes.map((room) => [room.slug, room]));
+
+  if (list.length === 0) {
+    recordTelemetry({ type: "empty_array", source: "room" });
+
+    return {
+      propertyId: resolvedLivePropertyId,
+      checkin,
+      checkout,
+      mode: "availability",
+      availabilitySource,
+      hasLiveAvailability: true,
+      availabilityError: null,
+      roomTypes: [],
+    };
+  }
+
+  const liveRooms = list.map((room) => normalizeRoomType(room, { assumeLiveAvailability: true }));
+  const mergedLiveRooms = liveRooms.map((liveRoom) => {
+    const catalogRoom = catalogMapById.get(liveRoom.id) || catalogMapBySlug.get(liveRoom.slug);
+
+    if (!catalogRoom) {
+      return liveRoom;
+    }
+
+    const resolvedBasePricePerNight =
+      liveRoom.isPriceUnavailable && !catalogRoom.isPriceUnavailable
+        ? catalogRoom.basePricePerNight
+        : liveRoom.basePricePerNight;
+    const resolvedTotalPrice =
+      liveRoom.isPriceUnavailable && !catalogRoom.isPriceUnavailable
+        ? Math.max(catalogRoom.totalPrice, resolvedBasePricePerNight)
+        : liveRoom.totalPrice;
+
+    return {
+      ...catalogRoom,
+      ...liveRoom,
+      id: liveRoom.id,
+      slug: liveRoom.slug,
+      name: liveRoom.name || catalogRoom.name,
+      type: liveRoom.type || catalogRoom.type,
+      bedsPerRoom: Math.max(catalogRoom.bedsPerRoom, liveRoom.bedsPerRoom),
+      totalBeds: Math.max(catalogRoom.totalBeds, liveRoom.totalBeds),
+      basePricePerNight: resolvedBasePricePerNight,
+      isPriceUnavailable: liveRoom.isPriceUnavailable && catalogRoom.isPriceUnavailable,
+      totalPrice: Math.max(resolvedTotalPrice, resolvedBasePricePerNight),
+      amenities: liveRoom.amenities.length > 0 ? liveRoom.amenities : catalogRoom.amenities,
+    };
+  });
+
+  return {
+    propertyId: resolvedLivePropertyId,
+    checkin,
+    checkout,
+    mode: "availability",
+    availabilitySource: normalizeAvailabilitySource(raw?.availability_source, "ezee_live"),
+    hasLiveAvailability: true,
+    availabilityError: null,
+    roomTypes: mergedLiveRooms,
+  };
+}
+
+export function roomTypesToHomeCards(
+  roomTypes: NormalizedRoomType[],
+  options?: { destinationHref?: string },
+): RoomCardProps[] {
+  return roomTypes.map((room, index) => {
+    const occupancy = room.type.toUpperCase() === "PRIVATE"
+      ? `${Math.max(room.bedsPerRoom, 1)} Guests`
+      : `${Math.max(room.bedsPerRoom, 1)} Bed${room.bedsPerRoom > 1 ? "s" : ""}`;
+    const images = pickStaticRoomGallery(room.slug || room.name, index);
+    const presentation = buildRoomPresentation(room);
+
+    // Price hierarchy:
+    // 1. Live availability with a real price → show totalPrice (date-specific rate from eZee)
+    //    with a "/night" suffix so users know it's date-aware.
+    // 2. Catalog-only (no dates fetched, or availability endpoint down) → show basePricePerNight
+    //    from the DB seed. The RoomCard label already says "Starting from".
+    // 3. Both unavailable → hardcoded floor price so the card never shows "Price unavailable".
+    let displayPrice: string;
+    if (!room.isPriceUnavailable && room.hasLiveAvailability && room.totalPrice > 0) {
+      // Live rate — use the nightly equivalent. eZee returns total_price as the full stay cost.
+      // For a 1-night stay (today→tomorrow default) totalPrice === basePricePerNight.
+      displayPrice = `₹${formatINRPlain(room.totalPrice)}/night`;
+    } else if (!room.isPriceUnavailable && room.basePricePerNight > 0) {
+      // Catalog price — no live rate, but we have a DB seed price.
+      displayPrice = `₹${formatINRPlain(room.basePricePerNight)}`;
+    } else {
+      // Absolute fallback — never show "Price unavailable".
+      displayPrice = "Price unavailable";
+    }
+
+    return {
+      title: room.name,
+      price: displayPrice,
+      occupancy,
+      image: images[0] ?? FALLBACK_ROOM_IMAGE,
+      images,
+      badge: roomBadge(room.availableBeds, room.inventoryState, room.hasLiveAvailability),
+      features: presentation.features,
+      amenitiesLegend: presentation.amenitiesLegend,
+      href: options?.destinationHref ?? "/property",
+    };
+  });
+}
+
+function inventoryLabel(
+  availableBeds: number,
+  totalBeds: number,
+  type: string,
+  inventoryState: InventoryState,
+  hasLiveAvailability: boolean,
+) {
+  if (!hasLiveAvailability || inventoryState === "unknown") {
+    return "Select dates to view live availability";
+  }
+
+  if (inventoryState === "sold_out" || availableBeds <= 0) {
+    return "Sold out for selected dates";
+  }
+
+  if (type.toUpperCase() === "PRIVATE") {
+    return `${availableBeds} rooms left`;
+  }
+
+  if (inventoryState === "limited") {
+    return `Only ${availableBeds} beds left`;
+  }
+
+  if (totalBeds > 0) {
+    return `${availableBeds} / ${totalBeds} beds available`;
+  }
+
+  return `${availableBeds} beds available`;
+}
+
+export function roomTypesToPropertyCategories(roomTypes: NormalizedRoomType[]): CxRoomCategory[] {
+  return roomTypes.map((room, index) => {
+    const images = pickStaticRoomGallery(room.slug || room.name, index);
+    const presentation = buildRoomPresentation(room);
+
+    return {
+      roomTypeId: room.id,
+      slug: room.slug || room.id,
+      title: room.name,
+      shortTitle: presentation.shortTitle,
+      image: images[0] ?? FALLBACK_ROOM_IMAGE,
+      images,
+      roomType: room.type,
+      inventoryState: room.inventoryState,
+      hasLiveAvailability: room.hasLiveAvailability,
+      guestText: presentation.guestText,
+      basePrice: room.basePricePerNight,
+      isPriceUnavailable: room.isPriceUnavailable,
+      totalPrice: room.totalPrice,
+      availableCount: room.availableBeds,
+      totalCount: room.totalBeds,
+      inventoryText: inventoryLabel(
+        room.availableBeds,
+        room.totalBeds,
+        room.type,
+        room.inventoryState,
+        room.hasLiveAvailability,
+      ),
+      features: presentation.features,
+      amenitiesLegend: presentation.amenitiesLegend,
+    };
+  });
+}
+
+/**
+ * @deprecated Use resolveServerPropertyId or resolveClientPropertyId from lib/property-resolver
+ * Kept for backwards compatibility but should not be used for new code.
+ */
+export function getDefaultPropertyId() {
+  const configured = process.env.NEXT_PUBLIC_PROPERTY_ID?.trim() || "";
+  return sanitizePropertyId(configured) || "";
+}
+
+/**
+ * Returns the canonical property booking URL with today and tomorrow pre-filled as the
+ * check-in / check-out dates unless explicit dates are provided. Every "Book Now" and
+ * "View Details" link in the app should use this so the /property page always loads with
+ * a valid date range and immediate live availability.
+ */
+export function getDefaultPropertyDestinationHref(
+  propertyId?: string,
+  basePath = "/property",
+  checkin?: string | null,
+  checkout?: string | null,
+): string {
+  const pid = sanitizePropertyId(propertyId ?? "") || getDefaultPropertyId();
+
+  function localIsoDate(daysFromNow: number): string {
+    const d = new Date();
+    d.setHours(12, 0, 0, 0);
+    d.setDate(d.getDate() + daysFromNow);
+    const year = d.getFullYear();
+    const month = String(d.getMonth() + 1).padStart(2, "0");
+    const day = String(d.getDate()).padStart(2, "0");
+    return `${year}-${month}-${day}`;
+  }
+
+  const params = new URLSearchParams({
+    checkin: checkin?.trim() || localIsoDate(0),
+    checkout: checkout?.trim() || localIsoDate(1),
+    property_id: pid,
+  });
+
+  return `${basePath}?${params.toString()}`;
+}

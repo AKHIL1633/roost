@@ -1,0 +1,106 @@
+.section {
+  position: relative;
+  user-select: none;
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 1.25rem;
+}
+
+@media (min-width: 768px) {
+  .grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 1.25rem;
+  }
+}
+
+@media (min-width: 1200px) {
+  .grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+.card {
+  position: relative;
+  overflow: hidden;
+  border-radius: 0px;
+  border: 1px solid #3D3D3D;
+  background: #161616;
+  box-shadow: 3px 3px 0px #000000;
+  padding: 1.5rem;
+  min-height: 180px;
+  transform-origin: center;
+  transition: transform 160ms cubic-bezier(0.2, 0.8, 0.2, 1), box-shadow 160ms cubic-bezier(0.2, 0.8, 0.2, 1), border-color 160ms ease;
+}
+
+.card:hover {
+  border-color: #FF2E62;
+  transform: translate3d(-2px, -2px, 0);
+  box-shadow: 5px 5px 0px #991438;
+}
+
+.cardCenter {
+  justify-self: center;
+  width: min(100%, 740px);
+}
+
+@media (min-width: 1200px) {
+  .cardCenter {
+    grid-column: 2 / 3;
+    width: 100%;
+  }
+}
+
+.card::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: 0px;
+  pointer-events: none;
+  border: 1px solid rgba(var(--glow-color, 255, 203, 69), calc(var(--glow-intensity, 0) * 0.5));
+}
+
+.day {
+  font-family: 'Gilroy', sans-serif;
+  letter-spacing: 0.16em;
+  font-size: 0.85rem;
+  font-weight: 900;
+  line-height: 1;
+  text-transform: uppercase;
+}
+
+.title {
+  margin-top: 0.85rem;
+  color: #ffffff;
+  font-family: 'Cirka', serif;
+  font-size: clamp(1.4rem, 1.2rem + 0.3vw, 2.2rem);
+  font-weight: 700;
+  line-height: 1.2;
+  letter-spacing: -0.01em;
+}
+
+.hook {
+  display: inline-flex;
+  margin-top: 0.85rem;
+  border-radius: 0px;
+  border: 1px solid #3D3D3D;
+  background: #121212;
+  color: #FF2E62;
+  font-family: 'Gilroy', sans-serif;
+  font-size: 0.75rem;
+  font-weight: 900;
+  line-height: 1;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  padding: 0.35rem 0.75rem;
+}
+
+.description {
+  margin-top: 0.85rem;
+  color: rgba(255, 255, 255, 0.7);
+  font-family: 'Gilroy', sans-serif;
+  font-size: 0.875rem;
+  line-height: 1.5;
+}

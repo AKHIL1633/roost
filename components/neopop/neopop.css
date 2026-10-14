@@ -1,0 +1,213 @@
+/**
+ * NeoPOP Global Stylesheet & Core Geometry
+ * Conforming strictly to migration-plan/NEOPOP_DESIGN_SYSTEM_INSTRUCTIONS.md
+ */
+
+/* ==========================================================================
+   1. Typography / Font Faces (Gilroy & Cirka)
+   ========================================================================== */
+
+/* Gilroy (Aliased to Lexend for body & UI) */
+@font-face {
+  font-family: 'Gilroy';
+  src: local('Lexend'), sans-serif;
+  font-weight: 100 900;
+  font-style: normal;
+  font-display: swap;
+}
+
+/* Cirka (Aliased to Geologica for display & headings) */
+@font-face {
+  font-family: 'Cirka';
+  src: local('Geologica'), sans-serif;
+  font-weight: 100 900;
+  font-style: normal;
+  font-display: swap;
+}
+
+/* ==========================================================================
+   2. Design System Root Variables
+   ========================================================================== */
+
+:root {
+  /* Surfaces: Deep Pitch Black & Carbon Layers */
+  --np-black-500: #000000;
+  --np-black-400: #0c0c0f;
+  --np-black-300: #121216;
+  --np-black-200: #18181d;
+  --np-black-100: #1a1a20;
+
+  /* Typography Hierarchy: Crisp White */
+  --np-white-500: #ffffff;
+  --np-white-300: #f1f1f1;
+  --np-white-100: #d2d2d8;
+  --np-white-secondary: rgba(241, 241, 241, 0.72);
+
+  /* Semantic Palette: Nudge Quad-Color Accents */
+  --np-brand: #e01e5a;
+  --np-brand-hover: #f02d6b;
+  --np-brand-edge: #991438;
+  --np-yellow: #ecb22e;
+  --np-green: #2fbc81;
+  --np-blue: #36c5f0;
+  --np-pink: #e01e5a;
+  --np-red: #ee4d37;
+
+  /* Geometry & Physics */
+  --np-edge-width: 2px;
+  --np-motion-press: 120ms;
+  --radius-container: 12px;
+  --radius-element: 8px;
+  --radius: 12px;
+
+  /* Font Families */
+  --font-gilroy: var(--font-lexend, 'Lexend', sans-serif);
+  --font-cirka: var(--font-geologica, 'Geologica', sans-serif);
+}
+
+/* ==========================================================================
+   3. Sharp Geometry & Plunk 3D Construction
+   ========================================================================== */
+
+.np-sharp {
+  border-radius: 0px !important;
+}
+
+/* 3D Plunk Button / Surface Container */
+.np-plunk {
+  isolation: isolate;
+  position: relative;
+  display: inline-flex;
+  background: transparent;
+  padding: 0;
+  border: none;
+  cursor: pointer;
+  text-decoration: none;
+  box-sizing: border-box;
+}
+
+/* Plunk Face */
+.np-plunk-face {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  transition: transform var(--np-motion-press) cubic-bezier(0.2, 0, 0, 1);
+  will-change: transform;
+  border-radius: 0px;
+  box-sizing: border-box;
+}
+
+/* Bottom Beveled Edge */
+.np-plunk::before {
+  content: "";
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: calc(100% - var(--np-edge-width));
+  height: var(--np-edge-width);
+  background: var(--np-edge, #000000);
+  transform: skewX(45deg);
+  transform-origin: 0 0;
+  pointer-events: none;
+  z-index: 0;
+  transition: opacity var(--np-motion-press) ease-in-out;
+}
+
+/* Right Beveled Edge */
+.np-plunk::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: var(--np-edge-width);
+  height: calc(100% - var(--np-edge-width));
+  background: var(--np-edge, #000000);
+  transform: skewY(45deg);
+  transform-origin: 0 0;
+  pointer-events: none;
+  z-index: 0;
+  transition: opacity var(--np-motion-press) ease-in-out;
+}
+
+/* Press Feedback (Tactile down-right 3px translation) */
+.np-plunk:active > .np-plunk-face,
+.np-plunk[data-active="true"] > .np-plunk-face {
+  transform: translate3d(var(--np-edge-width), var(--np-edge-width), 0);
+}
+
+/* When pressed, edge hides under the face */
+.np-plunk:active::before,
+.np-plunk:active::after,
+.np-plunk[data-active="true"]::before,
+.np-plunk[data-active="true"]::after {
+  opacity: 0.2;
+}
+
+/* Disabled Plunk */
+.np-plunk:disabled,
+.np-plunk[aria-disabled="true"] {
+  cursor: not-allowed;
+  opacity: 0.45;
+  pointer-events: none;
+}
+
+/* ==========================================================================
+   4. High-Contrast Offset Shadows & Elevation
+   ========================================================================== */
+
+.np-elevation-low {
+  box-shadow: 3px 3px 0px var(--np-black-200);
+}
+
+.np-elevation-high {
+  box-shadow: 6px 6px 0px var(--np-black-200);
+}
+
+.np-elevation-yellow {
+  box-shadow: 4px 4px 0px var(--np-yellow);
+}
+
+.np-elevation-green {
+  box-shadow: 4px 4px 0px var(--np-green);
+}
+
+.np-elevation-pink {
+  box-shadow: 4px 4px 0px var(--np-pink);
+}
+
+.np-elevation-black {
+  box-shadow: 4px 4px 0px #000000;
+}
+
+/* ==========================================================================
+   5. Focus Visible & Accessibility Contract
+   ========================================================================== */
+
+:focus-visible {
+  outline: 2px solid var(--np-green) !important;
+  outline-offset: 3px !important;
+}
+
+/* ==========================================================================
+   6. Reduced Motion Support
+   ========================================================================== */
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    scroll-behavior: auto !important;
+    transition-duration: 0.01ms !important;
+  }
+
+  .np-plunk:active > .np-plunk-face,
+  .np-plunk[data-active="true"] > .np-plunk-face {
+    transform: none !important;
+  }
+}
