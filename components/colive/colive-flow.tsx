@@ -109,11 +109,11 @@ const coliveAddonCatalog: ColiveAddonItem[] = [
   },
 ];
 
-const coliveInclusions = ["WiFi 300Mbps", "Electricity", "Housekeeping", "Community events"];
+const coliveInclusions = ["Superfast Speed WiFi", "Electricity", "Housekeeping", "Community events"];
 
 const longStayBenefits = [
   { title: "Monthly Pricing", copy: "Backend rates shown as monthly totals, never nightly math multiplied on the fly.", icon: CalendarDays },
-  { title: "Built for Work", copy: "300Mbps mesh WiFi, ergonomic desks, lockers, and shared creator zones.", icon: Briefcase },
+  { title: "Built for Work", copy: "Superfast Speed mesh WiFi, ergonomic desks, lockers, and shared creator zones.", icon: Briefcase },
   { title: "Community First", copy: "Curated weekly mixers, supper clubs, and live jam sessions in the common hall.", icon: Users },
   { title: "Transparent Billing", copy: "Digital quote itemizes rent, add-ons, taxes, and deposit with zero hidden fees.", icon: ShieldCheck },
 ];

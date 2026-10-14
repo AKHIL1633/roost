@@ -2,11 +2,6 @@ node_modules/
 .next/
 out/
 dist/
-.env.local
-.env.*.local
-.env.production
-!.env.example
-.env.*
 .local/
 .agents/
 .codex/
@@ -21,6 +16,7 @@ migration-plan/
 .env
 .env.*
 *.env
+!.env.example
 
 # Internal / Temporary
 BUILD_PLAN.md
@@ -30,4 +26,3 @@ context.md
 *.tsbuildinfo
 .mcp.json
 scratch/
-
