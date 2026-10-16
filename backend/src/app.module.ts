@@ -17,6 +17,7 @@ import { AdminInventoryModule } from './admin/inventory/admin-inventory.module';
 import { AdminKycModule } from './admin/kyc/admin-kyc.module';
 import { AdminBookingsModule } from './admin/bookings/admin-bookings.module';
 import { GuestStoreModule } from './guest/store/guest-store.module';
+import { GuestCommunityModule } from './guest/community/guest-community.module';
 import { GuestBookingModule } from './guest/booking/guest-booking.module';
 import { GuestKycModule } from './guest/kyc/guest-kyc.module';
 import { ColiveModule } from './guest/colive/colive.module';
@@ -76,6 +77,7 @@ import { UploadsModule } from './uploads/uploads.module';
     AdminConversationsModule,
     CouponsModule,
     GuestStoreModule,
+    GuestCommunityModule,
     GuestBookingModule,
     GuestKycModule,
     ColiveModule,

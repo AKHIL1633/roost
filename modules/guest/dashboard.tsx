@@ -15,6 +15,7 @@ import {
   Search,
   ShieldCheck,
   ShoppingBag,
+  Users,
   Waypoints,
 } from "lucide-react";
 import { toast } from "sonner";
@@ -63,6 +64,13 @@ const quickActions: QuickAction[] = [
     href: "guide",
     icon: Waypoints,
     sticker: "Included",
+  },
+  {
+    title: "Community",
+    copy: "Meet other residents, plan meetups, and post updates.",
+    href: "community",
+    icon: Users,
+    sticker: "New",
   },
   {
     title: "Checkout",

@@ -337,6 +337,8 @@ model guests {
   colive_quotes                                                          colive_quotes[]
   colive_draft_bookings                                                  colive_draft_bookings[]
   coupon_redemptions                                                     coupon_redemptions[]
+  community_posts                                                        community_posts[]
+  community_post_likes                                                   community_post_likes[]
 }
 
 model inventory {
@@ -624,8 +626,37 @@ model properties {
   coupon_redemptions       coupon_redemptions[]
   staff                    staff[]
   escalation_levels        escalation_levels[]
+  community_posts          community_posts[]
 
   @@index([brand], map: "idx_properties_brand")
+}
+
+// ─── RESIDENT COMMUNITY BOARD ─────────────────────────────────────────────────
+
+model community_posts {
+  id          String                 @id @db.VarChar(36)
+  property_id String                 @db.VarChar(36)
+  guest_id    String                 @db.VarChar(36)
+  category    String                 @default("GENERAL") @db.VarChar(20)
+  body        String                 @db.VarChar(500)
+  is_pinned   Boolean                @default(false)
+  created_at  DateTime               @default(now()) @db.Timestamp(6)
+  properties  properties             @relation(fields: [property_id], references: [id])
+  guests      guests                 @relation(fields: [guest_id], references: [id])
+  likes       community_post_likes[]
+
+  @@index([property_id, created_at], map: "idx_community_posts_property")
+}
+
+model community_post_likes {
+  id               String           @id @db.VarChar(36)
+  post_id          String           @db.VarChar(36)
+  guest_id         String           @db.VarChar(36)
+  created_at       DateTime         @default(now()) @db.Timestamp(6)
+  community_posts  community_posts  @relation(fields: [post_id], references: [id], onDelete: Cascade)
+  guests           guests           @relation(fields: [guest_id], references: [id])
+
+  @@unique([post_id, guest_id], name: "uq_community_post_like", map: "uq_community_post_like")
 }
 
 // ─── COLIVE LONG-STAY TABLES ─────────────────────────────────────────────────

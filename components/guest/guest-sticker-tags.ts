@@ -17,4 +17,5 @@ export const guestStickerTags = {
   checkout: { label: "Stay ledger", bg: "#c62828", text: "#ffffff", rotate: "rotate-[1deg]" },
   review: { label: "Guest note", bg: "#f9cb37", text: "#111111", rotate: "rotate-[-2deg]" },
   notice: { label: "Neighborhood", bg: "#facc15", text: "#111111", rotate: "rotate-[1deg]" },
+  community: { label: "Resident board", bg: "#3a5f84", text: "#ffffff", rotate: "rotate-[2deg]" },
 } satisfies Record<string, GuestStickerTagConfig>;
