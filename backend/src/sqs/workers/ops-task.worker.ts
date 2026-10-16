@@ -345,7 +345,7 @@ export class OpsTaskWorker implements SqsWorker {
       // FRONT_OFFICE and that test would wrongly suppress a perfectly good named ack.
       //
       // The one case that must never name anyone is UNFULFILLED: we don't offer the
-      // thing, so "assigned to Pankaj, on it" is a promise nobody can keep.
+      // thing, so "assigned to Alex, on it" is a promise nobody can keep.
       const unfulfilled = ticket.task_category === UNFULFILLED_CLASS;
       const namedAssignment =
         !unfulfilled &&

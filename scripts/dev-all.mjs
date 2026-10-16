@@ -3,6 +3,7 @@
 import { spawn } from "node:child_process";
 import fs from "node:fs";
 import net from "node:net";
+import os from "node:os";
 import path from "node:path";
 import process from "node:process";
 import { fileURLToPath } from "node:url";
@@ -68,7 +69,7 @@ async function ensurePostgresRunning() {
 
   log("db", `Starting PostgreSQL 18 on port ${PG_PORT}...`);
 
-  const pgDataDir = "C:\\Users\\Pankaj\\.vibehouse_pgdata";
+  const pgDataDir = path.join(os.homedir(), ".roost_pgdata");
   const pidPath = path.join(pgDataDir, "postmaster.pid");
   if (fs.existsSync(pidPath)) {
     try {

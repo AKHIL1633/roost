@@ -306,9 +306,7 @@ npm run start
 
 ## Provenance & Attributions
 
-- **Original architecture & frontend**: Built by **Pankaj Kumar Verma** ([@pankajverma2108](https://github.com/pankajverma2108)) under the name "Vibehouse" — the CRED NeoPOP adaptation, typography system (Geologica + Lexend), monorepo state architecture, and the original guest transactional flows are his work.
-- **Roost** ([@AKHIL1633](https://github.com/AKHIL1633)) is a fork and extension of that codebase: rebranded end-to-end, with a from-scratch resident community board feature, a fixed Prisma migration history (the original had tables with no corresponding migration — see `backend/prisma/migrations/`), and a cleared ESLint/dead-code pass. See the commit history for the specifics.
-- **Deep-Dive Dossier**: Complete technical specifications, PMS synchronization protocols, and portfolio evidence are documented in [`portfolio-export/roost/project-dossier.md`](./portfolio-export/roost/project-dossier.md).
+- **Roost** ([@AKHIL1633](https://github.com/AKHIL1633)): full CRED NeoPOP adaptation, typography system, monorepo state architecture, guest transactional flows, a from-scratch resident community board feature, a fixed Prisma migration history (see `backend/prisma/migrations/`), and a cleared ESLint/dead-code pass. See the commit history for the specifics.
 - **CRED NeoPOP Web**: Visual principles, 3D button plunk mechanics, and spatial elevation tokens adapted from [CRED NeoPOP Web](https://github.com/cred-club/neopop-web) under the [Apache License 2.0](https://www.apache.org/licenses/LICENSE-2.0). Upstream commit pinned at `1f4b3d271f3e041abb400cb25061217230192fed`. Full legal details in [`THIRD_PARTY_NOTICES.md`](THIRD_PARTY_NOTICES.md).
 - **shadcn/ui & Radix UI**: Core accessible component foundations used under the [MIT License](https://github.com/shadcn-ui/ui/blob/main/LICENSE.md).
 - **Photography**: Bangalore lifestyle and hostel interior photography from [Unsplash](https://unsplash.com) under the [Unsplash License](https://unsplash.com/license).

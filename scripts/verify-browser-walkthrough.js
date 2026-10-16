@@ -12,7 +12,7 @@ import puppeteer from 'puppeteer-core';
 import path from 'path';
 import fs from 'fs';
 
-const ARTIFACT_DIR = 'C:\\Users\\Pankaj\\.gemini\\antigravity-ide\\brain\\17312d38-9ccd-4a3f-bd1d-501b1828c7bb';
+const ARTIFACT_DIR = path.resolve(process.cwd(), '.local', 'browser-walkthrough');
 const CHROME_PATH = 'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe';
 
 const ROUTES = [
