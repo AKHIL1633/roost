@@ -1,4 +1,4 @@
-import { requestJson } from "@/lib/vibehouse-api";
+import { requestJson } from "@/lib/roost-api";
 
 // ---------------------------------------------------------------------------
 // Types

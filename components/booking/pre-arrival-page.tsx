@@ -763,7 +763,7 @@ export function PreArrivalPage({ ezeeReservationId }: { ezeeReservationId: strin
   const { guest, isAuthenticated, isRestoringSession, openAuthModal } = useGuestAuth();
 
   const [bookingTitle, setBookingTitle] = useState("Web check-in");
-  const [propertyName, setPropertyName] = useState("Vibehouse");
+  const [propertyName, setPropertyName] = useState("Roost");
   const [bookingLifecycleStatus, setBookingLifecycleStatus] = useState<string | null>(null);
   const [slots, setSlots] = useState<BookingSlotSummary[]>([]);
   const [activeSlotId, setActiveSlotId] = useState<string | null>(null);

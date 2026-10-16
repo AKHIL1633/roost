@@ -5,7 +5,7 @@ import { STATIC_ROUTE_SHELL_SEGMENT } from "@/lib/static-export-routes";
 
 export const metadata: Metadata = {
   title: "Support Feedback",
-  description: "Rate a completed support request from Vibehouse.",
+  description: "Rate a completed support request from Roost.",
   robots: { index: false, follow: false },
 };
 

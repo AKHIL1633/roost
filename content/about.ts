@@ -29,7 +29,7 @@ export const aboutStoryBlocks = [
   {
     title: "Hospitality Reimagined for Nomads",
     body:
-      "Vibehouse was conceived to bridge the gap between sterile business hotels and chaotic backpacker hostels—delivering high-design spaces where ambitious nomads work, rest, and belong.",
+      "Roost was conceived to bridge the gap between sterile business hotels and chaotic backpacker hostels—delivering high-design spaces where ambitious nomads work, rest, and belong.",
     color: "#E01E5A",
     image:
       "https://images.unsplash.com/photo-1681747971522-2d7a04c78321?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&w=1200",

@@ -1089,7 +1089,7 @@ export function BookingCheckoutPage() {
             amount: paymentOrder.amount_paise,
             currency: paymentOrder.currency,
             order_id: paymentOrder.razorpay_order_id,
-            name: "Vibehouse",
+            name: "Roost",
             description: `${draft.colive.propertyName || propertyHero.title} Colive booking`,
             prefill: {
               name: `${guestForm.firstName} ${guestForm.lastName}`.trim(),

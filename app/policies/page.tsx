@@ -80,7 +80,7 @@ const policyFaqs = [
 export const metadata: Metadata = {
   title: "Policies",
   description:
-    "Read Vibehouse Policies: general guest policy, check-in and ID rules, cancellation and refund policy, privacy policy, terms and conditions, and policy FAQs for stays in India.",
+    "Read Roost Policies: general guest policy, check-in and ID rules, cancellation and refund policy, privacy policy, terms and conditions, and policy FAQs for stays in India.",
   keywords: [
     "hostel policies",
     "guest policy",
@@ -96,11 +96,11 @@ export const metadata: Metadata = {
     canonical: "/policies",
   },
   openGraph: {
-    title: "Policies | Vibehouse",
+    title: "Policies | Roost",
     description:
       "Unified policy hub for guest rules, cancellation and refunds, privacy, terms, and FAQs.",
     url: "/policies",
-    siteName: "Vibehouse",
+    siteName: "Roost",
     type: "website",
   },
 };
@@ -162,7 +162,7 @@ export default function PoliciesPage() {
               <section className="vh-panel rounded-2xl p-6 md:p-8" id="general-policy">
                 <SectionHeading align="left" title="General Policy" />
                 <p className="text-sm leading-7 text-white/82 md:text-base">
-                  Vibehouse is a social stay and community hospitality brand. The policies below
+                  Roost is a social stay and community hospitality brand. The policies below
                   define fair use, guest eligibility, safety standards, and booking responsibilities for
                   all users of our website, booking channels, and on-property services.
                 </p>

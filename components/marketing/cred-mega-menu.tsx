@@ -34,7 +34,7 @@ export const credNavCategories: NavCategory[] = [
     label: "WHAT'S NEW",
     featured: {
       badge: "NEW LAUNCH",
-      title: "VIBEHOUSE · KORAMANGALA",
+      title: "ROOST · KORAMANGALA",
       subtitle: "Flagship social hostel, private suites & community rooftop cafe",
       image: "/images/property/hero-1-1600.webp",
       href: "/property",
@@ -184,7 +184,7 @@ export const credNavCategories: NavCategory[] = [
     id: "company",
     label: "COMPANY",
     featured: {
-      badge: "VIBEHOUSE",
+      badge: "ROOST",
       title: "CRAFTED FOR NOMADS, TRAVELERS & CREATIVES",
       subtitle: "Redefining boutique social living across India's most vibrant neighborhoods",
       image: "/images/property/hero-2-1600.webp",
@@ -220,13 +220,13 @@ export const credNavCategories: NavCategory[] = [
   },
 ];
 
-import { VibehouseLogo } from "./vibehouse-logo";
+import { RoostLogo } from "./roost-logo";
 
 /**
- * Vibehouse Brand Logo (Original Initial Logo)
+ * Roost Brand Logo (Original Initial Logo)
  */
 export function CredBrandLogo({ className }: { className?: string }) {
-  return <VibehouseLogo className={className} />;
+  return <RoostLogo className={className} />;
 }
 
 /**
@@ -264,7 +264,7 @@ export function CredExpandTrigger({
           </span>
         ) : (
           <span className="text-[9.5px] font-extrabold uppercase tracking-[0.14em] text-white/60 font-['Gilroy',sans-serif] transition-all">
-            VIBEHOUSE · KORAMANGALA
+            ROOST · KORAMANGALA
           </span>
         )}
       </div>

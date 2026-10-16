@@ -68,10 +68,10 @@ const brandPresentation: Record<
     sticker: "COMPLIMENTARY",
   },
   TDS: {
-    heading: "Vibehouse Breakfast Menu",
+    heading: "Roost Breakfast Menu",
     description: "Choose complimentary breakfast for each guest in your stay.",
     logo: "/brands/tds/logo.png",
-    logoAlt: "Vibehouse",
+    logoAlt: "Roost",
     sticker: null,
   },
 };

@@ -1,5 +1,5 @@
 import type { EventCardProps, RoomCardProps } from "@/content/types";
-import { getApiBaseUrl } from "@/lib/vibehouse-api";
+import { getApiBaseUrl } from "@/lib/roost-api";
 import { formatINRPlain } from "@/lib/format-price";
 const CANONICAL_PROPERTY_ID_REGEX = /^\d+$/;
 const FALLBACK_EVENT_IMAGE =
@@ -363,7 +363,7 @@ function normalizeEvent(event: RawEvent): EventCardProps {
   const time = formatTime12Hour(event.time);
   if (!event.time) recordTelemetry({ type: "missing_field", source: "event", field: "time" });
 
-  const location = ensureString(event.location, "Vibehouse");
+  const location = ensureString(event.location, "Roost");
   if (!event.location) recordTelemetry({ type: "missing_field", source: "event", field: "location" });
 
   const price = ensureString(event.price_text, "Details on arrival");

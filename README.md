@@ -1,8 +1,8 @@
 <div align="center">
 
-<img src="./portfolio-export/vibehouse/images/logo-crest.png" width="96" alt="Vibehouse Logo" style="filter: drop-shadow(0 0 24px rgba(255, 203, 69, 0.25));" />
+<img src="./portfolio-export/roost/images/logo-crest.png" width="96" alt="Roost Logo" style="filter: drop-shadow(0 0 24px rgba(255, 203, 69, 0.25));" />
 
-# VIBEHOUSE
+# ROOST
 
 ### High-Energy Coliving & Hostel Ecosystem. Neo-Brutalist Precision.
 
@@ -25,19 +25,19 @@ An expressive, dark-first digital hospitality platform where travelers, remote n
 
 ---
 
-> *"Vibehouse is engineered around one physical feeling: booking a bunk, locking a 3-month coliving pass, or ordering morning breakfast should never feel like filling out a tax form. Every state transition feels immediate, physical, and unmistakably premium."*
+> *"Roost is engineered around one physical feeling: booking a bunk, locking a 3-month coliving pass, or ordering morning breakfast should never feel like filling out a tax form. Every state transition feels immediate, physical, and unmistakably premium."*
 
 ---
 
 <div align="center">
 
-![Vibehouse NeoPOP Homepage Hero & Live Booking Bar](./portfolio-export/vibehouse/images/01-homepage-hero-desktop.png)
+![Roost NeoPOP Homepage Hero & Live Booking Bar](./portfolio-export/roost/images/01-homepage-hero-desktop.png)
 
 </div>
 
 ## The Guest Experience
 
-Vibehouse merges modern hostel culture with high-precision digital product design. Across every screen, the interface adheres to a strict neo-brutalist geometry, pitch-black layered surfaces, and authentic CRED NeoPOP 3D plunk physics.
+Roost merges modern hostel culture with high-precision digital product design. Across every screen, the interface adheres to a strict neo-brutalist geometry, pitch-black layered surfaces, and authentic CRED NeoPOP 3D plunk physics.
 
 | Guest Move | What It Feels Like |
 | :--- | :--- |
@@ -80,14 +80,14 @@ Vibehouse merges modern hostel culture with high-precision digital product desig
 
 ## Designed For Momentum
 
-Vibehouse's visual system is a local React 19-compatible adaptation of the **CRED NeoPOP** design system. The interface uses an absolute `#0D0D0D` pitch-black canvas, sharp zero-radius geometry, 3px 45-degree beveled edges, directional offset shadows, and tactile 120ms press physics.
+Roost's visual system is a local React 19-compatible adaptation of the **CRED NeoPOP** design system. The interface uses an absolute `#0D0D0D` pitch-black canvas, sharp zero-radius geometry, 3px 45-degree beveled edges, directional offset shadows, and tactile 120ms press physics.
 
 ### 1. Coliving Duration Engine & Real-Time Receipt Quote
 > Select between 1, 2, 3, or 6-month resident passes with live price calculation, dynamic addon configuration, and digital receipt breakdown.
 
 <div align="center">
 
-![Vibehouse Coliving Duration Engine](./portfolio-export/vibehouse/images/05-colive-duration-engine-desktop.png)
+![Roost Coliving Duration Engine](./portfolio-export/roost/images/05-colive-duration-engine-desktop.png)
 
 </div>
 
@@ -96,7 +96,7 @@ Vibehouse's visual system is a local React 19-compatible adaptation of the **CRE
 
 <div align="center">
 
-![Vibehouse Property & Rooms Showcase](./portfolio-export/vibehouse/images/03-rooms-catalog-desktop.png)
+![Roost Property & Rooms Showcase](./portfolio-export/roost/images/03-rooms-catalog-desktop.png)
 
 </div>
 
@@ -105,7 +105,7 @@ Vibehouse's visual system is a local React 19-compatible adaptation of the **CRE
 
 <div align="center">
 
-![Vibehouse Booking Checkout Review](./portfolio-export/vibehouse/images/07-booking-checkout-desktop.png)
+![Roost Booking Checkout Review](./portfolio-export/roost/images/07-booking-checkout-desktop.png)
 
 </div>
 
@@ -114,7 +114,7 @@ Vibehouse's visual system is a local React 19-compatible adaptation of the **CRE
 
 <div align="center">
 
-![Vibehouse Community Events & Lineup](./portfolio-export/vibehouse/images/06-community-events-bento-desktop.png)
+![Roost Community Events & Lineup](./portfolio-export/roost/images/06-community-events-bento-desktop.png)
 
 </div>
 
@@ -123,7 +123,7 @@ Vibehouse's visual system is a local React 19-compatible adaptation of the **CRE
 
 <div align="center">
 
-<img src="./portfolio-export/vibehouse/images/02-homepage-mobile.png" width="420" alt="Vibehouse Mobile Viewport" />
+<img src="./portfolio-export/roost/images/02-homepage-mobile.png" width="420" alt="Roost Mobile Viewport" />
 
 </div>
 
@@ -134,7 +134,7 @@ Vibehouse's visual system is a local React 19-compatible adaptation of the **CRE
 
 | Multi-Guest Web Check-In & KYC | Razorpay Verified Digital Ticket |
 | :---: | :---: |
-| ![Web Check-In Portal](./portfolio-export/vibehouse/images/readme-web-checkin.png) | ![Digital Ticket Confirmation](./portfolio-export/vibehouse/images/readme-digital-ticket.png) |
+| ![Web Check-In Portal](./portfolio-export/roost/images/readme-web-checkin.png) | ![Digital Ticket Confirmation](./portfolio-export/roost/images/readme-digital-ticket.png) |
 
 </div>
 
@@ -143,13 +143,13 @@ Vibehouse's visual system is a local React 19-compatible adaptation of the **CRE
 
 <div align="center">
 
-![Vibehouse Sanctuary Rooms Section](./portfolio-export/vibehouse/images/08-homepage-rooms-section-desktop.png)
+![Roost Sanctuary Rooms Section](./portfolio-export/roost/images/08-homepage-rooms-section-desktop.png)
 
 </div>
 
 <div align="center">
 
-![Vibehouse Property Details & Amenities](./portfolio-export/vibehouse/images/04-property-details-desktop.png)
+![Roost Property Details & Amenities](./portfolio-export/roost/images/04-property-details-desktop.png)
 
 </div>
 
@@ -179,13 +179,13 @@ Vibehouse's visual system is a local React 19-compatible adaptation of the **CRE
 
 ## Built To Move
 
-Vibehouse enforces strict transactional integrity across guest mutations. Every reservation, coliving quote, and payment lifecycle transition passes through an authenticated backend command boundary:
+Roost enforces strict transactional integrity across guest mutations. Every reservation, coliving quote, and payment lifecycle transition passes through an authenticated backend command boundary:
 
 ```mermaid
 sequenceDiagram
     autonumber
     actor Guest as Digital Nomad
-    participant UI as Vibehouse Frontend
+    participant UI as Roost Frontend
     participant API as NestJS Backend (:8000)
     participant RZP as Razorpay Gateway
     participant DB as PostgreSQL 18
@@ -216,7 +216,7 @@ sequenceDiagram
 
 ## Core Route Architecture
 
-Vibehouse is built on Next.js 16.2.9 with the App Router, providing 62 statically compiled and dynamic SSG routes:
+Roost is built on Next.js 16.2.9 with the App Router, providing 62 statically compiled and dynamic SSG routes:
 
 ```
 app/
@@ -256,8 +256,8 @@ app/
 
 ```bash
 # Clone the repository
-git clone https://github.com/pankajverma2108/vibehouse-frontend.git
-cd vibehouse-frontend
+git clone https://github.com/AKHIL1633/roost.git
+cd roost
 
 # Install dependencies
 npm install
@@ -306,8 +306,9 @@ npm run start
 
 ## Provenance & Attributions
 
-- **Architecture & Frontend Lead**: Designed and implemented by **Pankaj Kumar Verma** ([@pankajverma2108](https://github.com/pankajverma2108)) — full CRED NeoPOP adaptation, typography overhaul (Geologica + Lexend), monorepo state architecture, and guest transactional flows.
-- **Deep-Dive Dossier**: Complete technical specifications, PMS synchronization protocols, and portfolio evidence are documented in [`portfolio-export/vibehouse/project-dossier.md`](./portfolio-export/vibehouse/project-dossier.md).
+- **Original architecture & frontend**: Built by **Pankaj Kumar Verma** ([@pankajverma2108](https://github.com/pankajverma2108)) under the name "Vibehouse" — the CRED NeoPOP adaptation, typography system (Geologica + Lexend), monorepo state architecture, and the original guest transactional flows are his work.
+- **Roost** ([@AKHIL1633](https://github.com/AKHIL1633)) is a fork and extension of that codebase: rebranded end-to-end, with a from-scratch resident community board feature, a fixed Prisma migration history (the original had tables with no corresponding migration — see `backend/prisma/migrations/`), and a cleared ESLint/dead-code pass. See the commit history for the specifics.
+- **Deep-Dive Dossier**: Complete technical specifications, PMS synchronization protocols, and portfolio evidence are documented in [`portfolio-export/roost/project-dossier.md`](./portfolio-export/roost/project-dossier.md).
 - **CRED NeoPOP Web**: Visual principles, 3D button plunk mechanics, and spatial elevation tokens adapted from [CRED NeoPOP Web](https://github.com/cred-club/neopop-web) under the [Apache License 2.0](https://www.apache.org/licenses/LICENSE-2.0). Upstream commit pinned at `1f4b3d271f3e041abb400cb25061217230192fed`. Full legal details in [`THIRD_PARTY_NOTICES.md`](THIRD_PARTY_NOTICES.md).
 - **shadcn/ui & Radix UI**: Core accessible component foundations used under the [MIT License](https://github.com/shadcn-ui/ui/blob/main/LICENSE.md).
 - **Photography**: Bangalore lifestyle and hostel interior photography from [Unsplash](https://unsplash.com) under the [Unsplash License](https://unsplash.com/license).
@@ -317,6 +318,6 @@ npm run start
 <div align="center">
 
 Crafted with obsessive precision for travelers, digital nomads, and creators.<br/>
-**Vibehouse &copy; 2026. All rights reserved.**
+**Roost &copy; 2026. All rights reserved.**
 
 </div>

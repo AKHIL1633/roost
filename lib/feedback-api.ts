@@ -2,7 +2,7 @@ import {
   getApiBaseUrl,
   getRequestContextHeaders,
   parseApiError,
-} from "@/lib/vibehouse-api";
+} from "@/lib/roost-api";
 
 export type FeedbackState = "valid" | "used" | "expired" | "not_found";
 export type FeedbackBrand = "TDS" | "BUTEAK";

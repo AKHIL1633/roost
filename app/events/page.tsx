@@ -164,12 +164,12 @@ export default function EventsPage() {
           </Stagger>
           <FadeIn className="mt-12 text-center">
             <a
-              href="https://instagram.com/vibehouse"
+              href="https://instagram.com/roost"
               rel="noreferrer"
               target="_blank"
               className="inline-flex items-center gap-2 rounded-full bg-white/[0.08] hover:bg-[#E01E5A] text-white border border-white/15 hover:border-[#E01E5A] px-6 py-3 font-mono text-xs font-semibold uppercase tracking-wider transition-all shadow-[0_4px_20px_rgba(0,0,0,0.4)]"
             >
-              <span>Follow @vibehouse On Instagram</span>
+              <span>Follow @roost On Instagram</span>
             </a>
           </FadeIn>
         </div>

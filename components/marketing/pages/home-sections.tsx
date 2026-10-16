@@ -370,7 +370,7 @@ function ExperienceSection() {
     <SectionFrame>
       <div className="vh-container max-w-7xl mx-auto px-4 sm:px-6">
         <SectionHeading
-          subtitle="The Vibehouse Ethos"
+          subtitle="The Roost Ethos"
           title="More Than A Bed"
           tagline="A sanctuary built on spontaneous conversations, shared journeys, and creative momentum."
         />
@@ -516,9 +516,9 @@ function EnergySection() {
         </Stagger>
 
         <FadeIn className="mt-10 text-center">
-          <Link href="https://instagram.com/vibehouse" rel="noreferrer" target="_blank">
+          <Link href="https://instagram.com/roost" rel="noreferrer" target="_blank">
             <MagneticButton className="rounded-full bg-white/[0.06] hover:bg-white/[0.12] border border-white/15 px-6 py-3 text-xs font-mono font-medium uppercase tracking-wider text-white transition-all">
-              <span>Follow @vibehouse</span>
+              <span>Follow @roost</span>
             </MagneticButton>
           </Link>
         </FadeIn>

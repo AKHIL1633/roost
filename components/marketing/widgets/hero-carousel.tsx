@@ -53,7 +53,7 @@ export function HeroCarousel({ images, titleParts, children }: HeroCarouselProps
                   type="image/webp"
                 />
                 <ImageWithFallback
-                  alt={`Vibehouse boutique sanctuary ${index + 1}`}
+                  alt={`Roost boutique sanctuary ${index + 1}`}
                   className="h-full w-full object-cover object-center"
                   fetchPriority={index === 0 ? "high" : "auto"}
                   loading={index === 0 ? "eager" : "lazy"}

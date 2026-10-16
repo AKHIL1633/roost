@@ -3,7 +3,7 @@ import nextTypescript from "eslint-config-next/typescript";
 
 const config = [
   {
-    ignores: [".next/**", "guidelines/**", "postcss.config.mjs", "src/**", "backend/**", "docs/**", "scripts/**"],
+    ignores: [".next/**", "guidelines/**", "postcss.config.mjs", "backend/**", "docs/**", "scripts/**"],
   },
   ...nextVitals,
   ...nextTypescript,

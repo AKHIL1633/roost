@@ -2,8 +2,8 @@ const ZOSTEL_PATTERN = /\bzostel\b/gi;
 const LOCALHOST_PATTERN = /^https?:\/\/(localhost|127(?:\.\d+){3})(:\d+)?$/i;
 const DEFAULT_SITE_ORIGIN = "http://localhost:3000";
 
-export const BRAND_NAME = "Vibehouse";
-export const BRAND_SHORT_NAME = "VH";
+export const BRAND_NAME = "Roost";
+export const BRAND_SHORT_NAME = "RT";
 
 function looksLikeSystemId(value: string): boolean {
   // Reservation/property identifiers should not be shown as end-user location names.

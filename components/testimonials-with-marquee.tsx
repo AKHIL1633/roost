@@ -504,7 +504,7 @@ export default function TestimonialsMarquee() {
       <div className="mx-auto w-[95vw] max-w-[1400px] px-1 md:px-3">
         <div className="text-center mb-14 px-4">
           <p className="text-[11px] font-mono font-medium uppercase tracking-wider text-[#2FBC81] mb-3">
-            VOICES OF VIBEHOUSE
+            VOICES OF ROOST
           </p>
           <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold uppercase tracking-tight text-white font-display">
             Guests keep talking. We keep hosting.

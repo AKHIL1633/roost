@@ -20,19 +20,19 @@ export const footerLinks = {
 };
 
 export const siteMeta = {
-  name: "Vibehouse",
+  name: "Roost",
   tagline: "Stay. Mix. Repeat.",
   description:
     "A boutique social sanctuary and coliving hub in Koramangala, Bangalore. Designer private rooms, acoustic pod dorms, rooftop culture, and high-speed fiber.",
   contact: {
-    email: "hello@vibehouse.co",
-    emailHref: "mailto:hello@vibehouse.co",
+    email: "hello@roost.co",
+    emailHref: "mailto:hello@roost.co",
     addressLines: [
-      "Vibehouse Koramangala",
+      "Roost Koramangala",
       "13/14, Bank Officer Housing Co-operative Society",
       "Bengaluru Urban, Karnataka, India",
     ],
-    instagramHref: "https://instagram.com/vibehouse",
+    instagramHref: "https://instagram.com/roost",
     mapsHref: "https://maps.app.goo.gl/jJKJUUKzdmFJGbCG6?g_st=aw",
   },
 };

@@ -1,4 +1,4 @@
-import { getApiBaseUrl, requestJson } from "@/lib/vibehouse-api";
+import { getApiBaseUrl, requestJson } from "@/lib/roost-api";
 import { resolveClientBrand } from "@/lib/property-resolver";
 
 export type GuestProfile = {

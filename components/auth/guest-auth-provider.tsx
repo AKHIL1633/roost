@@ -2,7 +2,7 @@
 
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
-import { ApiRequestError } from "@/lib/vibehouse-api";
+import { ApiRequestError } from "@/lib/roost-api";
 
 import { GuestAuthModal } from "@/components/auth/guest-auth-modal";
 import {

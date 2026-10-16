@@ -1,4 +1,4 @@
-import { getApiBaseUrl, getRequestContextHeaders, parseApiError } from "@/lib/vibehouse-api";
+import { getApiBaseUrl, getRequestContextHeaders, parseApiError } from "@/lib/roost-api";
 
 export type BreakfastBrand = "BUTEAK" | "TDS";
 export type BreakfastLinkState = "valid" | "disabled" | "checked_out" | "revoked" | "not_found";

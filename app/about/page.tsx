@@ -25,7 +25,7 @@ export default function AboutPage() {
             <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-white/[0.06] border border-white/10 backdrop-blur-xl mb-6">
               <span className="h-2 w-2 rounded-full bg-[#2FBC81]" />
               <span className="text-[11px] font-mono font-medium uppercase tracking-wider text-white/90">
-                The Vibehouse Story
+                The Roost Story
               </span>
             </div>
 
@@ -39,7 +39,7 @@ export default function AboutPage() {
               <div className={`relative overflow-hidden transition-all duration-500 ease-in-out ${expanded ? "max-h-[500px]" : "max-h-32"}`}>
                 <div className="space-y-4 text-sm sm:text-base leading-relaxed text-white/75 font-body">
                   <p>
-                    Vibehouse was created to bridge the gap between sterile business hotels and uninspiring hostel bunks—offering high-design spaces where ambitious nomads work, rest, and build lasting friendships.
+                    Roost was created to bridge the gap between sterile business hotels and uninspiring hostel bunks—offering high-design spaces where ambitious nomads work, rest, and build lasting friendships.
                   </p>
                   <p>
                     From Bangalore&apos;s tech founders to global digital nomads, our properties deliver boutique acoustic pods, 100Mbps dedicated fiber, specialty coffee, and vibrant cultural nights.
@@ -64,7 +64,7 @@ export default function AboutPage() {
 
           <FadeIn className="overflow-hidden rounded-2xl border border-white/10 bg-[#121216] p-2 shadow-[0_20px_50px_rgba(0,0,0,0.7)]" delay={0.1}>
             <ImageWithFallback
-              alt="Vibehouse Koramangala sanctuary"
+              alt="Roost Koramangala sanctuary"
               className="aspect-[4/3] w-full object-cover rounded-xl"
               src="https://images.unsplash.com/photo-1501566953613-d93d5cb0be93?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&w=1200"
             />
@@ -151,7 +151,7 @@ export default function AboutPage() {
             </p>
 
             <h2 className="font-display text-3xl sm:text-5xl font-bold uppercase tracking-tight text-white leading-tight max-w-2xl mx-auto">
-              Ready to Experience Vibehouse?
+              Ready to Experience Roost?
             </h2>
 
             <p className="mt-4 text-xs sm:text-sm font-body text-white/70 max-w-md mx-auto leading-relaxed">

@@ -9,7 +9,7 @@ This project incorporates concepts, architecture, and design system foundations 
 - **Copyright**: Copyright (c) 2022 Dreamplug Technologies Pvt. Ltd. (CRED)
 
 ### Modifications Notice
-The local implementation in `components/neopop/` and related stylesheet definitions are modified adaptations developed specifically for Vibehouse / The Daily Social. The primitives have been customized to support Next.js App Router, Tailwind CSS integration, and local accessibility contracts.
+The local implementation in `components/neopop/` and related stylesheet definitions are modified adaptations developed specifically for Roost / The Daily Social. The primitives have been customized to support Next.js App Router, Tailwind CSS integration, and local accessibility contracts.
 
 ### Brand & Assets Notice
-CRED brand artwork, logos, wordmarks, trade dress, and proprietary trade names are not included. All product identities, copywriting, room assets, and hospitality workflows belong to Vibehouse / The Daily Social.
+CRED brand artwork, logos, wordmarks, trade dress, and proprietary trade names are not included. All product identities, copywriting, room assets, and hospitality workflows belong to Roost / The Daily Social.

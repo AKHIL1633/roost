@@ -16,9 +16,9 @@ export function EventCard({
   time,
   title,
 }: EventCardProps) {
-  const rsvpSubject = `RSVP: ${title} at Vibehouse (${date})`;
-  const rsvpBody = `Hi Vibehouse team,\n\nI'd like to RSVP for ${title}.\nDate: ${date}\nTime: ${time}\nLocation: ${location}\n\nThanks!`;
-  const rsvpHref = `mailto:hello@vibehouse.co?subject=${encodeURIComponent(rsvpSubject)}&body=${encodeURIComponent(rsvpBody)}`;
+  const rsvpSubject = `RSVP: ${title} at Roost (${date})`;
+  const rsvpBody = `Hi Roost team,\n\nI'd like to RSVP for ${title}.\nDate: ${date}\nTime: ${time}\nLocation: ${location}\n\nThanks!`;
+  const rsvpHref = `mailto:hello@roost.co?subject=${encodeURIComponent(rsvpSubject)}&body=${encodeURIComponent(rsvpBody)}`;
 
   const details = [
     { icon: CalendarDays, label: date, tone: "text-[#E01E5A]" },

@@ -46,7 +46,7 @@ export function AmbientCanvas({ className = "", intensity = 1.0 }: AmbientCanvas
     const colors = new Float32Array(particleCount * 3);
     const scales = new Float32Array(particleCount);
 
-    // Color palette: Vibehouse Crimson (#FF2E62), Warm Ice (#F3EEE6), and subtle deep orchid
+    // Color palette: Roost Crimson (#FF2E62), Warm Ice (#F3EEE6), and subtle deep orchid
     const colorCrimson = new THREE.Color("#FF2E62");
     const colorIce = new THREE.Color("#F3EEE6");
     const colorSoftPink = new THREE.Color("#FF426F");

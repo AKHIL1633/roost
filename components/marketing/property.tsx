@@ -1581,7 +1581,7 @@ export function Property({
             </p>
             <h1 className="leading-tight">
               <span className="font-display font-bold text-4xl md:text-6xl lg:text-7xl text-white tracking-tight">
-                VIBEHOUSE
+                ROOST
               </span>
             </h1>
             <p className="mx-auto mt-4 max-w-[760px] text-sm md:text-base leading-relaxed text-white/70 font-body">
@@ -1702,7 +1702,7 @@ export function Property({
                       width={224}
                     />
                     <p className="mt-4 text-base font-semibold text-white">No room types are currently available for this property.</p>
-                    <p className="mt-2 text-sm text-white/75">Please retry or contact support at hello@vibehouse.co.</p>
+                    <p className="mt-2 text-sm text-white/75">Please retry or contact support at hello@roost.co.</p>
                   </div>
                 ) : (
                   roomCategoryList.map((room) => {

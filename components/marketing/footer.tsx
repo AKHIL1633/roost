@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
-import { VibehouseLogo } from "./vibehouse-logo";
+import { RoostLogo } from "./roost-logo";
 import { footerLinks, siteMeta } from "@/content/site";
 import { isStandalonePublicRoute } from "@/lib/feedback-route";
 
@@ -19,7 +19,7 @@ export function Footer() {
       <div className="vh-container max-w-[1545px] mx-auto">
         <div className="mb-10 grid grid-cols-1 gap-10 md:grid-cols-4">
           <div className="md:col-span-2 space-y-4">
-            <VibehouseLogo />
+            <RoostLogo />
             <p className="text-xs uppercase tracking-[0.14em] text-white/75 font-body font-bold">
               Stay, Play, Belong.
             </p>

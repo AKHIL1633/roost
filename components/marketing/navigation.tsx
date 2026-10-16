@@ -11,7 +11,7 @@ import { hostelNavItems } from "@/content/nav-menu";
 import { getDefaultPropertyDestinationHref } from "@/lib/cx-api";
 import { isStandalonePublicRoute } from "@/lib/feedback-route";
 import { cn } from "@/lib/utils";
-import { VibehouseLogo } from "./vibehouse-logo";
+import { RoostLogo } from "./roost-logo";
 import { MagneticButton } from "./interactive/magnetic-button";
 
 const navItems = [
@@ -108,9 +108,9 @@ export function Navigation() {
                 : "bg-black/60 backdrop-blur-md border border-white/10"
             )}
           >
-            {/* Authentic Vibehouse Brand */}
+            {/* Authentic Roost Brand */}
             <div className="flex items-center gap-3">
-              <VibehouseLogo />
+              <RoostLogo />
               <span className="hidden xl:inline-block h-3.5 w-px bg-white/15" />
               <span className="hidden xl:inline-block font-mono text-[10px] font-medium uppercase tracking-wider text-white/50">
                 Koramangala
@@ -246,7 +246,7 @@ export function Navigation() {
                   Social Sanctuary
                 </p>
                 <p className="text-xl font-display font-bold uppercase tracking-tight text-white">
-                  Vibehouse
+                  Roost
                 </p>
               </div>
 

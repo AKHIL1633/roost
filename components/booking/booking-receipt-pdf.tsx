@@ -92,7 +92,7 @@ function formatCurrency(amount: number, currency = "INR"): string {
 }
 
 function buildQrUrl(bookingId: string): string {
-  return `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=vibehouse-${encodeURIComponent(bookingId)}`;
+  return `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=roost-${encodeURIComponent(bookingId)}`;
 }
 
 // ---------------------------------------------------------------------------
@@ -497,7 +497,7 @@ export function BookingReceiptPDF({ data }: BookingReceiptPDFProps) {
       title={`Receipt – ${data.booking_id}`}
       author={data.property_name}
       subject="Booking Confirmation Receipt"
-      creator="Vibehouse"
+      creator="Roost"
     >
       <Page size="A4" style={s.page}>
         {/* ── Side strip ──────────────────────────────────────────── */}

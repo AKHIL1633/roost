@@ -21,10 +21,10 @@ export type Brand = "TDS" | "BUTEAK";
 // Host-to-property mapping (must match backend's property-resolver.ts)
 // See: docs/multi_property/13_multi_property.md
 const HOST_TO_PROPERTY: Record<string, string> = {
-  "www.vibehouse.co": "60765",
-  "vibehouse.co": "60765",
-  "www.vibehouse.in": "60765",
-  "vibehouse.in": "60765",
+  "www.roost.co": "60765",
+  "roost.co": "60765",
+  "www.roost.in": "60765",
+  "roost.in": "60765",
   "vibe-house.netlify.app": "60765",
   "www.buteak.in": "55402",
   "buteak.in": "55402",
@@ -41,7 +41,7 @@ const PROPERTY_ID_TO_BRAND: Record<string, Brand> = {
 
 // Property ID to property name mapping
 const PROPERTY_ID_TO_NAME: Record<string, string> = {
-  "60765": "Vibehouse",
+  "60765": "Roost",
   "55402": "Buteak",
 };
 export function isValidPropertyId(value: unknown): value is string {

@@ -24,7 +24,7 @@ export const colorPalette = {
   },
   // Affirmative momentum semantics
   semantic: {
-    affirmative: '#FF2E62', // Vibehouse Crimson: primary action, next step, active selection
+    affirmative: '#FF2E62', // Roost Crimson: primary action, next step, active selection
     brand: '#FF2E62', // Primary Brand Crimson
     brandHover: '#FF426F', // Crimson Hover State
     brandEdge: '#991438', // Crimson Bevel Edge

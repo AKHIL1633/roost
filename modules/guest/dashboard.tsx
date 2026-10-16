@@ -329,7 +329,7 @@ export function GuestDashboard() {
   const stayWindow = `${formatDate(activeBooking?.checkin_date)} - ${formatDate(activeBooking?.checkout_date)}`;
   const roomOrBed = formatRoomOrBed(activeBooking?.room_number);
   const accessValue = activeBooking?.door_passcode ?? "Shared at check-in";
-  const supportHref = `mailto:${supportEmail}?subject=${encodeURIComponent(`Hey Vibehouse, I need help with booking ${activeBooking?.ezee_reservation_id ?? selectedBookingId ?? ""}`)}`;
+  const supportHref = `mailto:${supportEmail}?subject=${encodeURIComponent(`Hey Roost, I need help with booking ${activeBooking?.ezee_reservation_id ?? selectedBookingId ?? ""}`)}`;
   const primaryCtaClass = "vh-cta-button h-10 rounded-[4px] px-4 text-xs";
 
   useEffect(() => {

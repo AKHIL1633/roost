@@ -72,11 +72,11 @@ export const rooms: RoomCardProps[] = [
 
 export const propertyHero = {
   eyebrow: "Property",
-  title: "Vibehouse",
+  title: "Roost",
   location: "Koramangala",
   blurb:
     "A social stay with clean rooms, practical shared spaces, and an easy Koramangala location for short trips, work stays, and longer city living.",
-  addressName: "Vibehouse Koramangala",
+  addressName: "Roost Koramangala",
   address:
     "13/14, Bank Officer Housing Co-operative Society, Bengaluru Urban, Karnataka, India",
   mapsHref: "https://maps.app.goo.gl/jJKJUUKzdmFJGbCG6?g_st=aw",
@@ -85,7 +85,7 @@ export const propertyHero = {
 export const propertyGallery = [
   {
     src: "/images/property/hero-1-1600.webp",
-    alt: "Vibehouse dorm interior",
+    alt: "Roost dorm interior",
   },
   {
     src: "/images/property/hero-2-1600.webp",
@@ -102,7 +102,7 @@ export const propertyGallery = [
 ];
 
 export const propertyOverview = [
-  "Vibehouse Koramangala brings together boutique comfort and a social, city-friendly atmosphere for guests who want more than a plain overnight stop.",
+  "Roost Koramangala brings together boutique comfort and a social, city-friendly atmosphere for guests who want more than a plain overnight stop.",
   "The property is set up to feel calm when you need rest and connected when you want common spaces, with room categories that work for solo guests, friends, and flexible stays.",
   "Its location makes it easy to step out for coffee, work meetings, food runs, and evenings in the neighborhood while still returning to a stay that feels organized and welcoming.",
 ];
@@ -123,7 +123,7 @@ export const propertyAmenities = [
 ];
 
 export const locationMap = {
-  title: "Vibehouse Koramangala",
+  title: "Roost Koramangala",
   address:
     "13/14, Bank Officer Housing Co-operative Society, Bengaluru Urban, Karnataka, India",
   embedUrl:
@@ -286,6 +286,6 @@ export const roomFaqs = [
   {
     question: "Who do I contact if I have a query?",
     answer:
-      "You can contact Vibehouse directly using the listed email before arrival.",
+      "You can contact Roost directly using the listed email before arrival.",
   },
 ];

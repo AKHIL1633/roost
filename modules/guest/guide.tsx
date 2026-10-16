@@ -10,7 +10,7 @@ import { locationMap, nearbyAttractions, propertyAmenities, propertyGuidelines, 
 import { siteMeta } from "@/content/site";
 
 const supportEmail = siteMeta.contact.email;
-const supportHref = `mailto:${supportEmail}?subject=${encodeURIComponent("Hey Vibehouse, I need help during my stay.")}`;
+const supportHref = `mailto:${supportEmail}?subject=${encodeURIComponent("Hey Roost, I need help during my stay.")}`;
 
 function WhatsAppIcon({ className }: { className?: string }) {
   return (
