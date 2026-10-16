@@ -1,7 +1,5 @@
 <div align="center">
 
-<img src="./portfolio-export/roost/images/logo-crest.png" width="96" alt="Roost Logo" style="filter: drop-shadow(0 0 24px rgba(255, 203, 69, 0.25));" />
-
 # ROOST
 
 ### High-Energy Coliving & Hostel Ecosystem. Neo-Brutalist Precision.

@@ -3,7 +3,7 @@ import fs from 'fs';
 import path from 'path';
 
 const chromePath = 'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe';
-const outDir = path.resolve('portfolio-export/vibehouse/images');
+const outDir = path.resolve('portfolio-export/roost/images');
 fs.mkdirSync(outDir, { recursive: true });
 
 const oldScreenshotsToDelete = [
