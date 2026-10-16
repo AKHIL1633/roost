@@ -3,7 +3,7 @@ export const aboutPillars = [
     title: "Community",
     description:
       "Connect with tech founders, creators, and international explorers over curated dinners and rooftop acoustics.",
-    color: "#E01E5A",
+    color: "#F2650A",
   },
   {
     title: "Sanctuary Rest",
@@ -30,7 +30,7 @@ export const aboutStoryBlocks = [
     title: "Hospitality Reimagined for Nomads",
     body:
       "Roost was conceived to bridge the gap between sterile business hotels and chaotic backpacker hostels—delivering high-design spaces where ambitious nomads work, rest, and belong.",
-    color: "#E01E5A",
+    color: "#F2650A",
     image:
       "https://images.unsplash.com/photo-1681747971522-2d7a04c78321?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&w=1200",
   },

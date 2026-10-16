@@ -44,13 +44,13 @@
   --np-white-secondary: rgba(241, 241, 241, 0.72);
 
   /* Semantic Palette: Nudge Quad-Color Accents */
-  --np-brand: #e01e5a;
+  --np-brand: #f2650a;
   --np-brand-hover: #f02d6b;
   --np-brand-edge: #991438;
   --np-yellow: #ecb22e;
   --np-green: #2fbc81;
   --np-blue: #36c5f0;
-  --np-pink: #e01e5a;
+  --np-pink: #f2650a;
   --np-red: #ee4d37;
 
   /* Geometry & Physics */

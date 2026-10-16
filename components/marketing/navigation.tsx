@@ -138,7 +138,7 @@ export function Navigation() {
                   >
                     {item.label}
                     {isActive && (
-                      <span className="absolute bottom-1 left-1/2 -translate-x-1/2 w-1 h-1 rounded-full bg-[#E01E5A]" />
+                      <span className="absolute bottom-1 left-1/2 -translate-x-1/2 w-1 h-1 rounded-full bg-[#F2650A]" />
                     )}
                   </Link>
                 );
@@ -163,7 +163,7 @@ export function Navigation() {
                     onClick={() => setIsProfileMenuOpen((v) => !v)}
                     className="inline-flex items-center gap-2 font-mono text-[11px] font-medium uppercase tracking-wider text-white px-3 py-1.5 rounded-full bg-white/[0.08] border border-white/15 hover:border-white/30 transition-all cursor-pointer"
                   >
-                    <CircleUserRound className="h-3.5 w-3.5 text-[#E01E5A]" />
+                    <CircleUserRound className="h-3.5 w-3.5 text-[#F2650A]" />
                     <span className="max-w-[80px] truncate">{guestFirstName}</span>
                   </button>
                 )}
@@ -197,7 +197,7 @@ export function Navigation() {
                         signOut();
                         setIsProfileMenuOpen(false);
                       }}
-                      className="w-full text-left px-3 py-2 font-mono text-[11px] uppercase tracking-wider text-[#E01E5A] hover:bg-[#E01E5A]/10 rounded-lg transition-colors mt-1 border-t border-white/10 pt-2 cursor-pointer"
+                      className="w-full text-left px-3 py-2 font-mono text-[11px] uppercase tracking-wider text-[#F2650A] hover:bg-[#F2650A]/10 rounded-lg transition-colors mt-1 border-t border-white/10 pt-2 cursor-pointer"
                     >
                       Log Out
                     </button>
@@ -208,7 +208,7 @@ export function Navigation() {
               {/* Primary CTA */}
               <Link href={propertyHref} className="inline-block">
                 <MagneticButton
-                  className="bg-[#E01E5A] hover:bg-[#F02D6B] text-white rounded-full px-4 sm:px-5 py-2 sm:py-2.5 font-mono text-[11px] sm:text-xs font-semibold uppercase tracking-wider flex items-center gap-1.5 transition-all shadow-[0_4px_16px_rgba(224,30,90,0.35)] active:scale-[0.98]"
+                  className="bg-[#F2650A] hover:bg-[#F02D6B] text-white rounded-full px-4 sm:px-5 py-2 sm:py-2.5 font-mono text-[11px] sm:text-xs font-semibold uppercase tracking-wider flex items-center gap-1.5 transition-all shadow-[0_4px_16px_rgba(224,30,90,0.35)] active:scale-[0.98]"
                 >
                   <span>Book Now</span>
                   <ArrowRight className="h-3.5 w-3.5" />
@@ -242,7 +242,7 @@ export function Navigation() {
           >
             <div className="space-y-6 max-w-sm mx-auto w-full">
               <div className="border-b border-white/10 pb-4">
-                <p className="text-[10px] font-mono uppercase tracking-[0.2em] text-[#E01E5A] mb-1">
+                <p className="text-[10px] font-mono uppercase tracking-[0.2em] text-[#F2650A] mb-1">
                   Social Sanctuary
                 </p>
                 <p className="text-xl font-display font-bold uppercase tracking-tight text-white">
@@ -263,7 +263,7 @@ export function Navigation() {
                       onClick={() => setMobileMenuOpen(false)}
                       className={cn(
                         "flex items-center justify-between py-3 text-lg font-display font-bold uppercase tracking-[0.04em] transition-colors border-b border-white/6",
-                        pathname === item.href ? "text-[#E01E5A]" : "text-white/80 hover:text-white"
+                        pathname === item.href ? "text-[#F2650A]" : "text-white/80 hover:text-white"
                       )}
                     >
                       <span>{item.label}</span>
@@ -299,7 +299,7 @@ export function Navigation() {
                       signOut();
                       setMobileMenuOpen(false);
                     }}
-                    className="py-3 px-4 text-center font-mono text-xs font-medium uppercase tracking-wider text-[#E01E5A] border border-[#E01E5A]/30 rounded-full hover:bg-[#E01E5A]/10 transition-colors"
+                    className="py-3 px-4 text-center font-mono text-xs font-medium uppercase tracking-wider text-[#F2650A] border border-[#F2650A]/30 rounded-full hover:bg-[#F2650A]/10 transition-colors"
                   >
                     Logout
                   </button>
@@ -311,7 +311,7 @@ export function Navigation() {
               <Link
                 href={propertyHref}
                 onClick={() => setMobileMenuOpen(false)}
-                className="w-full inline-flex items-center justify-center gap-2 bg-[#E01E5A] hover:bg-[#F02D6B] text-white py-3.5 rounded-full font-mono text-xs font-semibold uppercase tracking-wider shadow-[0_4px_24px_rgba(224,30,90,0.4)] active:scale-[0.98]"
+                className="w-full inline-flex items-center justify-center gap-2 bg-[#F2650A] hover:bg-[#F02D6B] text-white py-3.5 rounded-full font-mono text-xs font-semibold uppercase tracking-wider shadow-[0_4px_24px_rgba(224,30,90,0.4)] active:scale-[0.98]"
               >
                 <span>Reserve A Stay</span>
                 <ArrowRight className="h-4 w-4" />

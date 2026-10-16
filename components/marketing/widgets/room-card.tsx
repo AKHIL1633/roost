@@ -74,7 +74,7 @@ export function RoomCard({
           <div
             className={cn(
               "absolute left-3 top-3 rounded-full px-3 py-1 text-[10px] font-mono font-medium uppercase tracking-wider text-white shadow-md",
-              isDorm ? "bg-[#36C5F0]/90 text-black font-semibold" : "bg-[#E01E5A] text-white"
+              isDorm ? "bg-[#36C5F0]/90 text-black font-semibold" : "bg-[#F2650A] text-white"
             )}
           >
             {badge.label}
@@ -89,7 +89,7 @@ export function RoomCard({
                 aria-label={`Show image ${index + 1}`}
                 className={cn(
                   "h-1 rounded-full transition-all duration-300",
-                  index === activeImageIndex ? "w-4 bg-[#E01E5A]" : "w-1 bg-white/40"
+                  index === activeImageIndex ? "w-4 bg-[#F2650A]" : "w-1 bg-white/40"
                 )}
                 onClick={(e) => {
                   e.preventDefault();
@@ -133,7 +133,7 @@ export function RoomCard({
           </div>
 
           <Link href={href}>
-            <MagneticButton className="rounded-full bg-white/[0.08] hover:bg-[#E01E5A] text-white hover:text-white border border-white/15 hover:border-[#E01E5A] px-4 py-2 text-xs font-semibold uppercase tracking-wider transition-all flex items-center gap-1.5">
+            <MagneticButton className="rounded-full bg-white/[0.08] hover:bg-[#F2650A] text-white hover:text-white border border-white/15 hover:border-[#F2650A] px-4 py-2 text-xs font-semibold uppercase tracking-wider transition-all flex items-center gap-1.5">
               <span>View Space</span>
               <ArrowRight className="h-3.5 w-3.5" />
             </MagneticButton>

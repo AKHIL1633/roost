@@ -78,7 +78,7 @@ function SectionFrame({ alt = false, children, className = "" }: SectionFramePro
       )}
     >
       {/* Subtle Atmospheric Glow */}
-      <div className="pointer-events-none absolute -top-40 left-1/2 -translate-x-1/2 w-[600px] h-[300px] bg-[#E01E5A]/[0.025] blur-[120px] rounded-full" />
+      <div className="pointer-events-none absolute -top-40 left-1/2 -translate-x-1/2 w-[600px] h-[300px] bg-[#F2650A]/[0.025] blur-[120px] rounded-full" />
       {children}
     </section>
   );
@@ -137,8 +137,8 @@ function AmenitiesSection() {
       title: "Seamless Safety",
       subtitle: "24/7 Smart Biometrics",
       description: "Keyless access, secure luggage vaults, daily professional housekeeping, and friendly 24-hour community hosts.",
-      accentClass: "bg-[#E01E5A]/10 border-[#E01E5A]/25 text-[#E01E5A]",
-      subtitleClass: "text-[#E01E5A]",
+      accentClass: "bg-[#F2650A]/10 border-[#F2650A]/25 text-[#F2650A]",
+      subtitleClass: "text-[#F2650A]",
     },
   ];
 
@@ -249,7 +249,7 @@ function RoomsSection({
 
         {roomError ? (
           <div className="bg-[#121216] border border-white/10 rounded-2xl p-5 text-center max-w-xl mx-auto mt-8 mb-4">
-            <p className="font-mono text-[11px] uppercase tracking-wider text-[#E01E5A] font-semibold mb-1">Live Inventory Notice</p>
+            <p className="font-mono text-[11px] uppercase tracking-wider text-[#F2650A] font-semibold mb-1">Live Inventory Notice</p>
             <p className="text-xs font-body text-white/75">{roomError}</p>
           </div>
         ) : null}
@@ -292,7 +292,7 @@ function EventsSection({
 
         {eventError ? (
           <div className="bg-[#121216] border border-white/10 rounded-2xl p-5 text-center max-w-xl mx-auto mt-8 mb-4">
-            <p className="font-mono text-[11px] uppercase tracking-wider text-[#E01E5A] font-semibold mb-1">Events Calendar Notice</p>
+            <p className="font-mono text-[11px] uppercase tracking-wider text-[#F2650A] font-semibold mb-1">Events Calendar Notice</p>
             <p className="text-xs font-body text-white/75">{eventError}</p>
           </div>
         ) : null}
@@ -360,7 +360,7 @@ function UpsellSection() {
 
 function ExperienceSection() {
   const quadAccents = [
-    { color: "#E01E5A", icon: Zap, kicker: "HIGH OCTANE" },
+    { color: "#F2650A", icon: Zap, kicker: "HIGH OCTANE" },
     { color: "#2FBC81", icon: ShieldCheck, kicker: "SAFE HAVEN" },
     { color: "#36C5F0", icon: Users, kicker: "TRIBE CULTURE" },
     { color: "#ECB22E", icon: Compass, kicker: "CITY CENTER" },
@@ -440,10 +440,10 @@ function MoreAboutUsSection() {
           <StaggerItem className="h-full">
             <Link
               href="/upcoming"
-              className="group flex h-full flex-col justify-between bg-[#121216] p-8 rounded-2xl border border-white/10 hover:border-[#E01E5A]/40 transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_20px_40px_rgba(0,0,0,0.7)]"
+              className="group flex h-full flex-col justify-between bg-[#121216] p-8 rounded-2xl border border-white/10 hover:border-[#F2650A]/40 transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_20px_40px_rgba(0,0,0,0.7)]"
             >
               <div>
-                <span className="inline-block rounded-full bg-[#E01E5A] text-white px-3 py-1 text-[10px] font-mono font-medium uppercase tracking-wider mb-4 shadow-md">
+                <span className="inline-block rounded-full bg-[#F2650A] text-white px-3 py-1 text-[10px] font-mono font-medium uppercase tracking-wider mb-4 shadow-md">
                   Coming Soon · 2026
                 </span>
                 <h3 className="font-display text-3xl font-bold uppercase tracking-tight text-white group-hover:text-white transition-colors">
@@ -454,7 +454,7 @@ function MoreAboutUsSection() {
                 </p>
               </div>
 
-              <div className="mt-8 pt-5 border-t border-white/10 flex items-center justify-between text-xs font-mono font-medium uppercase tracking-wider text-[#E01E5A]">
+              <div className="mt-8 pt-5 border-t border-white/10 flex items-center justify-between text-xs font-mono font-medium uppercase tracking-wider text-[#F2650A]">
                 <span>Preview New Hubs</span>
                 <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1.5" />
               </div>
@@ -465,7 +465,7 @@ function MoreAboutUsSection() {
           <StaggerItem className="h-full">
             <Link
               href="/partner-with-us"
-              className="group flex h-full flex-col justify-between bg-[#121216] p-8 rounded-2xl border border-white/10 hover:border-[#E01E5A]/40 transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_20px_40px_rgba(0,0,0,0.7)]"
+              className="group flex h-full flex-col justify-between bg-[#121216] p-8 rounded-2xl border border-white/10 hover:border-[#F2650A]/40 transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_20px_40px_rgba(0,0,0,0.7)]"
             >
               <div>
                 <span className="inline-block rounded-full bg-white/[0.08] border border-white/15 text-white px-3 py-1 text-[10px] font-mono font-medium uppercase tracking-wider mb-4">
@@ -479,7 +479,7 @@ function MoreAboutUsSection() {
                 </p>
               </div>
 
-              <div className="mt-8 pt-5 border-t border-white/10 flex items-center justify-between text-xs font-mono font-medium uppercase tracking-wider text-[#E01E5A]">
+              <div className="mt-8 pt-5 border-t border-white/10 flex items-center justify-between text-xs font-mono font-medium uppercase tracking-wider text-[#F2650A]">
                 <span>Explore Models</span>
                 <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1.5" />
               </div>
@@ -536,9 +536,9 @@ function CtaSection({ destinationHref = "/property" }: { destinationHref?: strin
     <SectionFrame alt className="py-28 sm:py-36">
       <div className="vh-container max-w-4xl mx-auto px-4 sm:px-6">
         <FadeIn className="bg-[#121216] rounded-3xl p-8 sm:p-12 border border-white/10 shadow-[0_24px_60px_rgba(0,0,0,0.8)] text-center relative overflow-hidden">
-          <div className="pointer-events-none absolute -bottom-24 left-1/2 -translate-x-1/2 w-[450px] h-[250px] bg-[#E01E5A]/10 blur-[90px] rounded-full" />
+          <div className="pointer-events-none absolute -bottom-24 left-1/2 -translate-x-1/2 w-[450px] h-[250px] bg-[#F2650A]/10 blur-[90px] rounded-full" />
 
-          <p className="text-[11px] font-mono font-medium uppercase tracking-wider text-[#E01E5A] mb-3">
+          <p className="text-[11px] font-mono font-medium uppercase tracking-wider text-[#F2650A] mb-3">
             Your Bengaluru Base
           </p>
 

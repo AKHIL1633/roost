@@ -97,7 +97,7 @@ const DateSummaryButton = forwardRef<HTMLButtonElement, DateSummaryButtonProps>(
       >
         {/* Left: Check-In Column */}
         <div className="flex items-center gap-2.5 sm:gap-3 shrink-0">
-          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[#E01E5A]/15 text-[#E01E5A] border border-[#E01E5A]/30 group-hover:scale-105 transition-transform">
+          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[#F2650A]/15 text-[#F2650A] border border-[#F2650A]/30 group-hover:scale-105 transition-transform">
             <CalendarDays className="h-4 w-4" />
           </div>
           <div>
@@ -123,7 +123,7 @@ const DateSummaryButton = forwardRef<HTMLButtonElement, DateSummaryButtonProps>(
             <ChevronDown
               className={cn(
                 "h-3.5 w-3.5 text-white/50 group-hover:text-white transition-transform",
-                open && "rotate-180 text-[#E01E5A]"
+                open && "rotate-180 text-[#F2650A]"
               )}
             />
           </div>
@@ -144,7 +144,7 @@ const DateSummaryButton = forwardRef<HTMLButtonElement, DateSummaryButtonProps>(
       )}
     >
       <div className="flex items-center gap-3">
-        <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-[#E01E5A]/15 text-[#E01E5A] border border-[#E01E5A]/30">
+        <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-[#F2650A]/15 text-[#F2650A] border border-[#F2650A]/30">
           <CalendarDays className="h-4 w-4" />
         </div>
         <div className="flex items-center gap-3 sm:gap-4">
@@ -165,7 +165,7 @@ const DateSummaryButton = forwardRef<HTMLButtonElement, DateSummaryButtonProps>(
         <ChevronDown
           className={cn(
             "h-3.5 w-3.5 text-white/50 group-hover:text-white transition-transform",
-            open && "rotate-180 text-[#E01E5A]"
+            open && "rotate-180 text-[#F2650A]"
           )}
         />
       </div>
@@ -291,7 +291,7 @@ export function BookingWidget({
             )}
           >
             <MagneticButton
-              className="w-full md:w-auto bg-[#E01E5A] hover:bg-[#F02D6B] text-white rounded-xl md:rounded-full px-7 py-3.5 text-xs font-bold uppercase tracking-wider flex items-center justify-center gap-2 transition-all shadow-[0_4px_20px_rgba(224,30,90,0.4)] active:scale-[0.98]"
+              className="w-full md:w-auto bg-[#F2650A] hover:bg-[#F02D6B] text-white rounded-xl md:rounded-full px-7 py-3.5 text-xs font-bold uppercase tracking-wider flex items-center justify-center gap-2 transition-all shadow-[0_4px_20px_rgba(224,30,90,0.4)] active:scale-[0.98]"
             >
               <span>{submitLabel}</span>
               <ArrowRight className="h-4 w-4" />
@@ -349,7 +349,7 @@ export function BookingWidget({
           )}
         >
           <MagneticButton
-            className="w-full bg-[#E01E5A] hover:bg-[#F02D6B] text-white rounded-xl py-3.5 text-xs font-bold uppercase tracking-wider flex items-center justify-center gap-2 shadow-[0_4px_20px_rgba(224,30,90,0.4)] active:scale-[0.98]"
+            className="w-full bg-[#F2650A] hover:bg-[#F02D6B] text-white rounded-xl py-3.5 text-xs font-bold uppercase tracking-wider flex items-center justify-center gap-2 shadow-[0_4px_20px_rgba(224,30,90,0.4)] active:scale-[0.98]"
           >
             <span>{submitLabel}</span>
             <ArrowRight className="h-4 w-4" />

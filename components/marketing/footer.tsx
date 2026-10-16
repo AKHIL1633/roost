@@ -27,10 +27,10 @@ export function Footer() {
               {siteMeta.contact.addressLines.map((line) => (
                 <p key={line}>{line}</p>
               ))}
-              <a className="block transition-colors hover:text-[#E01E5A]" href={siteMeta.contact.mapsHref} target="_blank" rel="noreferrer">
+              <a className="block transition-colors hover:text-[#F2650A]" href={siteMeta.contact.mapsHref} target="_blank" rel="noreferrer">
                 View on Google Maps
               </a>
-              <a className="block transition-colors hover:text-[#E01E5A]" href={siteMeta.contact.emailHref}>
+              <a className="block transition-colors hover:text-[#F2650A]" href={siteMeta.contact.emailHref}>
                 {siteMeta.contact.email}
               </a>
             </div>

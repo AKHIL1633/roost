@@ -68,14 +68,14 @@ export default function EventsPage() {
         </div>
         <FadeIn className="relative z-10 mx-auto max-w-5xl px-4 text-center">
           <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-white/[0.06] border border-white/10 backdrop-blur-xl mb-6">
-            <span className="h-2 w-2 rounded-full bg-[#E01E5A] animate-pulse" />
+            <span className="h-2 w-2 rounded-full bg-[#F2650A] animate-pulse" />
             <span className="text-[11px] font-mono font-medium uppercase tracking-wider text-white/90">
               Live Cultural Calendar
             </span>
           </div>
           <h1 className="leading-none uppercase font-display font-bold text-4xl sm:text-6xl md:text-7xl lg:text-8xl tracking-tight text-white">
             <span>Never a Dull</span>{" "}
-            <span className="text-[#E01E5A] block sm:inline">Evening.</span>
+            <span className="text-[#F2650A] block sm:inline">Evening.</span>
           </h1>
           <p className="mx-auto mt-6 max-w-[660px] text-sm sm:text-base md:text-lg text-white/70 font-body leading-relaxed">
             From sunset rooftop acoustics to founder jam sessions, experience Bangalore&apos;s creative culture alongside international nomads and local artists.
@@ -167,7 +167,7 @@ export default function EventsPage() {
               href="https://instagram.com/roost"
               rel="noreferrer"
               target="_blank"
-              className="inline-flex items-center gap-2 rounded-full bg-white/[0.08] hover:bg-[#E01E5A] text-white border border-white/15 hover:border-[#E01E5A] px-6 py-3 font-mono text-xs font-semibold uppercase tracking-wider transition-all shadow-[0_4px_20px_rgba(0,0,0,0.4)]"
+              className="inline-flex items-center gap-2 rounded-full bg-white/[0.08] hover:bg-[#F2650A] text-white border border-white/15 hover:border-[#F2650A] px-6 py-3 font-mono text-xs font-semibold uppercase tracking-wider transition-all shadow-[0_4px_20px_rgba(0,0,0,0.4)]"
             >
               <span>Follow @roost On Instagram</span>
             </a>

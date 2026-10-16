@@ -21,7 +21,7 @@ export function EventCard({
   const rsvpHref = `mailto:hello@roost.co?subject=${encodeURIComponent(rsvpSubject)}&body=${encodeURIComponent(rsvpBody)}`;
 
   const details = [
-    { icon: CalendarDays, label: date, tone: "text-[#E01E5A]" },
+    { icon: CalendarDays, label: date, tone: "text-[#F2650A]" },
     { icon: Clock3, label: time, tone: "text-[#36C5F0]" },
     { icon: MapPin, label: location, tone: "text-[#2FBC81]" },
     { icon: Users, label: capacity, tone: "text-[#ECB22E]" },
@@ -39,7 +39,7 @@ export function EventCard({
         <div className="absolute inset-0 bg-gradient-to-t from-[#121216] via-transparent to-black/40" />
 
         {badge ? (
-          <div className="absolute right-3 top-3 rounded-full bg-[#E01E5A] px-3 py-1 text-[10px] font-mono font-medium uppercase tracking-wider text-white shadow-md">
+          <div className="absolute right-3 top-3 rounded-full bg-[#F2650A] px-3 py-1 text-[10px] font-mono font-medium uppercase tracking-wider text-white shadow-md">
             {badge.label}
           </div>
         ) : null}
@@ -73,12 +73,12 @@ export function EventCard({
         </div>
 
         <div className="pt-4 border-t border-white/10 flex items-center justify-between gap-4">
-          <span className="inline-block rounded-full bg-[#E01E5A]/15 border border-[#E01E5A]/30 px-3 py-1 font-mono text-[11px] font-semibold uppercase tracking-wider text-[#E01E5A]">
+          <span className="inline-block rounded-full bg-[#F2650A]/15 border border-[#F2650A]/30 px-3 py-1 font-mono text-[11px] font-semibold uppercase tracking-wider text-[#F2650A]">
             {price}
           </span>
 
           <Link href={rsvpHref} rel="noreferrer" className="shrink-0">
-            <MagneticButton className="rounded-full bg-[#E01E5A] hover:bg-[#F02D6B] text-white px-5 py-2.5 text-xs font-semibold uppercase tracking-wider flex items-center gap-1.5 transition-all shadow-[0_4px_16px_rgba(224,30,90,0.35)] active:scale-[0.98]">
+            <MagneticButton className="rounded-full bg-[#F2650A] hover:bg-[#F02D6B] text-white px-5 py-2.5 text-xs font-semibold uppercase tracking-wider flex items-center gap-1.5 transition-all shadow-[0_4px_16px_rgba(224,30,90,0.35)] active:scale-[0.98]">
               <span>RSVP</span>
               <ArrowUpRight className="h-3.5 w-3.5" />
             </MagneticButton>

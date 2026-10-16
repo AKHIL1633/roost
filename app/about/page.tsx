@@ -32,7 +32,7 @@ export default function AboutPage() {
             <h1 className="font-display text-4xl sm:text-6xl lg:text-7xl font-bold uppercase tracking-tight text-white leading-none">
               More Than
               <br />
-              <span className="text-[#E01E5A]">Just A Bed.</span>
+              <span className="text-[#F2650A]">Just A Bed.</span>
             </h1>
 
             <div className="relative mt-6 max-w-xl">
@@ -144,7 +144,7 @@ export default function AboutPage() {
       <section className="bg-[#060608] py-24 sm:py-32">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 text-center">
           <FadeIn className="bg-[#121216] rounded-3xl p-8 sm:p-14 border border-white/10 shadow-[0_24px_60px_rgba(0,0,0,0.8)] relative overflow-hidden">
-            <div className="pointer-events-none absolute -bottom-24 left-1/2 -translate-x-1/2 w-[450px] h-[250px] bg-[#E01E5A]/10 blur-[90px] rounded-full" />
+            <div className="pointer-events-none absolute -bottom-24 left-1/2 -translate-x-1/2 w-[450px] h-[250px] bg-[#F2650A]/10 blur-[90px] rounded-full" />
 
             <p className="text-[11px] font-mono font-medium uppercase tracking-wider text-[#2FBC81] mb-3">
               YOUR SOCIAL SANCTUARY
@@ -160,7 +160,7 @@ export default function AboutPage() {
 
             <div className="mt-8 flex justify-center">
               <Link href={getDefaultPropertyDestinationHref()}>
-                <MagneticButton className="rounded-full bg-[#E01E5A] hover:bg-[#F02D6B] text-white px-8 py-3.5 font-mono text-xs font-semibold uppercase tracking-wider flex items-center gap-2 transition-all shadow-[0_4px_20px_rgba(224,30,90,0.35)]">
+                <MagneticButton className="rounded-full bg-[#F2650A] hover:bg-[#F02D6B] text-white px-8 py-3.5 font-mono text-xs font-semibold uppercase tracking-wider flex items-center gap-2 transition-all shadow-[0_4px_20px_rgba(224,30,90,0.35)]">
                   <span>Explore Rooms &amp; Availability</span>
                   <ArrowRight className="h-4 w-4" />
                 </MagneticButton>

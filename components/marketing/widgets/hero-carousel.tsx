@@ -86,7 +86,7 @@ export function HeroCarousel({ images, titleParts, children }: HeroCarouselProps
         <div className="my-auto py-6 max-w-5xl">
           <h1 className="uppercase leading-[0.95] text-4xl sm:text-6xl md:text-7xl lg:text-8xl font-display font-bold tracking-tight select-none text-white">
             <span>{titleParts[0]}</span>{" "}
-            <span className="text-[#E01E5A]">
+            <span className="text-[#F2650A]">
               {titleParts[1]}
             </span>
             <br />
@@ -135,7 +135,7 @@ export function HeroCarousel({ images, titleParts, children }: HeroCarouselProps
               className={cn(
                 "h-1 rounded-full transition-all duration-300 cursor-pointer",
                 index === selectedIndex
-                  ? "w-6 bg-[#E01E5A] shadow-[0_0_8px_rgba(224,30,90,0.6)]"
+                  ? "w-6 bg-[#F2650A] shadow-[0_0_8px_rgba(224,30,90,0.6)]"
                   : "w-2 bg-white/30 hover:bg-white/60"
               )}
               onClick={() => emblaApi?.scrollTo(index)}

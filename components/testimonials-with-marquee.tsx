@@ -201,7 +201,7 @@ const ReviewCard: React.FC<{ review: Review }> = ({ review }) => {
       onClick={toggle}
     >
       <div className="flex items-center justify-between mb-2">
-        <span className="text-[10.5px] font-mono font-bold uppercase tracking-[0.16em] text-[#E01E5A]">
+        <span className="text-[10.5px] font-mono font-bold uppercase tracking-[0.16em] text-[#F2650A]">
           {review.source}
         </span>
         <div className="flex gap-0.5">
@@ -209,7 +209,7 @@ const ReviewCard: React.FC<{ review: Review }> = ({ review }) => {
             <Star
               key={i}
               size={12}
-              className={i < review.rating ? 'fill-[#E01E5A] text-[#E01E5A]' : 'text-gray-700'}
+              className={i < review.rating ? 'fill-[#F2650A] text-[#F2650A]' : 'text-gray-700'}
             />
           ))}
         </div>
@@ -230,7 +230,7 @@ const ReviewCard: React.FC<{ review: Review }> = ({ review }) => {
         <div className="mb-1">
           <button
             onClick={toggle}
-            className="text-xs text-[#E01E5A] hover:text-white font-mono font-bold uppercase tracking-[0.06em] cursor-pointer"
+            className="text-xs text-[#F2650A] hover:text-white font-mono font-bold uppercase tracking-[0.06em] cursor-pointer"
             onMouseDown={(e) => e.stopPropagation()}
             onTouchStart={(e) => {
               e.stopPropagation();
@@ -318,7 +318,7 @@ const PlatformCard: React.FC<{ platform: PlatformRating }> = ({ platform }) => {
           <Star
             key={i}
             size={14}
-            className={i < normalizedStars ? 'fill-[#E01E5A] text-[#E01E5A]' : 'text-gray-600'}
+            className={i < normalizedStars ? 'fill-[#F2650A] text-[#F2650A]' : 'text-gray-600'}
           />
         ))}
       </div>
@@ -521,8 +521,8 @@ export default function TestimonialsMarquee() {
       <style>{`
         .custom-scroll::-webkit-scrollbar { width: 1px; height: 1px; }
         .custom-scroll::-webkit-scrollbar-track { background: transparent; }
-        .custom-scroll::-webkit-scrollbar-thumb { background: #E01E5A; }
-        .custom-scroll { scrollbar-width: thin; scrollbar-color: #E01E5A transparent; }
+        .custom-scroll::-webkit-scrollbar-thumb { background: #F2650A; }
+        .custom-scroll { scrollbar-width: thin; scrollbar-color: #F2650A transparent; }
         .clamped { display: -webkit-box; -webkit-line-clamp: 4; -webkit-box-orient: vertical; overflow: hidden; }
         .unclamped { max-height: 110px; overflow: auto; }
         @keyframes scroll-left { 0% { transform: translateX(0); } 100% { transform: translateX(-33.333%); } }

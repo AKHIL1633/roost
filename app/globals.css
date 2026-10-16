@@ -69,14 +69,18 @@
   --accent-mint-soft: rgba(47, 188, 129, 0.12);
   --accent-mint-border: rgba(47, 188, 129, 0.35);
 
-  --accent-crimson: #e01e5a;
-  --accent-crimson-soft: rgba(224, 30, 90, 0.14);
-  --accent-crimson-border: rgba(224, 30, 90, 0.4);
+  /* Roost primary: electric ember-orange, replacing the previous hot-pink/
+     crimson primary. Kept on the same --accent-crimson / --vh-pink variable
+     names (hundreds of call sites reference them) — only the color VALUE
+     changes, so the whole app re-themes from this one edit. */
+  --accent-crimson: #f2650a;
+  --accent-crimson-soft: rgba(242, 101, 10, 0.14);
+  --accent-crimson-border: rgba(242, 101, 10, 0.4);
 
   /* Legacy Color Aliases mapped to Nudge Palette */
   --vh-hot: var(--accent-amber);
   --vh-pink: var(--accent-crimson);
-  --vh-pink-soft: #f04b75;
+  --vh-pink-soft: #ff8a3d;
   --vh-cyan: var(--accent-cyan);
   --vh-ice: #ffffff;
   --vh-lime: var(--accent-mint);
@@ -230,7 +234,7 @@ body {
 }
 
 *::-webkit-scrollbar-thumb {
-  background: linear-gradient(180deg, #e01e5a 0%, #991438 100%);
+  background: linear-gradient(180deg, #f2650a 0%, #991438 100%);
   border: 2px solid rgba(255, 255, 255, 0.12);
   border-radius: 999px;
 }

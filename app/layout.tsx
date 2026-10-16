@@ -26,7 +26,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" className="dark" data-scroll-behavior="smooth">
-      <body suppressHydrationWarning className="vh-shell flex min-h-screen flex-col font-body bg-[#000000] text-[#F1F1F1] antialiased selection:bg-[#E01E5A] selection:text-white">
+      <body suppressHydrationWarning className="vh-shell flex min-h-screen flex-col font-body bg-[#000000] text-[#F1F1F1] antialiased selection:bg-[#F2650A] selection:text-white">
         <GuestAuthProvider>
           <Suspense fallback={null}>
             <Navigation />
