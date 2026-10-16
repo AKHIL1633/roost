@@ -17,6 +17,7 @@ import {
   ChevronRight,
   Clock3,
   Droplets,
+  Expand,
   GlassWater,
   Info,
   LampDesk,
@@ -65,6 +66,7 @@ import {
 } from "@/content/rooms";
 import { ImageWithFallback } from "@/components/shared/image-with-fallback";
 import { FadeIn } from "@/components/shared/motion";
+import { PhotoLightbox } from "@/components/shared/photo-lightbox";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { Button } from "@/components/ui/button";
 import { Button as NeoPopButton } from "@/components/neopop";
@@ -864,6 +866,8 @@ function RoomDetailsPopup({
   onIncrement: () => void;
   onDecrement: () => void;
 }) {
+  const [roomLightboxOpen, setRoomLightboxOpen] = useState(false);
+
   useEffect(() => {
     if (!room) {
       return undefined;
@@ -892,6 +896,7 @@ function RoomDetailsPopup({
 
   const gallery = getRoomGallery(room);
   const activeImage = gallery[imageIndex] ?? gallery[0];
+  const galleryImages = gallery.map((src, index) => ({ src, alt: `${room.title} ${index + 1}` }));
   const detailItems = Array.from(new Set([...room.features, ...room.amenitiesLegend]));
   const isSoldOut = room.inventoryState === "sold_out";
   const isAvailabilityPending = !room.hasLiveAvailability || room.inventoryState === "unknown";
@@ -906,19 +911,25 @@ function RoomDetailsPopup({
     >
       <div className="flex min-h-full items-start justify-center lg:items-center">
         <div
-          className="animate-vh-scale-in grid w-full max-w-5xl overflow-hidden border border-[#3D3D3D] bg-[#121212] shadow-[6px_6px_0px_#000000] rounded-none lg:max-h-[92vh] lg:grid-cols-[1.2fr_0.8fr]"
+          className="animate-vh-scale-in grid w-full max-w-5xl overflow-hidden rounded-[14px] border border-[#3D3D3D] bg-[#121212] shadow-[0_16px_40px_rgba(0,0,0,0.55)] lg:max-h-[92vh] lg:grid-cols-[1.2fr_0.8fr]"
           onClick={(event) => event.stopPropagation()}
           role="dialog"
         >
           <div className="border-b border-[#3D3D3D] p-4 lg:border-b-0 lg:border-r lg:p-6">
-            <div className="overflow-hidden border border-[#3D3D3D] shadow-[3px_3px_0px_#000000]">
-              <ImageWithFallback alt={room.title} className="h-[220px] w-full object-cover sm:h-[300px] md:h-[420px]" src={activeImage} />
-            </div>
+            <button
+              aria-label="View photo full-size"
+              className="group relative block w-full overflow-hidden rounded-[10px] border border-[#3D3D3D]"
+              onClick={() => setRoomLightboxOpen(true)}
+              type="button"
+            >
+              <ImageWithFallback alt={room.title} className="h-[220px] w-full object-cover transition-transform duration-300 group-hover:scale-105 sm:h-[300px] md:h-[420px]" src={activeImage} />
+              <Expand className="pointer-events-none absolute right-3 top-3 h-7 w-7 rounded-full bg-black/50 p-1.5 text-white opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
+            </button>
             <div className="mt-4 grid grid-cols-4 gap-2">
               {gallery.map((image, index) => (
                 <button
                   key={image}
-                  className={`overflow-hidden border ${index === imageIndex ? "border-[var(--vh-pink)] shadow-[2px_2px_0px_#000000]" : "border-white/10"}`}
+                  className={`overflow-hidden rounded-[6px] border ${index === imageIndex ? "border-[var(--vh-pink)] shadow-[0_4px_12px_rgba(242,101,10,0.4)]" : "border-white/10"}`}
                   onClick={() => onImageChange(index)}
                   type="button"
                 >
@@ -926,6 +937,14 @@ function RoomDetailsPopup({
                 </button>
               ))}
             </div>
+            {roomLightboxOpen ? (
+              <PhotoLightbox
+                images={galleryImages}
+                index={imageIndex}
+                onClose={() => setRoomLightboxOpen(false)}
+                onIndexChange={onImageChange}
+              />
+            ) : null}
           </div>
 
           <div className="p-5 md:p-6 lg:max-h-[92vh] lg:overflow-y-auto">
@@ -1059,6 +1078,7 @@ export function Property({
   const router = useRouter();
   const { isAuthenticated, isRestoringSession, openAuthModal } = useGuestAuth();
   const [aboutExpanded, setAboutExpanded] = useState(false);
+  const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
   const [selectedCounts, setSelectedCounts] = useState<Record<string, number>>({});
   const [activeRoomKey, setActiveRoomKey] = useState<string | null>(null);
   const [activeRoomImageIndex, setActiveRoomImageIndex] = useState(0);
@@ -1591,24 +1611,52 @@ export function Property({
 
           <div className="grid grid-cols-1 gap-3 md:grid-cols-12">
             <div className="md:col-span-7">
-              <div className="overflow-hidden border border-white/15 shadow-[4px_4px_0px_#000000]">
+              <button
+                aria-label={`View ${propertyGallery[0].alt} full-size`}
+                className="group relative block w-full overflow-hidden rounded-[14px] border border-white/15 shadow-[0_12px_32px_rgba(0,0,0,0.5)]"
+                onClick={() => setLightboxIndex(0)}
+                type="button"
+              >
                 <ImageWithFallback
                   alt={propertyGallery[0].alt}
-                  className="h-[340px] w-full object-cover md:h-[480px]"
+                  className="h-[340px] w-full object-cover transition-transform duration-300 group-hover:scale-105 md:h-[480px]"
                   src={propertyGallery[0].src}
                 />
-              </div>
+                <span className="pointer-events-none absolute inset-0 bg-black/0 transition-colors duration-300 group-hover:bg-black/20" />
+                <Expand className="pointer-events-none absolute right-4 top-4 h-8 w-8 rounded-full bg-black/50 p-1.5 text-white opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
+              </button>
             </div>
             <div className="grid grid-cols-2 gap-3 md:col-span-5">
-              {propertyGallery.slice(1).map((image) => (
-                <div key={image.src} className="overflow-hidden border border-white/15 shadow-[3px_3px_0px_#000000]">
-                  <ImageWithFallback alt={image.alt} className="h-[164px] w-full object-cover md:h-[234px]" src={image.src} />
-                </div>
+              {propertyGallery.slice(1).map((image, i) => (
+                <button
+                  aria-label={`View ${image.alt} full-size`}
+                  className="group relative block w-full overflow-hidden rounded-[14px] border border-white/15 shadow-[0_8px_22px_rgba(0,0,0,0.45)]"
+                  key={image.src}
+                  onClick={() => setLightboxIndex(i + 1)}
+                  type="button"
+                >
+                  <ImageWithFallback
+                    alt={image.alt}
+                    className="h-[164px] w-full object-cover transition-transform duration-300 group-hover:scale-105 md:h-[234px]"
+                    src={image.src}
+                  />
+                  <span className="pointer-events-none absolute inset-0 bg-black/0 transition-colors duration-300 group-hover:bg-black/20" />
+                  <Expand className="pointer-events-none absolute right-3 top-3 h-6 w-6 rounded-full bg-black/50 p-1 text-white opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
+                </button>
               ))}
             </div>
           </div>
         </div>
       </section>
+
+      {lightboxIndex !== null ? (
+        <PhotoLightbox
+          images={propertyGallery}
+          index={lightboxIndex}
+          onClose={() => setLightboxIndex(null)}
+          onIndexChange={setLightboxIndex}
+        />
+      ) : null}
 
       <section className="bg-[#0A0A0E] py-12 md:py-16">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
