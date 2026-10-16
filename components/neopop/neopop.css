@@ -56,9 +56,9 @@
   /* Geometry & Physics */
   --np-edge-width: 2px;
   --np-motion-press: 120ms;
-  --radius-container: 12px;
-  --radius-element: 8px;
-  --radius: 12px;
+  --radius-container: 14px;
+  --radius-element: 10px;
+  --radius: 14px;
 
   /* Font Families */
   --font-gilroy: var(--font-lexend, 'Lexend', sans-serif);
@@ -70,10 +70,16 @@
    ========================================================================== */
 
 .np-sharp {
-  border-radius: 0px !important;
+  border-radius: var(--radius-element) !important;
 }
 
-/* 3D Plunk Button / Surface Container */
+/* 3D Plunk Button / Surface Container.
+   Reworked from the original sharp-bevel NeoPOP mechanic (90deg corners +
+   skewed ::before/::after edge slivers + hard offset translate-on-press) to
+   a rounded, soft-elevation style: the skewed bevels only read correctly
+   against sharp corners, so they're retired in favor of a blurred shadow
+   that compresses on press — same tactile "plunk" feedback, different
+   shape language. */
 .np-plunk {
   isolation: isolate;
   position: relative;
@@ -97,54 +103,14 @@
   height: 100%;
   transition: transform var(--np-motion-press) cubic-bezier(0.2, 0, 0, 1);
   will-change: transform;
-  border-radius: 0px;
+  border-radius: var(--radius-element);
   box-sizing: border-box;
 }
 
-/* Bottom Beveled Edge */
-.np-plunk::before {
-  content: "";
-  position: absolute;
-  bottom: 0;
-  left: 0;
-  width: calc(100% - var(--np-edge-width));
-  height: var(--np-edge-width);
-  background: var(--np-edge, #000000);
-  transform: skewX(45deg);
-  transform-origin: 0 0;
-  pointer-events: none;
-  z-index: 0;
-  transition: opacity var(--np-motion-press) ease-in-out;
-}
-
-/* Right Beveled Edge */
-.np-plunk::after {
-  content: "";
-  position: absolute;
-  top: 0;
-  right: 0;
-  width: var(--np-edge-width);
-  height: calc(100% - var(--np-edge-width));
-  background: var(--np-edge, #000000);
-  transform: skewY(45deg);
-  transform-origin: 0 0;
-  pointer-events: none;
-  z-index: 0;
-  transition: opacity var(--np-motion-press) ease-in-out;
-}
-
-/* Press Feedback (Tactile down-right 3px translation) */
+/* Press Feedback (soft compress, replacing the hard down-right translate) */
 .np-plunk:active > .np-plunk-face,
 .np-plunk[data-active="true"] > .np-plunk-face {
-  transform: translate3d(var(--np-edge-width), var(--np-edge-width), 0);
-}
-
-/* When pressed, edge hides under the face */
-.np-plunk:active::before,
-.np-plunk:active::after,
-.np-plunk[data-active="true"]::before,
-.np-plunk[data-active="true"]::after {
-  opacity: 0.2;
+  transform: scale(0.97);
 }
 
 /* Disabled Plunk */
@@ -160,27 +126,27 @@
    ========================================================================== */
 
 .np-elevation-low {
-  box-shadow: 3px 3px 0px var(--np-black-200);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.35);
 }
 
 .np-elevation-high {
-  box-shadow: 6px 6px 0px var(--np-black-200);
+  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.5);
 }
 
 .np-elevation-yellow {
-  box-shadow: 4px 4px 0px var(--np-yellow);
+  box-shadow: 0 6px 18px color-mix(in srgb, var(--np-yellow) 45%, transparent);
 }
 
 .np-elevation-green {
-  box-shadow: 4px 4px 0px var(--np-green);
+  box-shadow: 0 6px 18px color-mix(in srgb, var(--np-green) 45%, transparent);
 }
 
 .np-elevation-pink {
-  box-shadow: 4px 4px 0px var(--np-pink);
+  box-shadow: 0 6px 18px color-mix(in srgb, var(--np-pink) 45%, transparent);
 }
 
 .np-elevation-black {
-  box-shadow: 4px 4px 0px #000000;
+  box-shadow: 0 8px 22px rgba(0, 0, 0, 0.55);
 }
 
 /* ==========================================================================

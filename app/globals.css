@@ -1,5 +1,5 @@
 @import url("https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght@100;200;300;400;500;600;700&display=swap");
-@import url("https://fonts.googleapis.com/css2?family=Geologica:wght@300;400;500;600;700;800;900&family=Lexend:wght@300;400;500;600;700;800;900&family=DM+Mono:ital,wght@0,300;0,400;0,500;1,400;1,500&family=Inter+Tight:ital,wght@0,400;0,500;0,600;0,700;0,800;1,400;1,700&family=Inter:ital,opsz,wght@0,14..32,300..900;1,14..32,300..900&display=swap");
+@import url("https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=Plus+Jakarta+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700;0,800;1,400;1,500&family=DM+Mono:ital,wght@0,300;0,400;0,500;1,400;1,500&family=Inter+Tight:ital,wght@0,400;0,500;0,600;0,700;0,800;1,400;1,700&family=Inter:ital,opsz,wght@0,14..32,300..900;1,14..32,300..900&display=swap");
 @import "tailwindcss";
 @import "react-day-picker/style.css";
 @import "../src/styles/theme.css";
@@ -18,8 +18,15 @@
 }
 
 :root {
-  --font-geologica: "Geologica", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-  --font-lexend: "Lexend", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  /* Typography system: Space Grotesk (display) + Plus Jakarta Sans (body),
+     replacing the previous Geologica + Lexend pairing. Kept on the same
+     --font-geologica / --font-lexend variable names — everything in this
+     file and across components references fonts through those two names
+     (directly or via the --font-display/--font-body/--font-gilroy/etc.
+     indirection below), so swapping just these two definitions re-types
+     the whole app. */
+  --font-geologica: "Space Grotesk", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  --font-lexend: "Plus Jakarta Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
   --font-inter: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
   --font-inter-display: "Inter Tight", "Inter Display", "Inter", -apple-system, BlinkMacSystemFont, sans-serif;
   --font-dm-mono: "DM Mono", "Geist Mono", SFMono-Regular, Menlo, Monaco, Consolas, monospace;
@@ -636,7 +643,7 @@ select optgroup {
   }
 
   .vh-section {
-    @apply py-6 md:py-8;
+    @apply py-10 md:py-16;
     background-color: var(--vh-section-a);
   }
 
@@ -659,15 +666,15 @@ select optgroup {
   }
 
   .vh-card {
-    @apply rounded-none border border-[#3D3D3D] bg-[#161616] shadow-[6px_6px_0px_#000000];
+    @apply rounded-[14px] border border-[#3D3D3D] bg-[#161616] shadow-[0_12px_32px_rgba(0,0,0,0.5)];
   }
 
   .vh-panel {
-    @apply rounded-none border border-[#3D3D3D] bg-[#161616] shadow-[6px_6px_0px_#000000];
+    @apply rounded-[14px] border border-[#3D3D3D] bg-[#161616] shadow-[0_12px_32px_rgba(0,0,0,0.5)];
   }
 
   .vh-panel-soft {
-    @apply rounded-none border border-[#3D3D3D] bg-[#121212];
+    @apply rounded-[14px] border border-[#3D3D3D] bg-[#121212];
   }
 
   .vh-bento-tile {
@@ -677,23 +684,23 @@ select optgroup {
   }
 
   .vh-chip {
-    @apply inline-flex items-center gap-2 rounded-none border border-[#3D3D3D] bg-[#1F1F1F] px-3 py-1.5 text-[11px] font-semibold uppercase tracking-[0.1em] text-white;
+    @apply inline-flex items-center gap-2 rounded-full border border-[#3D3D3D] bg-[#1F1F1F] px-3 py-1.5 text-[11px] font-semibold uppercase tracking-[0.1em] text-white;
   }
 
   .vh-icon-pill {
-    @apply inline-flex h-10 w-10 items-center justify-center rounded-none border border-[#3D3D3D] bg-[#1F1F1F] text-white;
+    @apply inline-flex h-10 w-10 items-center justify-center rounded-full border border-[#3D3D3D] bg-[#1F1F1F] text-white;
   }
 
   .vh-outline-button {
-    @apply inline-flex items-center justify-center rounded-none border border-[#3D3D3D] bg-[#121212] px-4 py-2 text-sm font-bold uppercase text-white hover:bg-[#202029];
+    @apply inline-flex items-center justify-center rounded-[10px] border border-[#3D3D3D] bg-[#121212] px-4 py-2 text-sm font-bold uppercase text-white hover:bg-[#202029];
   }
 
   .vh-primary-button {
-    @apply inline-flex items-center justify-center rounded-none bg-[var(--np-yellow)] border border-[var(--np-yellow)] px-6 py-3 text-sm font-bold uppercase text-black shadow-[4px_4px_0px_#000000] hover:bg-[var(--np-yellow)]/90;
+    @apply inline-flex items-center justify-center rounded-[10px] bg-[var(--np-yellow)] border border-[var(--np-yellow)] px-6 py-3 text-sm font-bold uppercase text-black shadow-[0_8px_20px_rgba(0,0,0,0.45)] transition-transform hover:-translate-y-0.5 hover:bg-[var(--np-yellow)]/90;
   }
 
   .vh-cta-button {
-    @apply inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-none bg-[var(--np-yellow)] border border-[var(--np-yellow)] px-6 py-3 text-center text-[18px] font-bold uppercase leading-7 text-black shadow-[4px_4px_0px_#000000] transition-all outline-none hover:bg-[var(--np-yellow)]/90 focus-visible:ring-[3px] focus-visible:ring-[var(--np-yellow)];
+    @apply inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-[10px] bg-[var(--np-yellow)] border border-[var(--np-yellow)] px-6 py-3 text-center text-[18px] font-bold uppercase leading-7 text-black shadow-[0_8px_20px_rgba(0,0,0,0.45)] transition-all outline-none hover:-translate-y-0.5 hover:bg-[var(--np-yellow)]/90 focus-visible:ring-[3px] focus-visible:ring-[var(--np-yellow)];
     font-family: var(--font-gilroy);
   }
 
@@ -795,7 +802,7 @@ select optgroup {
   }
 
   .vh-input {
-    @apply w-full rounded-none border border-[#3D3D3D] bg-[#121212] px-3 py-2 text-sm text-white outline-none focus:border-[var(--np-yellow)] transition-all;
+    @apply w-full rounded-[8px] border border-[#3D3D3D] bg-[#121212] px-3 py-2 text-sm text-white outline-none focus:border-[var(--np-yellow)] transition-all;
   }
 
   .vh-rot-1 {
