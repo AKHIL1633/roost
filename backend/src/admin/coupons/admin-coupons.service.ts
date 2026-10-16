@@ -23,8 +23,12 @@ export class AdminCouponsService {
     // Scope guard: every requested property_id must be in actor.property_ids.
     // For "all properties", actor must be authorised on ALL active properties (owner pattern).
     if (dto.applies_to_all_properties) {
-      const allActive = await this.prisma.properties.findMany({ select: { id: true } });
-      const missing = allActive.filter((p) => !actor.property_ids.includes(p.id));
+      const allActive = await this.prisma.properties.findMany({
+        select: { id: true },
+      });
+      const missing = allActive.filter(
+        (p) => !actor.property_ids.includes(p.id),
+      );
       if (missing.length > 0) {
         throw new ForbiddenException(
           `Only admins authorised on all properties can create platform-wide coupons (missing: ${missing.map((p) => p.id).join(', ')})`,
@@ -32,26 +36,40 @@ export class AdminCouponsService {
       }
     } else {
       if (!dto.property_ids || dto.property_ids.length === 0) {
-        throw new BadRequestException('Provide property_ids or set applies_to_all_properties=true');
+        throw new BadRequestException(
+          'Provide property_ids or set applies_to_all_properties=true',
+        );
       }
-      const unauthorised = dto.property_ids.filter((p) => !actor.property_ids.includes(p));
+      const unauthorised = dto.property_ids.filter(
+        (p) => !actor.property_ids.includes(p),
+      );
       if (unauthorised.length > 0) {
-        throw new ForbiddenException(`Not authorised for properties: ${unauthorised.join(', ')}`);
+        throw new ForbiddenException(
+          `Not authorised for properties: ${unauthorised.join(', ')}`,
+        );
       }
     }
 
     // Cross-field validation that DTO decorators can't express
     if (dto.type === 'ONE_TIME_CODE' && !dto.code) {
-      throw new BadRequestException('code is required for ONE_TIME_CODE coupons');
+      throw new BadRequestException(
+        'code is required for ONE_TIME_CODE coupons',
+      );
     }
     if (dto.type !== 'ONE_TIME_CODE' && dto.code) {
-      throw new BadRequestException('code is only allowed for ONE_TIME_CODE coupons');
+      throw new BadRequestException(
+        'code is only allowed for ONE_TIME_CODE coupons',
+      );
     }
     if (dto.type === 'STAY_LENGTH' && !dto.min_stay_nights) {
-      throw new BadRequestException('min_stay_nights is required for STAY_LENGTH coupons');
+      throw new BadRequestException(
+        'min_stay_nights is required for STAY_LENGTH coupons',
+      );
     }
     if (dto.type !== 'ONE_TIME_CODE' && !dto.name) {
-      throw new BadRequestException('name is required for auto coupons (STAY_LENGTH, NEW_GUEST)');
+      throw new BadRequestException(
+        'name is required for auto coupons (STAY_LENGTH, NEW_GUEST)',
+      );
     }
     if (dto.discount_type === 'PERCENT' && dto.discount_value > 100) {
       throw new BadRequestException('PERCENT discount_value cannot exceed 100');
@@ -68,7 +86,9 @@ export class AdminCouponsService {
 
     // Uniqueness check up-front for a clearer error than the DB constraint message
     if (dto.code) {
-      const existing = await this.prisma.coupons.findUnique({ where: { code: dto.code } });
+      const existing = await this.prisma.coupons.findUnique({
+        where: { code: dto.code },
+      });
       if (existing) {
         throw new ConflictException(`Coupon code "${dto.code}" already exists`);
       }
@@ -88,7 +108,9 @@ export class AdminCouponsService {
             ? new Prisma.Decimal(dto.max_discount_amount.toFixed(2))
             : null,
         min_stay_nights: dto.min_stay_nights ?? null,
-        min_booking_amount: new Prisma.Decimal((dto.min_booking_amount ?? 0).toFixed(2)),
+        min_booking_amount: new Prisma.Decimal(
+          (dto.min_booking_amount ?? 0).toFixed(2),
+        ),
         max_uses_per_guest: dto.max_uses_per_guest ?? 1,
         max_total_uses: dto.max_total_uses ?? null,
         applies_to_all_properties: dto.applies_to_all_properties ?? false,
@@ -101,7 +123,9 @@ export class AdminCouponsService {
           ? {}
           : {
               coupon_properties: {
-                create: (dto.property_ids ?? []).map((property_id) => ({ property_id })),
+                create: (dto.property_ids ?? []).map((property_id) => ({
+                  property_id,
+                })),
               },
             }),
       },
@@ -114,8 +138,14 @@ export class AdminCouponsService {
   // ─── List ──────────────────────────────────────────────────────────────
 
   async list(query: ListCouponsQueryDto, actor: AdminJwtPayload) {
-    const page = Number.isFinite(query.page) && (query.page as number) >= 1 ? (query.page as number) : 1;
-    const limit = Number.isFinite(query.limit) && (query.limit as number) >= 1 ? (query.limit as number) : 20;
+    const page =
+      Number.isFinite(query.page) && (query.page as number) >= 1
+        ? (query.page as number)
+        : 1;
+    const limit =
+      Number.isFinite(query.limit) && (query.limit as number) >= 1
+        ? (query.limit as number)
+        : 20;
 
     // Scope: admins see coupons that touch their active property (or "all properties" coupons).
     // No-property admins (e.g., during owner setup) can filter explicitly via ?property_id=
@@ -164,7 +194,11 @@ export class AdminCouponsService {
 
     return {
       items: items.map((c) =>
-        this.serialise(c, c._count.coupon_redemptions, totalsByCoupon.get(c.id) ?? 0),
+        this.serialise(
+          c,
+          c._count.coupon_redemptions,
+          totalsByCoupon.get(c.id) ?? 0,
+        ),
       ),
       total,
       page,
@@ -204,7 +238,11 @@ export class AdminCouponsService {
     });
 
     return {
-      ...this.serialise(coupon, coupon._count.coupon_redemptions, Number(totalSum._sum.discount_amount ?? 0)),
+      ...this.serialise(
+        coupon,
+        coupon._count.coupon_redemptions,
+        Number(totalSum._sum.discount_amount ?? 0),
+      ),
       recent_redemptions: coupon.coupon_redemptions,
     };
   }
@@ -221,8 +259,12 @@ export class AdminCouponsService {
 
     // Validate scope changes if any
     if (dto.applies_to_all_properties === true) {
-      const allActive = await this.prisma.properties.findMany({ select: { id: true } });
-      const missing = allActive.filter((p) => !actor.property_ids.includes(p.id));
+      const allActive = await this.prisma.properties.findMany({
+        select: { id: true },
+      });
+      const missing = allActive.filter(
+        (p) => !actor.property_ids.includes(p.id),
+      );
       if (missing.length > 0) {
         throw new ForbiddenException(
           `Only admins authorised on all properties can switch to platform-wide`,
@@ -230,12 +272,20 @@ export class AdminCouponsService {
       }
     }
     if (dto.property_ids) {
-      const unauthorised = dto.property_ids.filter((p) => !actor.property_ids.includes(p));
+      const unauthorised = dto.property_ids.filter(
+        (p) => !actor.property_ids.includes(p),
+      );
       if (unauthorised.length > 0) {
-        throw new ForbiddenException(`Not authorised for properties: ${unauthorised.join(', ')}`);
+        throw new ForbiddenException(
+          `Not authorised for properties: ${unauthorised.join(', ')}`,
+        );
       }
     }
-    if (dto.discount_type === 'PERCENT' && dto.discount_value !== undefined && dto.discount_value > 100) {
+    if (
+      dto.discount_type === 'PERCENT' &&
+      dto.discount_value !== undefined &&
+      dto.discount_value > 100
+    ) {
       throw new BadRequestException('PERCENT discount_value cannot exceed 100');
     }
     // Auto coupons must keep a name (DB CHECK enforces this too).
@@ -245,8 +295,12 @@ export class AdminCouponsService {
 
     const data: Prisma.couponsUpdateInput = {
       ...(dto.name !== undefined ? { name: dto.name } : {}),
-      ...(dto.description !== undefined ? { description: dto.description } : {}),
-      ...(dto.discount_type !== undefined ? { discount_type: dto.discount_type } : {}),
+      ...(dto.description !== undefined
+        ? { description: dto.description }
+        : {}),
+      ...(dto.discount_type !== undefined
+        ? { discount_type: dto.discount_type }
+        : {}),
       ...(dto.discount_value !== undefined
         ? { discount_value: new Prisma.Decimal(dto.discount_value.toFixed(2)) }
         : {}),
@@ -258,20 +312,36 @@ export class AdminCouponsService {
                 : new Prisma.Decimal(dto.max_discount_amount.toFixed(2)),
           }
         : {}),
-      ...(dto.min_stay_nights !== undefined ? { min_stay_nights: dto.min_stay_nights } : {}),
-      ...(dto.min_booking_amount !== undefined
-        ? { min_booking_amount: new Prisma.Decimal(dto.min_booking_amount.toFixed(2)) }
+      ...(dto.min_stay_nights !== undefined
+        ? { min_stay_nights: dto.min_stay_nights }
         : {}),
-      ...(dto.max_uses_per_guest !== undefined ? { max_uses_per_guest: dto.max_uses_per_guest } : {}),
-      ...(dto.max_total_uses !== undefined ? { max_total_uses: dto.max_total_uses } : {}),
+      ...(dto.min_booking_amount !== undefined
+        ? {
+            min_booking_amount: new Prisma.Decimal(
+              dto.min_booking_amount.toFixed(2),
+            ),
+          }
+        : {}),
+      ...(dto.max_uses_per_guest !== undefined
+        ? { max_uses_per_guest: dto.max_uses_per_guest }
+        : {}),
+      ...(dto.max_total_uses !== undefined
+        ? { max_total_uses: dto.max_total_uses }
+        : {}),
       ...(dto.applies_to_all_properties !== undefined
         ? { applies_to_all_properties: dto.applies_to_all_properties }
         : {}),
       ...(dto.valid_from !== undefined
-        ? { valid_from: dto.valid_from === null ? null : new Date(dto.valid_from) }
+        ? {
+            valid_from:
+              dto.valid_from === null ? null : new Date(dto.valid_from),
+          }
         : {}),
       ...(dto.valid_until !== undefined
-        ? { valid_until: dto.valid_until === null ? null : new Date(dto.valid_until) }
+        ? {
+            valid_until:
+              dto.valid_until === null ? null : new Date(dto.valid_until),
+          }
         : {}),
       ...(dto.admin_note !== undefined ? { admin_note: dto.admin_note } : {}),
       ...(dto.is_hidden !== undefined ? { is_hidden: dto.is_hidden } : {}),
@@ -282,7 +352,10 @@ export class AdminCouponsService {
       await tx.coupons.update({ where: { id }, data });
 
       // Replace property links if either flag or list changed
-      if (dto.property_ids !== undefined || dto.applies_to_all_properties !== undefined) {
+      if (
+        dto.property_ids !== undefined ||
+        dto.applies_to_all_properties !== undefined
+      ) {
         await tx.coupon_properties.deleteMany({ where: { coupon_id: id } });
         if (
           dto.applies_to_all_properties !== true &&
@@ -290,7 +363,10 @@ export class AdminCouponsService {
           dto.property_ids.length > 0
         ) {
           await tx.coupon_properties.createMany({
-            data: dto.property_ids.map((property_id) => ({ coupon_id: id, property_id })),
+            data: dto.property_ids.map((property_id) => ({
+              coupon_id: id,
+              property_id,
+            })),
           });
         }
       }
@@ -382,7 +458,12 @@ export class AdminCouponsService {
 
   // ─── Redemptions ───────────────────────────────────────────────────────
 
-  async listRedemptions(id: string, page: number, limit: number, actor: AdminJwtPayload) {
+  async listRedemptions(
+    id: string,
+    page: number,
+    limit: number,
+    actor: AdminJwtPayload,
+  ) {
     const coupon = await this.prisma.coupons.findUnique({
       where: { id },
       include: { coupon_properties: { select: { property_id: true } } },
@@ -397,7 +478,9 @@ export class AdminCouponsService {
         skip: (page - 1) * limit,
         take: limit,
         include: {
-          guests: { select: { id: true, name: true, email: true, phone: true } },
+          guests: {
+            select: { id: true, name: true, email: true, phone: true },
+          },
         },
       }),
       this.prisma.coupon_redemptions.count({ where: { coupon_id: id } }),
@@ -415,7 +498,9 @@ export class AdminCouponsService {
     if (explicitPropertyId) {
       // Must still be in actor's authorised set
       if (!actor.property_ids.includes(explicitPropertyId)) {
-        throw new ForbiddenException(`Not authorised for property ${explicitPropertyId}`);
+        throw new ForbiddenException(
+          `Not authorised for property ${explicitPropertyId}`,
+        );
       }
       return {
         OR: [
@@ -428,13 +513,20 @@ export class AdminCouponsService {
     return {
       OR: [
         { applies_to_all_properties: true },
-        { coupon_properties: { some: { property_id: { in: actor.property_ids } } } },
+        {
+          coupon_properties: {
+            some: { property_id: { in: actor.property_ids } },
+          },
+        },
       ],
     };
   }
 
   private assertCouponInScope(
-    coupon: { applies_to_all_properties: boolean; coupon_properties: { property_id: string }[] },
+    coupon: {
+      applies_to_all_properties: boolean;
+      coupon_properties: { property_id: string }[];
+    },
     actor: AdminJwtPayload,
   ) {
     if (coupon.applies_to_all_properties) {
@@ -442,9 +534,13 @@ export class AdminCouponsService {
       // requires owner scope (enforced separately in update).
       return;
     }
-    const touches = coupon.coupon_properties.some((p) => actor.property_ids.includes(p.property_id));
+    const touches = coupon.coupon_properties.some((p) =>
+      actor.property_ids.includes(p.property_id),
+    );
     if (!touches) {
-      throw new ForbiddenException('Coupon belongs to properties outside your scope');
+      throw new ForbiddenException(
+        'Coupon belongs to properties outside your scope',
+      );
     }
   }
 
@@ -485,7 +581,9 @@ export class AdminCouponsService {
       discount_type: coupon.discount_type,
       discount_value: Number(coupon.discount_value),
       max_discount_amount:
-        coupon.max_discount_amount !== null ? Number(coupon.max_discount_amount) : null,
+        coupon.max_discount_amount !== null
+          ? Number(coupon.max_discount_amount)
+          : null,
       min_stay_nights: coupon.min_stay_nights,
       min_booking_amount: Number(coupon.min_booking_amount),
       max_uses_per_guest: coupon.max_uses_per_guest,

@@ -98,7 +98,10 @@ export class ProspectService {
     // Single-property brand (TDS today): nothing to disambiguate — auto-resolve.
     if (props.length === 1) {
       const only = props[0];
-      await this.upsertSession(brand, msg.waId, { property_id: only.id, pending_query: null });
+      await this.upsertSession(brand, msg.waId, {
+        property_id: only.id,
+        pending_query: null,
+      });
       await this.flowLog.log({
         trace_id: traceId,
         brand,
@@ -146,11 +149,16 @@ export class ProspectService {
     // Not a tap. Do we have a still-fresh property from this chat session?
     const fresh =
       existing?.property_id &&
-      Date.now() - new Date(existing.last_message_at).getTime() <= this.sessionTtlMs();
+      Date.now() - new Date(existing.last_message_at).getTime() <=
+        this.sessionTtlMs();
 
     if (fresh && existing?.property_id) {
-      await this.upsertSession(brand, msg.waId, { property_id: existing.property_id });
-      const name = props.find((p) => p.id === existing.property_id)?.name ?? existing.property_id;
+      await this.upsertSession(brand, msg.waId, {
+        property_id: existing.property_id,
+      });
+      const name =
+        props.find((p) => p.id === existing.property_id)?.name ??
+        existing.property_id;
       await this.flowLog.log({
         trace_id: traceId,
         brand,
@@ -200,7 +208,10 @@ export class ProspectService {
    * the whole call is best-effort — any failure or an empty/unanswered response
    * returns `answered:false` so the caller falls back to reception + L1 notify.
    */
-  async askChatbot(propertyId: string, question: string): Promise<ChatbotAnswer> {
+  async askChatbot(
+    propertyId: string,
+    question: string,
+  ): Promise<ChatbotAnswer> {
     const url = process.env.PROSPECT_RAG_URL || 'https://api.buteak.in/chat';
     try {
       const controller = new AbortController();
@@ -208,12 +219,18 @@ export class ProspectService {
       const res = await fetch(url, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ question, n_results: 3, property_id: propertyId }),
+        body: JSON.stringify({
+          question,
+          n_results: 3,
+          property_id: propertyId,
+        }),
         signal: controller.signal,
       }).finally(() => clearTimeout(timeout));
 
       if (!res.ok) {
-        this.logger.warn(`chatbot ${url} → HTTP ${res.status} for property=${propertyId}`);
+        this.logger.warn(
+          `chatbot ${url} → HTTP ${res.status} for property=${propertyId}`,
+        );
         return { answered: false, answer: null };
       }
       const json: any = await res.json().catch(() => null);
@@ -223,9 +240,13 @@ export class ProspectService {
       const answered =
         answeredFlag === 1 || answeredFlag === '1' || answeredFlag === true;
       const answer = typeof d.answer === 'string' ? d.answer.trim() : '';
-      return answered && answer ? { answered: true, answer } : { answered: false, answer: null };
+      return answered && answer
+        ? { answered: true, answer }
+        : { answered: false, answer: null };
     } catch (err) {
-      this.logger.warn(`chatbot call failed (${url}): ${(err as Error).message}`);
+      this.logger.warn(
+        `chatbot call failed (${url}): ${(err as Error).message}`,
+      );
       return { answered: false, answer: null };
     }
   }
@@ -310,14 +331,22 @@ export class ProspectService {
           last_message_at: now,
         },
         update: {
-          ...(patch.property_id !== undefined ? { property_id: patch.property_id } : {}),
-          ...(patch.pending_query !== undefined ? { pending_query: patch.pending_query } : {}),
-          ...(patch.selector_sent_at !== undefined ? { selector_sent_at: patch.selector_sent_at } : {}),
+          ...(patch.property_id !== undefined
+            ? { property_id: patch.property_id }
+            : {}),
+          ...(patch.pending_query !== undefined
+            ? { pending_query: patch.pending_query }
+            : {}),
+          ...(patch.selector_sent_at !== undefined
+            ? { selector_sent_at: patch.selector_sent_at }
+            : {}),
           last_message_at: now,
         },
       })
       .catch((err) =>
-        this.logger.error(`prospect session upsert failed (${brand}/${waId}): ${(err as Error).message}`),
+        this.logger.error(
+          `prospect session upsert failed (${brand}/${waId}): ${(err as Error).message}`,
+        ),
       );
   }
 }

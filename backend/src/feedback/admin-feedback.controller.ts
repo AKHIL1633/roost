@@ -53,7 +53,8 @@ export class AdminFeedbackController {
       brand,
       min_rating: min_rating != null ? Number(min_rating) : undefined,
       max_rating: max_rating != null ? Number(max_rating) : undefined,
-      submitted: submitted === 'true' ? true : submitted === 'false' ? false : undefined,
+      submitted:
+        submitted === 'true' ? true : submitted === 'false' ? false : undefined,
       page: page != null ? Number(page) : undefined,
       limit: limit != null ? Number(limit) : undefined,
     });
@@ -82,7 +83,8 @@ export class AdminFeedbackController {
     @Param('id') id: string,
   ) {
     const row = await this.prisma.ticket_feedback.findUnique({ where: { id } });
-    if (!row) throw new NotFoundException('Feedback record ' + id + ' not found');
+    if (!row)
+      throw new NotFoundException('Feedback record ' + id + ' not found');
 
     const ticket = await this.prisma.zoho_ticket_ref.findUnique({
       where: { id: row.ticket_id },

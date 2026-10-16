@@ -117,7 +117,10 @@ const GUEST_MESSAGES: { label: string; interpreted: string; text: string }[] = [
   {
     label: 'emoji-terminated line',
     interpreted: 'Thanks and request',
-    text: 'Thanks a lot ' + String.fromCodePoint(0x1f64f) + '\nRoom 404 needs a pillow',
+    text:
+      'Thanks a lot ' +
+      String.fromCodePoint(0x1f64f) +
+      '\nRoom 404 needs a pillow',
   },
   {
     label: 'long space run',
@@ -130,7 +133,11 @@ const GUEST_MESSAGES: { label: string; interpreted: string; text: string }[] = [
     text: 'FIRE\nsmoke in the corridor\n3rd floor',
   },
   // Control group — these were never broken and must stay untouched.
-  { label: 'plain single line', interpreted: 'Request for towel', text: 'send a towel to 404' },
+  {
+    label: 'plain single line',
+    interpreted: 'Request for towel',
+    text: 'send a towel to 404',
+  },
   { label: 'single word', interpreted: 'Request for towel', text: 'towel' },
   {
     label: 'hyphenated single line',
@@ -154,7 +161,8 @@ describe('WATI newline defect — full notify chain', () => {
 
   /** The parameter array WATI actually received on the last call. */
   const sentParams = (): { name: string; value: string }[] =>
-    JSON.parse(fetchMock.mock.calls[fetchMock.mock.calls.length - 1][1].body).parameters;
+    JSON.parse(fetchMock.mock.calls[fetchMock.mock.calls.length - 1][1].body)
+      .parameters;
 
   beforeEach(() => {
     process.env = { ...OLD_ENV };
@@ -204,7 +212,8 @@ describe('WATI newline defect — full notify chain', () => {
       } as never);
 
       expect(fetchMock).toHaveBeenCalledTimes(1);
-      for (const p of sentParams()) expect(rejectedByWhatsApp(p.value)).toBe(false);
+      for (const p of sentParams())
+        expect(rejectedByWhatsApp(p.value)).toBe(false);
     });
 
     it('STAFF_ESCALATION — every parameter is accepted by WhatsApp', async () => {
@@ -233,7 +242,8 @@ describe('WATI newline defect — full notify chain', () => {
       } as never);
 
       expect(fetchMock).toHaveBeenCalledTimes(1);
-      for (const p of sentParams()) expect(rejectedByWhatsApp(p.value)).toBe(false);
+      for (const p of sentParams())
+        expect(rejectedByWhatsApp(p.value)).toBe(false);
     });
 
     it('GUEST_ACK — every parameter is accepted by WhatsApp', async () => {
@@ -254,7 +264,8 @@ describe('WATI newline defect — full notify chain', () => {
       } as never);
 
       expect(fetchMock).toHaveBeenCalledTimes(1);
-      for (const p of sentParams()) expect(rejectedByWhatsApp(p.value)).toBe(false);
+      for (const p of sentParams())
+        expect(rejectedByWhatsApp(p.value)).toBe(false);
     });
 
     it('the flattened subject still contains every word the guest typed', async () => {
@@ -300,7 +311,9 @@ describe('WATI newline defect — full notify chain', () => {
             variables: { name: 'Praveer', request: subject, room_no: '404' },
           },
         } as never);
-        expect(sentParams().find((p) => p.name === 'request')!.value).toBe(subject);
+        expect(sentParams().find((p) => p.name === 'request')!.value).toBe(
+          subject,
+        );
       }
     });
   });
@@ -308,8 +321,14 @@ describe('WATI newline defect — full notify chain', () => {
   describe('the exact strings staff will now read', () => {
     it.each([
       ['Request for towel (Can you send me a towel. at 404. and 405)', 0],
-      ['Food delivery to room (Guest has ordered food from Swiggy. to Room 505)', 1],
-      ['Housekeeping supplies (Hi. please send. 2 towels. 1 soap. Room 302)', 4],
+      [
+        'Food delivery to room (Guest has ordered food from Swiggy. to Room 505)',
+        1,
+      ],
+      [
+        'Housekeeping supplies (Hi. please send. 2 towels. 1 soap. Room 302)',
+        4,
+      ],
       ['AC not cooling (AC not cooling. Room 210. since morning)', 5],
       ['Request for water (need water bottles)', 6],
       ['Cleaning request (room not cleaned. please send someone)', 7],
@@ -326,10 +345,16 @@ describe('WATI newline defect — full notify chain', () => {
           staff_name: 'Praveer',
           brand: 'TDS',
           template: 'service_staff_assign_v1',
-          variables: { name: 'Praveer', request: ticketSubject(interpreted, text), room_no: '404' },
+          variables: {
+            name: 'Praveer',
+            request: ticketSubject(interpreted, text),
+            room_no: '404',
+          },
         },
       } as never);
-      expect(sentParams().find((p) => p.name === 'request')!.value).toBe(expected);
+      expect(sentParams().find((p) => p.name === 'request')!.value).toBe(
+        expected,
+      );
     });
   });
 });

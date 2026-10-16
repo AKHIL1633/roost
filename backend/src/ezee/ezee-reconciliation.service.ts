@@ -121,12 +121,16 @@ export class EzeeReconciliationService implements OnApplicationBootstrap {
       return;
     }
 
-    this.logger.warn(`Reconciliation: ${unsynced.length} unsynced booking(s) — queuing`);
+    this.logger.warn(
+      `Reconciliation: ${unsynced.length} unsynced booking(s) — queuing`,
+    );
 
     for (const booking of unsynced) {
       const payment = booking.payments[0];
       if (!payment) {
-        this.logger.warn(`Skipping ${booking.ezee_reservation_id} — no captured payment`);
+        this.logger.warn(
+          `Skipping ${booking.ezee_reservation_id} — no captured payment`,
+        );
         continue;
       }
 
@@ -179,10 +183,15 @@ export class EzeeReconciliationService implements OnApplicationBootstrap {
       return;
     }
 
-    this.logger.log(`Reconciliation: checking ${activeSynced.length} active booking(s) against eZee`);
+    this.logger.log(
+      `Reconciliation: checking ${activeSynced.length} active booking(s) against eZee`,
+    );
 
     // For each booking, fetch fresh status from eZee and compare
-    let cancelled = 0, checkedIn = 0, checkedOut = 0, roomUpdated = 0;
+    let cancelled = 0,
+      checkedIn = 0,
+      checkedOut = 0,
+      roomUpdated = 0;
 
     for (const booking of activeSynced) {
       try {
@@ -192,7 +201,9 @@ export class EzeeReconciliationService implements OnApplicationBootstrap {
         );
 
         if (!ezeeData) {
-          this.logger.warn(`Booking ${booking.ezee_reservation_id} not found in eZee — skipping`);
+          this.logger.warn(
+            `Booking ${booking.ezee_reservation_id} not found in eZee — skipping`,
+          );
           continue;
         }
 
@@ -200,7 +211,8 @@ export class EzeeReconciliationService implements OnApplicationBootstrap {
         const tran = ezeeData.BookingTran?.[0];
         if (!tran) continue;
 
-        const ezeeStatus = EzeeReconciliationService.EZEE_STATUS_MAP[tran.CurrentStatus] ?? null;
+        const ezeeStatus =
+          EzeeReconciliationService.EZEE_STATUS_MAP[tran.CurrentStatus] ?? null;
         const ezeeRoomName = tran.RoomName ?? null;
 
         const updates: Record<string, any> = {};
@@ -218,15 +230,19 @@ export class EzeeReconciliationService implements OnApplicationBootstrap {
           } else if (ezeeStatus === 'CHECKED_IN') {
             checkedIn++;
             // Provision MyGate lock access — fire-and-forget, non-blocking
-            this.mygate.provisionLockAccess({
-              eri: booking.ezee_reservation_id,
-              propertyId: booking.property_id,
-              roomNumber: ezeeRoomName ?? booking.room_number,
-              checkin: booking.checkin_date,
-              checkout: booking.checkout_date ?? null,
-            }).catch((err: Error) =>
-              this.logger.error(`MyGate provision error for ${booking.ezee_reservation_id}: ${err.message}`),
-            );
+            this.mygate
+              .provisionLockAccess({
+                eri: booking.ezee_reservation_id,
+                propertyId: booking.property_id,
+                roomNumber: ezeeRoomName ?? booking.room_number,
+                checkin: booking.checkin_date,
+                checkout: booking.checkout_date ?? null,
+              })
+              .catch((err: Error) =>
+                this.logger.error(
+                  `MyGate provision error for ${booking.ezee_reservation_id}: ${err.message}`,
+                ),
+              );
           } else if (ezeeStatus === 'CHECKED_OUT') {
             updates.is_active = false;
             checkedOut++;
@@ -306,18 +322,25 @@ export class EzeeReconciliationService implements OnApplicationBootstrap {
         // 55402 res number that happens to be the same integer).
         const ezeeResNos = ezeeReservations.map((r) => r.reservationNo);
         const existing = await this.prisma.ezee_booking_cache.findMany({
-          where: { property_id: property.id, ezee_reservation_no: { in: ezeeResNos } },
+          where: {
+            property_id: property.id,
+            ezee_reservation_no: { in: ezeeResNos },
+          },
           select: { ezee_reservation_no: true },
         });
         const existingSet = new Set(existing.map((e) => e.ezee_reservation_no));
 
         // Also check by generated ERI in case it was already ingested
-        const generatedEris = ezeeResNos.map((no) => `${property.id}-EZEE-${no}`);
+        const generatedEris = ezeeResNos.map(
+          (no) => `${property.id}-EZEE-${no}`,
+        );
         const existingByEri = await this.prisma.ezee_booking_cache.findMany({
           where: { ezee_reservation_id: { in: generatedEris } },
           select: { ezee_reservation_id: true },
         });
-        const existingEriSet = new Set(existingByEri.map((e) => e.ezee_reservation_id));
+        const existingEriSet = new Set(
+          existingByEri.map((e) => e.ezee_reservation_id),
+        );
 
         for (const res of ezeeReservations) {
           // Skip if already cached (by eZee reservation_no or by generated ERI)
@@ -326,8 +349,10 @@ export class EzeeReconciliationService implements OnApplicationBootstrap {
           if (existingEriSet.has(eri)) continue;
 
           // Skip cancelled/no-show — no point caching dead bookings
-          const mappedStatus = EzeeReconciliationService.EZEE_STATUS_MAP[res.status];
-          if (mappedStatus === 'CANCELLED' || mappedStatus === 'NO_SHOW') continue;
+          const mappedStatus =
+            EzeeReconciliationService.EZEE_STATUS_MAP[res.status];
+          if (mappedStatus === 'CANCELLED' || mappedStatus === 'NO_SHOW')
+            continue;
 
           // The autosync webhook now writes this same key (it used to write the
           // bare reservation number), so a push can land between the existence
@@ -391,25 +416,35 @@ export class EzeeReconciliationService implements OnApplicationBootstrap {
                     approved_at: new Date(),
                   },
                 });
-                this.logger.log(`Immediately linked guest ${match.id} to ingested booking ${eri}`);
+                this.logger.log(
+                  `Immediately linked guest ${match.id} to ingested booking ${eri}`,
+                );
 
                 if (match.email) {
-                  this.email.sendOtaBookingLinkedEmail({
-                    toEmail: match.email,
-                    firstName: match.name?.split(' ')[0] ?? 'there',
-                    bookingId: eri,
-                    propertyName: property.name ?? 'The Daily Social',
-                    roomTypeName: res.roomTypeName ?? 'your room',
-                    checkinDate: res.checkin ?? '',
-                    checkoutDate: res.checkout ?? '',
-                    source: res.source ?? 'an OTA',
-                    propertyId: property.id,
-                  }).catch((e: Error) => this.logger.warn(`OTA link email failed for ${eri}: ${e.message}`));
+                  this.email
+                    .sendOtaBookingLinkedEmail({
+                      toEmail: match.email,
+                      firstName: match.name?.split(' ')[0] ?? 'there',
+                      bookingId: eri,
+                      propertyName: property.name ?? 'The Daily Social',
+                      roomTypeName: res.roomTypeName ?? 'your room',
+                      checkinDate: res.checkin ?? '',
+                      checkoutDate: res.checkout ?? '',
+                      source: res.source ?? 'an OTA',
+                      propertyId: property.id,
+                    })
+                    .catch((e: Error) =>
+                      this.logger.warn(
+                        `OTA link email failed for ${eri}: ${e.message}`,
+                      ),
+                    );
                 }
               }
             } catch (linkErr) {
               // Non-fatal — autoLinkBookings() will catch this on the guest's next auth event
-              this.logger.warn(`Immediate guest match failed for ${eri}: ${(linkErr as Error).message}`);
+              this.logger.warn(
+                `Immediate guest match failed for ${eri}: ${(linkErr as Error).message}`,
+              );
             }
           }
         }
@@ -426,7 +461,9 @@ export class EzeeReconciliationService implements OnApplicationBootstrap {
     }
 
     if (ingested > 0) {
-      this.logger.warn(`Reconciliation: ingested ${ingested} external booking(s) from eZee`);
+      this.logger.warn(
+        `Reconciliation: ingested ${ingested} external booking(s) from eZee`,
+      );
     } else {
       this.logger.log('Reconciliation: no new external bookings to ingest');
     }
@@ -446,7 +483,11 @@ export class EzeeReconciliationService implements OnApplicationBootstrap {
     const today = new Date(`${istDateStr()}T00:00:00.000Z`);
     const cancelled = await this.prisma.breakfast_order
       .updateMany({
-        where: { ezee_reservation_id: eri, status: 'PLACED', service_date: { gt: today } },
+        where: {
+          ezee_reservation_id: eri,
+          status: 'PLACED',
+          service_date: { gt: today },
+        },
         data: { status: 'CANCELLED', updated_at: new Date() },
       })
       .catch((err: Error) => {
@@ -454,7 +495,9 @@ export class EzeeReconciliationService implements OnApplicationBootstrap {
         return { count: 0 };
       });
     if (cancelled.count > 0) {
-      this.logger.log(`reconcile: ${eri} checked out → cancelled ${cancelled.count} breakfast order(s)`);
+      this.logger.log(
+        `reconcile: ${eri} checked out → cancelled ${cancelled.count} breakfast order(s)`,
+      );
     }
   }
 

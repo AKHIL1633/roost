@@ -1,4 +1,11 @@
-import { IsString, IsOptional, IsBoolean, IsIn, MaxLength, Matches } from 'class-validator';
+import {
+  IsString,
+  IsOptional,
+  IsBoolean,
+  IsIn,
+  MaxLength,
+  Matches,
+} from 'class-validator';
 
 // `role` is validated against the staff_roles catalog in the service.
 const DEPARTMENTS = ['HOUSEKEEPING', 'MAINTENANCE', 'FRONT_OFFICE'];
@@ -11,7 +18,9 @@ export class UpdateStaffDto {
 
   @IsOptional()
   @IsString()
-  @Matches(/^[0-9]{10,15}$/, { message: 'phone must be 10–15 digits (country code, no +)' })
+  @Matches(/^[0-9]{10,15}$/, {
+    message: 'phone must be 10–15 digits (country code, no +)',
+  })
   phone?: string;
 
   /** Must exist (and be active) in the staff_roles catalog — validated in the service. */

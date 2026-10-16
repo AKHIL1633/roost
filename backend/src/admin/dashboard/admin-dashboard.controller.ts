@@ -2,7 +2,10 @@ import { Controller, Get, Param, Query, UseGuards } from '@nestjs/common';
 import { AdminDashboardService } from './admin-dashboard.service';
 import { DashboardQueryDto } from './dto/dashboard-query.dto';
 import { BreakdownQueryDto, RevenueQueryDto } from './dto/revenue-query.dto';
-import { CouponsWidgetQueryDto, ListPaymentsQueryDto } from './dto/payments-query.dto';
+import {
+  CouponsWidgetQueryDto,
+  ListPaymentsQueryDto,
+} from './dto/payments-query.dto';
 import { AdminJwtGuard } from '../../common/guards/admin-jwt.guard';
 import { PermissionsGuard } from '../../common/guards/permissions.guard';
 import { RequirePermission } from '../../common/decorators/require-permission.decorator';
@@ -21,7 +24,10 @@ export class AdminDashboardController {
    */
   @Get('summary')
   @RequirePermission('dashboard.view')
-  summary(@Query() query: DashboardQueryDto, @CurrentAdmin() actor: AdminJwtPayload) {
+  summary(
+    @Query() query: DashboardQueryDto,
+    @CurrentAdmin() actor: AdminJwtPayload,
+  ) {
     return this.dashboardService.summary(query, actor);
   }
 
@@ -32,7 +38,10 @@ export class AdminDashboardController {
    */
   @Get('revenue')
   @RequirePermission('dashboard.view')
-  revenue(@Query() query: RevenueQueryDto, @CurrentAdmin() actor: AdminJwtPayload) {
+  revenue(
+    @Query() query: RevenueQueryDto,
+    @CurrentAdmin() actor: AdminJwtPayload,
+  ) {
     return this.dashboardService.revenue(query, actor);
   }
 
@@ -44,7 +53,10 @@ export class AdminDashboardController {
    */
   @Get('breakdown')
   @RequirePermission('dashboard.view')
-  breakdown(@Query() query: BreakdownQueryDto, @CurrentAdmin() actor: AdminJwtPayload) {
+  breakdown(
+    @Query() query: BreakdownQueryDto,
+    @CurrentAdmin() actor: AdminJwtPayload,
+  ) {
     return this.dashboardService.breakdown(query, actor);
   }
 
@@ -54,7 +66,10 @@ export class AdminDashboardController {
    */
   @Get('coupons')
   @RequirePermission('dashboard.view')
-  coupons(@Query() query: CouponsWidgetQueryDto, @CurrentAdmin() actor: AdminJwtPayload) {
+  coupons(
+    @Query() query: CouponsWidgetQueryDto,
+    @CurrentAdmin() actor: AdminJwtPayload,
+  ) {
     return this.dashboardService.couponsWidget(query, actor);
   }
 
@@ -65,7 +80,10 @@ export class AdminDashboardController {
    */
   @Get('payments')
   @RequirePermission('dashboard.view')
-  paymentsList(@Query() query: ListPaymentsQueryDto, @CurrentAdmin() actor: AdminJwtPayload) {
+  paymentsList(
+    @Query() query: ListPaymentsQueryDto,
+    @CurrentAdmin() actor: AdminJwtPayload,
+  ) {
     return this.dashboardService.paymentsList(query, actor);
   }
 
@@ -75,7 +93,10 @@ export class AdminDashboardController {
    */
   @Get('payments/:id')
   @RequirePermission('dashboard.view')
-  paymentDetail(@Param('id') id: string, @CurrentAdmin() actor: AdminJwtPayload) {
+  paymentDetail(
+    @Param('id') id: string,
+    @CurrentAdmin() actor: AdminJwtPayload,
+  ) {
     return this.dashboardService.paymentDetail(id, actor);
   }
 }

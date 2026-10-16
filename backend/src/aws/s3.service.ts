@@ -1,4 +1,9 @@
-import { Injectable, Logger, OnModuleInit, NotFoundException } from '@nestjs/common';
+import {
+  Injectable,
+  Logger,
+  OnModuleInit,
+  NotFoundException,
+} from '@nestjs/common';
 import {
   S3Client,
   PutObjectCommand,
@@ -87,7 +92,9 @@ export class S3Service implements OnModuleInit {
       );
       this.logger.log('S3 CORS configured successfully');
     } catch (err: any) {
-      this.logger.warn(`Failed to set S3 CORS (set it manually): ${err.message}`);
+      this.logger.warn(
+        `Failed to set S3 CORS (set it manually): ${err.message}`,
+      );
     }
   }
 
@@ -142,7 +149,12 @@ export class S3Service implements OnModuleInit {
     pathPrefix: string,
     fileName: string,
     contentType: string,
-  ): Promise<{ uploadUrl: string; fileKey: string; fileUrl: string; expiresInSeconds: number }> {
+  ): Promise<{
+    uploadUrl: string;
+    fileKey: string;
+    fileUrl: string;
+    expiresInSeconds: number;
+  }> {
     const ext = fileName.split('.').pop() ?? 'jpg';
     const nameBase = path.parse(fileName).name.replace(/[^a-zA-Z0-9_-]/g, '_');
     const uniqueId = uuidv4().slice(0, 8);
@@ -255,16 +267,16 @@ export class S3Service implements OnModuleInit {
    * Generate a presigned GET URL for viewing/downloading a file.
    * Default TTL 15 minutes.
    */
-  async getPresignedDownloadUrl(
-    key: string,
-    expiresIn = 900,
-  ): Promise<string> {
+  async getPresignedDownloadUrl(key: string, expiresIn = 900): Promise<string> {
     const cleanKey = this.extractKey(key);
     if (this.isLocal) {
       return `${this.baseUrl}/uploads/${cleanKey}`;
     }
 
-    const command = new GetObjectCommand({ Bucket: this.bucket, Key: cleanKey });
+    const command = new GetObjectCommand({
+      Bucket: this.bucket,
+      Key: cleanKey,
+    });
     return getSignedUrl(this.s3, command, { expiresIn });
   }
 
@@ -282,7 +294,9 @@ export class S3Service implements OnModuleInit {
       return;
     }
 
-    await this.s3.send(new DeleteObjectCommand({ Bucket: this.bucket, Key: cleanKey }));
+    await this.s3.send(
+      new DeleteObjectCommand({ Bucket: this.bucket, Key: cleanKey }),
+    );
     this.logger.log(`S3 object deleted: ${cleanKey}`);
   }
 

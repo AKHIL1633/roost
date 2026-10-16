@@ -1,4 +1,8 @@
-import { Injectable, Logger, ServiceUnavailableException } from '@nestjs/common';
+import {
+  Injectable,
+  Logger,
+  ServiceUnavailableException,
+} from '@nestjs/common';
 import {
   SESClient,
   SendEmailCommand,
@@ -14,14 +18,14 @@ import { PrismaService } from '../prisma/prisma.service';
  * is in scope (e.g., signup OTP before the guest has a booking).
  */
 interface Branding {
-  brandName: string;       // "The Daily Social" or "Buteak Suites"
-  primaryColor: string;    // hex for headers/buttons/booking-card border
-  secondaryColor: string;  // hex for darker text/secondary accents
-  accentColor: string;     // hex for text-on-primary (usually white)
-  logoUrl: string;         // absolute URL — empty string means "render brand name only"
-  supportEmail: string;    // shown in footer
-  fromAddress: string;     // SES Source envelope address
-  websiteUrl: string;      // for CTA links + footer
+  brandName: string; // "The Daily Social" or "Buteak Suites"
+  primaryColor: string; // hex for headers/buttons/booking-card border
+  secondaryColor: string; // hex for darker text/secondary accents
+  accentColor: string; // hex for text-on-primary (usually white)
+  logoUrl: string; // absolute URL — empty string means "render brand name only"
+  supportEmail: string; // shown in footer
+  fromAddress: string; // SES Source envelope address
+  websiteUrl: string; // for CTA links + footer
   /**
    * AWS region the SES API call routes to. Different per brand so each
    * domain identity's regional sandbox/production status is honoured.
@@ -64,7 +68,7 @@ export class EmailService {
     if (!client) {
       // Explicit env-var creds so the SDK doesn't fall through to an ECS task
       // role that may not have ses:SendEmail in the target region.
-      const accessKeyId     = process.env.AWS_ACCESS_KEY_ID;
+      const accessKeyId = process.env.AWS_ACCESS_KEY_ID;
       const secretAccessKey = process.env.AWS_SECRET_ACCESS_KEY;
       client = new SESClient({
         region,
@@ -101,26 +105,31 @@ export class EmailService {
       // serve from TDS's frontend until the Buteak rebuild. Once Buteak FE is
       // dynamic, flip branding_config.logo_url to an absolute https://www.buteak.in URL.
       const logoUrl = logoRel
-        ? (logoRel.startsWith('http')
-            ? logoRel
-            : `${TDS_DEFAULT.websiteUrl}${logoRel.startsWith('/') ? '' : '/'}${logoRel}`)
+        ? logoRel.startsWith('http')
+          ? logoRel
+          : `${TDS_DEFAULT.websiteUrl}${logoRel.startsWith('/') ? '' : '/'}${logoRel}`
         : '';
 
       return {
-        brandName:      (bc.brand_name as string) || prop.name || TDS_DEFAULT.brandName,
-        primaryColor:   (bc.primary_color_hex as string) || TDS_DEFAULT.primaryColor,
-        secondaryColor: (bc.secondary_color_hex as string) || TDS_DEFAULT.secondaryColor,
-        accentColor:    (bc.accent_color_hex as string) || TDS_DEFAULT.accentColor,
+        brandName:
+          (bc.brand_name as string) || prop.name || TDS_DEFAULT.brandName,
+        primaryColor:
+          (bc.primary_color_hex as string) || TDS_DEFAULT.primaryColor,
+        secondaryColor:
+          (bc.secondary_color_hex as string) || TDS_DEFAULT.secondaryColor,
+        accentColor: (bc.accent_color_hex as string) || TDS_DEFAULT.accentColor,
         logoUrl,
-        supportEmail:   support,
-        fromAddress:    support,
-        websiteUrl:     (bc.domain as string)
+        supportEmail: support,
+        fromAddress: support,
+        websiteUrl: (bc.domain as string)
           ? `https://${bc.domain as string}`
           : TDS_DEFAULT.websiteUrl,
-        sesRegion:      (bc.ses_region as string) || DEFAULT_SES_REGION,
+        sesRegion: (bc.ses_region as string) || DEFAULT_SES_REGION,
       };
     } catch (err) {
-      this.logger.warn(`getBranding(${propertyId}) failed, defaulting to TDS: ${(err as Error).message}`);
+      this.logger.warn(
+        `getBranding(${propertyId}) failed, defaulting to TDS: ${(err as Error).message}`,
+      );
       return TDS_DEFAULT;
     }
   }
@@ -161,13 +170,24 @@ export class EmailService {
     purpose?: 'email_verification' | 'password_reset' | 'two_fa';
     propertyId?: string;
   }): Promise<void> {
-    const { toEmail, toName, otp, expiresAt, purpose = 'email_verification', propertyId } = opts;
+    const {
+      toEmail,
+      toName,
+      otp,
+      expiresAt,
+      purpose = 'email_verification',
+      propertyId,
+    } = opts;
     const branding = await this.getBranding(propertyId);
 
     const expiresFormatted = expiresAt.toLocaleString('en-IN', {
       timeZone: 'Asia/Kolkata',
-      day: '2-digit', month: 'short', year: 'numeric',
-      hour: '2-digit', minute: '2-digit', hour12: true,
+      day: '2-digit',
+      month: 'short',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+      hour12: true,
     });
 
     // Emoji removed from subject lines — they push deliverability into the
@@ -178,40 +198,63 @@ export class EmailService {
       purpose === 'password_reset'
         ? {
             subject: `${branding.brandName} — Password reset code`,
-            heading: 'We received a request to reset the password for your account.',
+            heading:
+              'We received a request to reset the password for your account.',
             label: 'Password reset code',
             cta: 'Reset password',
-            footerHint: 'Didn\'t ask to reset your password? You can safely ignore this email — your account is unchanged until the code is used.',
+            footerHint:
+              "Didn't ask to reset your password? You can safely ignore this email — your account is unchanged until the code is used.",
           }
         : purpose === 'two_fa'
           ? {
               subject: `${branding.brandName} — Login verification code`,
-              heading: 'Enter this code on the login screen to finish signing in.',
+              heading:
+                'Enter this code on the login screen to finish signing in.',
               label: 'Login verification code',
               cta: 'Continue sign-in',
-              footerHint: 'Didn\'t try to log in? Someone may have your password — change it immediately.',
+              footerHint:
+                "Didn't try to log in? Someone may have your password — change it immediately.",
             }
           : {
               subject: `Your ${branding.brandName} verification code`,
               heading: `Welcome to ${branding.brandName}! Use the code below to verify your email address.`,
               label: 'Email verification code',
               cta: `Open ${branding.brandName}`,
-              footerHint: 'Didn\'t sign up? You can safely ignore this email — no account will be activated without this code.',
+              footerHint:
+                "Didn't sign up? You can safely ignore this email — no account will be activated without this code.",
             };
 
-    const html = this.buildOtpHtml(toName, otp, expiresFormatted, copy.heading, copy.label, copy.cta, copy.footerHint, branding);
-    const text = this.buildOtpText(toName, otp, expiresFormatted, copy.heading, copy.footerHint, branding);
+    const html = this.buildOtpHtml(
+      toName,
+      otp,
+      expiresFormatted,
+      copy.heading,
+      copy.label,
+      copy.cta,
+      copy.footerHint,
+      branding,
+    );
+    const text = this.buildOtpText(
+      toName,
+      otp,
+      expiresFormatted,
+      copy.heading,
+      copy.footerHint,
+      branding,
+    );
 
     // In local dev, skip SES and log the OTP so the flow is testable without AWS config
     if (process.env.NODE_ENV !== 'production') {
       console.log('\n======================================================');
       console.log(`📧 [DEV EMAIL OTP] To: ${toEmail} | Name: ${toName}`);
       console.log(`🔑 OTP CODE: [ ${otp} ] (Purpose: ${purpose})`);
-      console.log(`⏰ Expires: ${expiresFormatted} | Brand: ${branding.brandName}`);
+      console.log(
+        `⏰ Expires: ${expiresFormatted} | Brand: ${branding.brandName}`,
+      );
       console.log('======================================================\n');
       this.logger.warn(
         `[DEV] OTP email NOT sent via SES. ` +
-        `to=${toEmail} purpose=${purpose} otp=${otp} expires=${expiresFormatted} brand=${branding.brandName}`,
+          `to=${toEmail} purpose=${purpose} otp=${otp} expires=${expiresFormatted} brand=${branding.brandName}`,
       );
       return;
     }
@@ -229,11 +272,17 @@ export class EmailService {
     };
 
     try {
-      await this.getClient(branding.sesRegion).send(new SendEmailCommand(input));
-      this.logger.log(`${purpose} OTP email sent to ${toEmail} (brand=${branding.brandName}, region=${branding.sesRegion})`);
+      await this.getClient(branding.sesRegion).send(
+        new SendEmailCommand(input),
+      );
+      this.logger.log(
+        `${purpose} OTP email sent to ${toEmail} (brand=${branding.brandName}, region=${branding.sesRegion})`,
+      );
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : String(err);
-      this.logger.error(`SES send failed to=${toEmail} purpose=${purpose} error=${msg}`);
+      this.logger.error(
+        `SES send failed to=${toEmail} purpose=${purpose} error=${msg}`,
+      );
       throw new ServiceUnavailableException(
         'Could not send OTP email. Please try again in a moment.',
       );
@@ -382,7 +431,9 @@ export class EmailService {
   }): Promise<void> {
     const branding = await this.getBranding(opts.propertyId);
     if (process.env.NODE_ENV !== 'production') {
-      this.logger.log(`[DEV] OTA booking linked email to=${opts.toEmail} bookingId=${opts.bookingId} property=${opts.propertyName}`);
+      this.logger.log(
+        `[DEV] OTA booking linked email to=${opts.toEmail} bookingId=${opts.bookingId} property=${opts.propertyName}`,
+      );
       return;
     }
     const html = this.buildOtaLinkedHtml(opts, branding);
@@ -404,13 +455,23 @@ export class EmailService {
     };
 
     await this.getClient(branding.sesRegion).send(new SendEmailCommand(input));
-    this.logger.log(`OTA booking linked email sent to ${opts.toEmail} for booking ${opts.bookingId} (brand=${branding.brandName}, region=${branding.sesRegion})`);
+    this.logger.log(
+      `OTA booking linked email sent to ${opts.toEmail} for booking ${opts.bookingId} (brand=${branding.brandName}, region=${branding.sesRegion})`,
+    );
   }
 
-  private buildOtaLinkedHtml(opts: {
-    firstName: string; bookingId: string; propertyName: string;
-    roomTypeName: string; checkinDate: string; checkoutDate: string; source: string;
-  }, b: Branding): string {
+  private buildOtaLinkedHtml(
+    opts: {
+      firstName: string;
+      bookingId: string;
+      propertyName: string;
+      roomTypeName: string;
+      checkinDate: string;
+      checkoutDate: string;
+      source: string;
+    },
+    b: Branding,
+  ): string {
     return `<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -496,10 +557,18 @@ export class EmailService {
 </html>`;
   }
 
-  private buildOtaLinkedText(opts: {
-    firstName: string; bookingId: string; propertyName: string;
-    roomTypeName: string; checkinDate: string; checkoutDate: string; source: string;
-  }, b: Branding): string {
+  private buildOtaLinkedText(
+    opts: {
+      firstName: string;
+      bookingId: string;
+      propertyName: string;
+      roomTypeName: string;
+      checkinDate: string;
+      checkoutDate: string;
+      source: string;
+    },
+    b: Branding,
+  ): string {
     return [
       `${b.brandName.toUpperCase()} — Your booking is linked`,
       '─'.repeat(40),
@@ -546,7 +615,9 @@ export class EmailService {
   }): Promise<void> {
     const branding = await this.getBranding(opts.propertyId);
     if (process.env.NODE_ENV !== 'production') {
-      this.logger.log(`[DEV] Booking confirmation email to=${opts.toEmail} bookingId=${opts.bookingId} room=${opts.roomNumber}`);
+      this.logger.log(
+        `[DEV] Booking confirmation email to=${opts.toEmail} bookingId=${opts.bookingId} room=${opts.roomNumber}`,
+      );
       return;
     }
     const html = this.buildBookingHtml(opts, branding);
@@ -556,7 +627,10 @@ export class EmailService {
       Source: `${branding.brandName} <${branding.fromAddress}>`,
       Destination: { ToAddresses: [opts.toEmail] },
       Message: {
-        Subject: { Data: `Booking confirmed — ${opts.propertyName}`, Charset: 'UTF-8' },
+        Subject: {
+          Data: `Booking confirmed — ${opts.propertyName}`,
+          Charset: 'UTF-8',
+        },
         Body: {
           Html: { Data: html, Charset: 'UTF-8' },
           Text: { Data: text, Charset: 'UTF-8' },
@@ -565,15 +639,28 @@ export class EmailService {
     };
 
     await this.getClient(branding.sesRegion).send(new SendEmailCommand(input));
-    this.logger.log(`Booking confirmation email sent to ${opts.toEmail} for ${opts.bookingId} (brand=${branding.brandName}, region=${branding.sesRegion})`);
+    this.logger.log(
+      `Booking confirmation email sent to ${opts.toEmail} for ${opts.bookingId} (brand=${branding.brandName}, region=${branding.sesRegion})`,
+    );
   }
 
-  private buildBookingHtml(opts: {
-    firstName: string; fullName: string; gender?: string;
-    toEmail: string; phone?: string; bookingId: string;
-    propertyName: string; roomType: string; roomNumber: string;
-    checkinDate: string; checkoutDate: string; noOfGuests: number;
-  }, b: Branding): string {
+  private buildBookingHtml(
+    opts: {
+      firstName: string;
+      fullName: string;
+      gender?: string;
+      toEmail: string;
+      phone?: string;
+      bookingId: string;
+      propertyName: string;
+      roomType: string;
+      roomNumber: string;
+      checkinDate: string;
+      checkoutDate: string;
+      noOfGuests: number;
+    },
+    b: Branding,
+  ): string {
     const phoneRow = opts.phone
       ? `<tr><td style="padding:8px 0;border-top:1px solid #eee;">
           <span style="font-size:11px;font-weight:600;color:#999;letter-spacing:1.5px;text-transform:uppercase;display:block;margin-bottom:3px;">Phone</span>
@@ -690,12 +777,23 @@ export class EmailService {
 </html>`;
   }
 
-  private buildBookingText(opts: {
-    firstName: string; fullName: string; gender?: string;
-    toEmail: string; phone?: string; bookingId: string;
-    propertyName: string; roomType: string; roomNumber: string;
-    checkinDate: string; checkoutDate: string; noOfGuests: number;
-  }, b: Branding): string {
+  private buildBookingText(
+    opts: {
+      firstName: string;
+      fullName: string;
+      gender?: string;
+      toEmail: string;
+      phone?: string;
+      bookingId: string;
+      propertyName: string;
+      roomType: string;
+      roomNumber: string;
+      checkinDate: string;
+      checkoutDate: string;
+      noOfGuests: number;
+    },
+    b: Branding,
+  ): string {
     const lines = [
       `${b.brandName.toUpperCase()} — Booking Confirmed`,
       '─'.repeat(40),
@@ -754,7 +852,9 @@ export class EmailService {
   }): Promise<void> {
     const branding = await this.getBranding(opts.propertyId);
     if (process.env.NODE_ENV !== 'production') {
-      this.logger.log(`[DEV] Booking sync-failed email to=${opts.toEmail} bookingId=${opts.bookingId}`);
+      this.logger.log(
+        `[DEV] Booking sync-failed email to=${opts.toEmail} bookingId=${opts.bookingId}`,
+      );
       return;
     }
     const html = this.buildBookingSyncFailedHtml(opts, branding);
@@ -764,7 +864,10 @@ export class EmailService {
       Source: `${branding.brandName} <${branding.fromAddress}>`,
       Destination: { ToAddresses: [opts.toEmail] },
       Message: {
-        Subject: { Data: `We're sorting out your ${opts.propertyName} booking`, Charset: 'UTF-8' },
+        Subject: {
+          Data: `We're sorting out your ${opts.propertyName} booking`,
+          Charset: 'UTF-8',
+        },
         Body: {
           Html: { Data: html, Charset: 'UTF-8' },
           Text: { Data: text, Charset: 'UTF-8' },
@@ -860,14 +963,14 @@ export class EmailService {
       'confirmed yet.',
       '',
       'Our team has been alerted and someone will reach out to you shortly to',
-      'confirm your booking or arrange a full refund — you don\'t need to do',
+      "confirm your booking or arrange a full refund — you don't need to do",
       `anything. If you'd like to reach us sooner, call on ${EmailService.SUPPORT_PHONE}.`,
       '',
       '── BOOKING ──',
       `  Reference : ${opts.bookingId}`,
       `  Property  : ${opts.propertyName}`,
       '',
-      'Your payment is safe. We\'re on it.',
+      "Your payment is safe. We're on it.",
       '',
       '─'.repeat(40),
       `From the ${b.brandName} Support Team`,
@@ -886,7 +989,9 @@ export class EmailService {
   }): Promise<void> {
     const branding = await this.getBranding(opts.propertyId);
     if (process.env.NODE_ENV !== 'production') {
-      this.logger.log(`[DEV] Check-in confirmation email to=${opts.toEmail} passkeys=${JSON.stringify(opts.passkeys)}`);
+      this.logger.log(
+        `[DEV] Check-in confirmation email to=${opts.toEmail} passkeys=${JSON.stringify(opts.passkeys)}`,
+      );
       return;
     }
     const html = this.buildCheckinHtml(opts, branding);
@@ -896,7 +1001,10 @@ export class EmailService {
       Source: `${branding.brandName} <${branding.fromAddress}>`,
       Destination: { ToAddresses: [opts.toEmail] },
       Message: {
-        Subject: { Data: `You're checked in — welcome to ${branding.brandName}`, Charset: 'UTF-8' },
+        Subject: {
+          Data: `You're checked in — welcome to ${branding.brandName}`,
+          Charset: 'UTF-8',
+        },
         Body: {
           Html: { Data: html, Charset: 'UTF-8' },
           Text: { Data: text, Charset: 'UTF-8' },
@@ -905,14 +1013,19 @@ export class EmailService {
     };
 
     await this.getClient(branding.sesRegion).send(new SendEmailCommand(input));
-    this.logger.log(`Check-in confirmation email sent to ${opts.toEmail} (brand=${branding.brandName}, region=${branding.sesRegion})`);
+    this.logger.log(
+      `Check-in confirmation email sent to ${opts.toEmail} (brand=${branding.brandName}, region=${branding.sesRegion})`,
+    );
   }
 
-  private buildCheckinHtml(opts: {
-    firstName: string;
-    passkeys: Array<{ key: string; roomNumber: string }>;
-    lockerKeys?: Array<{ key: string; lockerLabel: string }>;
-  }, b: Branding): string {
+  private buildCheckinHtml(
+    opts: {
+      firstName: string;
+      passkeys: Array<{ key: string; roomNumber: string }>;
+      lockerKeys?: Array<{ key: string; lockerLabel: string }>;
+    },
+    b: Branding,
+  ): string {
     const passkeyRows = opts.passkeys
       .map(
         (p) => `<tr>
@@ -1021,11 +1134,14 @@ export class EmailService {
 </html>`;
   }
 
-  private buildCheckinText(opts: {
-    firstName: string;
-    passkeys: Array<{ key: string; roomNumber: string }>;
-    lockerKeys?: Array<{ key: string; lockerLabel: string }>;
-  }, b: Branding): string {
+  private buildCheckinText(
+    opts: {
+      firstName: string;
+      passkeys: Array<{ key: string; roomNumber: string }>;
+      lockerKeys?: Array<{ key: string; lockerLabel: string }>;
+    },
+    b: Branding,
+  ): string {
     const lines = [
       `${b.brandName.toUpperCase()} — You're Checked In!`,
       '─'.repeat(40),

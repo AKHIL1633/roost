@@ -58,8 +58,8 @@ export class SqsModule implements OnModuleInit {
       queueUrlEnvKey: SQS_QUEUE_URLS.EZEE_SYNC,
       worker: this.ezeeSyncWorker,
       maxMessages: 1,
-      visibilityTimeout: 120,      // eZee API can be slow
-      emptyPollDelayMs: 2000,       // Less aggressive polling
+      visibilityTimeout: 120, // eZee API can be slow
+      emptyPollDelayMs: 2000, // Less aggressive polling
     });
 
     // Notify queue — outbound notifications

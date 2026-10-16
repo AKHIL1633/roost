@@ -20,7 +20,8 @@ export class CreateTestBookingDto {
    */
   @IsString()
   @Matches(/^[+\d][\d\s-]{9,19}$/, {
-    message: 'phone must be a plausible phone number (digits, spaces or dashes; 10-20 chars)',
+    message:
+      'phone must be a plausible phone number (digits, spaces or dashes; 10-20 chars)',
   })
   phone!: string;
 

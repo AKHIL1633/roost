@@ -1,4 +1,9 @@
-import { Injectable, Logger, OnModuleInit, OnModuleDestroy } from '@nestjs/common';
+import {
+  Injectable,
+  Logger,
+  OnModuleInit,
+  OnModuleDestroy,
+} from '@nestjs/common';
 import { TicketsService } from './tickets.service';
 import { ZohoDeskService } from '../zoho-desk/zoho-desk.service';
 
@@ -26,7 +31,11 @@ export class ZohoSyncService implements OnModuleInit, OnModuleDestroy {
   ) {}
 
   private get enabled(): boolean {
-    if (process.env.ZOHO_SYNC_ENABLED !== 'true' || !this.zohoDesk.isConfigured()) return false;
+    if (
+      process.env.ZOHO_SYNC_ENABLED !== 'true' ||
+      !this.zohoDesk.isConfigured()
+    )
+      return false;
     // The ZohoWebhookController (webhooks/zoho-desk) is the PUSH-based reverse-sync path.
     // Once that webhook is configured in Zoho Desk, this pull loop is redundant AND
     // expensive: every tick issues one GET /tickets/{id} per still-open ticket (up to 50)
@@ -34,7 +43,10 @@ export class ZohoSyncService implements OnModuleInit, OnModuleDestroy {
     // credit budget (a single GET dwarfing every other call). So when the webhook secret is
     // present we skip polling entirely. Set ZOHO_SYNC_FORCE_POLL=true to re-enable the pull
     // as a manual backstop if a webhook delivery issue is ever suspected.
-    if (process.env.ZOHO_WEBHOOK_SECRET && process.env.ZOHO_SYNC_FORCE_POLL !== 'true') {
+    if (
+      process.env.ZOHO_WEBHOOK_SECRET &&
+      process.env.ZOHO_SYNC_FORCE_POLL !== 'true'
+    ) {
       return false;
     }
     return true;
@@ -43,7 +55,8 @@ export class ZohoSyncService implements OnModuleInit, OnModuleDestroy {
   onModuleInit(): void {
     if (!this.enabled) {
       const reason =
-        process.env.ZOHO_WEBHOOK_SECRET && process.env.ZOHO_SYNC_ENABLED === 'true'
+        process.env.ZOHO_WEBHOOK_SECRET &&
+        process.env.ZOHO_SYNC_ENABLED === 'true'
           ? 'webhook is configured (push-based) — polling skipped to conserve Zoho API credits; set ZOHO_SYNC_FORCE_POLL=true to force the pull backstop'
           : 'needs ZOHO_SYNC_ENABLED=true + Zoho Desk creds';
       this.logger.log(`Zoho reverse-sync disabled (${reason}).`);
@@ -63,12 +76,17 @@ export class ZohoSyncService implements OnModuleInit, OnModuleDestroy {
     if (this.running) return;
     this.running = true;
     try {
-      const { checked, changed } = await this.tickets.syncOpenTicketsFromZoho(50);
+      const { checked, changed } =
+        await this.tickets.syncOpenTicketsFromZoho(50);
       if (changed > 0) {
-        this.logger.log(`Zoho reverse-sync: ${changed} ticket(s) synced (of ${checked} checked)`);
+        this.logger.log(
+          `Zoho reverse-sync: ${changed} ticket(s) synced (of ${checked} checked)`,
+        );
       }
     } catch (err) {
-      this.logger.error(`Zoho reverse-sync tick failed: ${(err as Error).message}`);
+      this.logger.error(
+        `Zoho reverse-sync tick failed: ${(err as Error).message}`,
+      );
     } finally {
       this.running = false;
     }

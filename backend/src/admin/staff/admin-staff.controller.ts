@@ -44,7 +44,10 @@ export class AdminStaffController {
   }
 
   @Patch(':id/availability')
-  setAvailability(@Param('id') id: string, @Body('is_available') isAvailable: boolean) {
+  setAvailability(
+    @Param('id') id: string,
+    @Body('is_available') isAvailable: boolean,
+  ) {
     return this.staff.setAvailability(id, isAvailable);
   }
 
@@ -71,7 +74,10 @@ export class AdminStaffController {
    * call is rejected.
    */
   @Delete(':id/hard')
-  hardDelete(@Param('id') id: string, @Query('reassign_to') reassignTo?: string) {
+  hardDelete(
+    @Param('id') id: string,
+    @Query('reassign_to') reassignTo?: string,
+  ) {
     return this.staff.hardDelete(id, reassignTo);
   }
 }

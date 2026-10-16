@@ -47,10 +47,7 @@ export class GuestStoreController {
   /** Get cart contents for a booking. */
   @UseGuards(GuestJwtGuard)
   @Get('cart/:eri')
-  getCart(
-    @CurrentGuest() guest: GuestJwtPayload,
-    @Param('eri') eri: string,
-  ) {
+  getCart(@CurrentGuest() guest: GuestJwtPayload, @Param('eri') eri: string) {
     return this.storeService.getCart(guest, eri);
   }
 
@@ -91,10 +88,7 @@ export class GuestStoreController {
   /** Checkout / Pay — simulated payment. */
   @UseGuards(GuestJwtGuard)
   @Post('cart/:eri/checkout')
-  checkout(
-    @CurrentGuest() guest: GuestJwtPayload,
-    @Param('eri') eri: string,
-  ) {
+  checkout(@CurrentGuest() guest: GuestJwtPayload, @Param('eri') eri: string) {
     return this.storeService.checkout(guest, eri);
   }
 
@@ -151,10 +145,7 @@ export class GuestStoreController {
   /** Get all orders for a booking. */
   @UseGuards(GuestJwtGuard)
   @Get(':eri/orders')
-  getOrders(
-    @CurrentGuest() guest: GuestJwtPayload,
-    @Param('eri') eri: string,
-  ) {
+  getOrders(@CurrentGuest() guest: GuestJwtPayload, @Param('eri') eri: string) {
     return this.storeService.getOrders(guest, eri);
   }
 }

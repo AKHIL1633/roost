@@ -37,7 +37,9 @@ export class AdminStaffService {
   }
 
   async create(dto: CreateStaffDto) {
-    const property = await this.prisma.properties.findUnique({ where: { id: dto.property_id } });
+    const property = await this.prisma.properties.findUnique({
+      where: { id: dto.property_id },
+    });
     if (!property) throw new NotFoundException('property_id not found');
     const role = await this.staffRoles.assertActiveRole(dto.role);
     try {
@@ -53,8 +55,13 @@ export class AdminStaffService {
         },
       });
     } catch (e) {
-      if (e instanceof Prisma.PrismaClientKnownRequestError && e.code === 'P2002') {
-        throw new ConflictException('A staff member with this phone already exists at this property');
+      if (
+        e instanceof Prisma.PrismaClientKnownRequestError &&
+        e.code === 'P2002'
+      ) {
+        throw new ConflictException(
+          'A staff member with this phone already exists at this property',
+        );
       }
       throw e;
     }
@@ -62,19 +69,33 @@ export class AdminStaffService {
 
   async update(id: string, dto: UpdateStaffDto) {
     await this.getOrThrow(id);
-    const role = dto.role !== undefined ? await this.staffRoles.assertActiveRole(dto.role) : undefined;
+    const role =
+      dto.role !== undefined
+        ? await this.staffRoles.assertActiveRole(dto.role)
+        : undefined;
     // Deactivating an account also takes them off shift: an inactive staff must never
     // stay `is_available` (and thus assignable / counted on-duty). Mirrors deactivate()
     // and wins over any is_available also sent in the same request.
-    const forceOffShift = dto.is_active === false ? { is_available: false } : {};
+    const forceOffShift =
+      dto.is_active === false ? { is_available: false } : {};
     try {
       return await this.prisma.staff.update({
         where: { id },
-        data: { ...dto, ...(role !== undefined && { role }), ...forceOffShift, updated_at: new Date() },
+        data: {
+          ...dto,
+          ...(role !== undefined && { role }),
+          ...forceOffShift,
+          updated_at: new Date(),
+        },
       });
     } catch (e) {
-      if (e instanceof Prisma.PrismaClientKnownRequestError && e.code === 'P2002') {
-        throw new ConflictException('Another staff member at this property already uses this phone');
+      if (
+        e instanceof Prisma.PrismaClientKnownRequestError &&
+        e.code === 'P2002'
+      ) {
+        throw new ConflictException(
+          'Another staff member at this property already uses this phone',
+        );
       }
       throw e;
     }
@@ -150,8 +171,18 @@ export class AdminStaffService {
     ]);
     const reassignCandidates = liveTickets
       ? await this.prisma.staff.findMany({
-          where: { property_id: target.property_id, is_active: true, id: { not: id } },
-          select: { id: true, name: true, role: true, department: true, active_ticket_count: true },
+          where: {
+            property_id: target.property_id,
+            is_active: true,
+            id: { not: id },
+          },
+          select: {
+            id: true,
+            name: true,
+            role: true,
+            department: true,
+            active_ticket_count: true,
+          },
           orderBy: [{ active_ticket_count: 'asc' }, { name: 'asc' }],
         })
       : [];
@@ -184,7 +215,9 @@ export class AdminStaffService {
       assigned_staff_id: id,
       status: { in: LIVE_TICKET_STATUSES },
     };
-    const liveCount = await this.prisma.zoho_ticket_ref.count({ where: liveWhere });
+    const liveCount = await this.prisma.zoho_ticket_ref.count({
+      where: liveWhere,
+    });
 
     let successor: { id: string; name: string } | null = null;
     if (liveCount > 0) {
@@ -194,15 +227,24 @@ export class AdminStaffService {
         );
       }
       if (reassignTo === id) {
-        throw new BadRequestException('Cannot reassign tickets to the staff member being deleted');
+        throw new BadRequestException(
+          'Cannot reassign tickets to the staff member being deleted',
+        );
       }
-      const candidate = await this.prisma.staff.findUnique({ where: { id: reassignTo } });
-      if (!candidate) throw new NotFoundException('reassign_to staff member not found');
+      const candidate = await this.prisma.staff.findUnique({
+        where: { id: reassignTo },
+      });
+      if (!candidate)
+        throw new NotFoundException('reassign_to staff member not found');
       if (candidate.property_id !== target.property_id) {
-        throw new BadRequestException('reassign_to must be a staff member at the same property');
+        throw new BadRequestException(
+          'reassign_to must be a staff member at the same property',
+        );
       }
       if (!candidate.is_active) {
-        throw new BadRequestException('reassign_to must be an active staff member');
+        throw new BadRequestException(
+          'reassign_to must be an active staff member',
+        );
       }
       successor = { id: candidate.id, name: candidate.name };
     }
@@ -213,7 +255,10 @@ export class AdminStaffService {
         // least-loaded assignment stays honest.
         await tx.zoho_ticket_ref.updateMany({
           where: liveWhere,
-          data: { assigned_staff_id: successor.id, assigned_staff_name: successor.name },
+          data: {
+            assigned_staff_id: successor.id,
+            assigned_staff_name: successor.name,
+          },
         });
         await tx.staff.update({
           where: { id: successor.id },

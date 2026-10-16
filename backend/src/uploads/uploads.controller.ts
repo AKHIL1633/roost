@@ -31,9 +31,14 @@ export class UploadsController {
     this.uploadsDir = dir;
   }
 
-  private resolveSafePath(req: Request): { safeKey: string; targetFile: string } {
+  private resolveSafePath(req: Request): {
+    safeKey: string;
+    targetFile: string;
+  } {
     const paramMatch = (req.params as any)[0] || (req.params as any)['*'] || '';
-    const rawKey = decodeURIComponent(paramMatch || req.path.replace(/^\/uploads\/?/, ''));
+    const rawKey = decodeURIComponent(
+      paramMatch || req.path.replace(/^\/uploads\/?/, ''),
+    );
     const safeKey = rawKey.replace(/\.\./g, '').replace(/^\/+/, '');
     if (!safeKey) {
       throw new ForbiddenException('Invalid file path');

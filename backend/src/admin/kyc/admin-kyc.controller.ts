@@ -44,7 +44,10 @@ export class AdminKycController {
     @Param('slotId') slotId: string,
     @CurrentAdmin() admin: AdminJwtPayload,
   ) {
-    return this.adminKycService.getDocumentUrls(slotId, admin.property_id ?? null);
+    return this.adminKycService.getDocumentUrls(
+      slotId,
+      admin.property_id ?? null,
+    );
   }
 
   /**
@@ -64,7 +67,7 @@ export class AdminKycController {
     }
     return this.adminKycService.deleteDocument(
       slotId,
-      imageType as 'front' | 'back',
+      imageType,
       admin.property_id ?? null,
     );
   }

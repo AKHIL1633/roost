@@ -55,8 +55,27 @@ export class RoomSelectionService {
 
   /** Filler words stripped before deciding whether a short reply is a bare room attempt. */
   private static readonly FILLER = new Set([
-    'room', 'rooms', 'no', 'no.', 'number', 'num', 'the', 'in', 'is', 'my', 'put', 'send', 'to',
-    'for', 'a', 'it', 'this', 'please', 'pls', 'want', 'i',
+    'room',
+    'rooms',
+    'no',
+    'no.',
+    'number',
+    'num',
+    'the',
+    'in',
+    'is',
+    'my',
+    'put',
+    'send',
+    'to',
+    'for',
+    'a',
+    'it',
+    'this',
+    'please',
+    'pls',
+    'want',
+    'i',
   ]);
 
   constructor(private readonly prisma: PrismaService) {}
@@ -105,7 +124,9 @@ export class RoomSelectionService {
         },
       })
       .catch((err) =>
-        this.logger.error(`room-selection stash failed (${brand}/${waId}): ${(err as Error).message}`),
+        this.logger.error(
+          `room-selection stash failed (${brand}/${waId}): ${(err as Error).message}`,
+        ),
       );
   }
 
@@ -114,7 +135,11 @@ export class RoomSelectionService {
    * Consuming a selection or a topic change DELETES the row; a re-prompt keeps it (bumping the
    * idle window) so the guest gets another try.
    */
-  async consume(brand: string, waId: string, text: string): Promise<RoomSelectionOutcome> {
+  async consume(
+    brand: string,
+    waId: string,
+    text: string,
+  ): Promise<RoomSelectionOutcome> {
     const row = await this.prisma.wa_pending_room_selection.findUnique({
       where: { brand_wa_id: { brand, wa_id: waId } },
     });
@@ -131,7 +156,11 @@ export class RoomSelectionService {
 
     if (verdict.kind === 'match') {
       await this.deleteRow(brand, waId);
-      return { state: 'selected', room: verdict.room, pendingText: row.pending_text };
+      return {
+        state: 'selected',
+        room: verdict.room,
+        pendingText: row.pending_text,
+      };
     }
     if (verdict.kind === 'invalid') {
       // Keep the prompt alive for another attempt; bump the idle window.
@@ -152,7 +181,10 @@ export class RoomSelectionService {
   /** Bump the idle window so a prompt the guest is actively answering doesn't lapse mid-exchange. */
   private async touch(brand: string, waId: string): Promise<void> {
     await this.prisma.wa_pending_room_selection
-      .update({ where: { brand_wa_id: { brand, wa_id: waId } }, data: { last_message_at: new Date() } })
+      .update({
+        where: { brand_wa_id: { brand, wa_id: waId } },
+        data: { last_message_at: new Date() },
+      })
       .catch(() => undefined);
   }
 
@@ -165,7 +197,9 @@ export class RoomSelectionService {
   private parseRooms(raw: string): string[] {
     try {
       const arr = JSON.parse(raw);
-      return Array.isArray(arr) ? arr.map((r) => String(r)).filter(Boolean) : [];
+      return Array.isArray(arr)
+        ? arr.map((r) => String(r)).filter(Boolean)
+        : [];
     } catch {
       return [];
     }
@@ -196,7 +230,10 @@ export class RoomSelectionService {
       lower: c.toLowerCase(),
       digits: (c.match(/\d+/g) ?? []).join(''),
     }));
-    const tokens = raw.toLowerCase().split(/[^a-z0-9-]+/).filter(Boolean);
+    const tokens = raw
+      .toLowerCase()
+      .split(/[^a-z0-9-]+/)
+      .filter(Boolean);
 
     // 1. Collect EVERY room of theirs named in the reply ("room 103", "in 103", "306, 406").
     //    A guest who answers with more than one hasn't chosen — reporting `multi` lets the caller
@@ -205,16 +242,23 @@ export class RoomSelectionService {
     for (const t of tokens) {
       for (const c of cand) {
         if (t === c.lower) matched.add(c.room);
-        else if (c.digits && /^\d+$/.test(t) && t === c.digits) matched.add(c.room);
+        else if (c.digits && /^\d+$/.test(t) && t === c.digits)
+          matched.add(c.room);
       }
     }
     if (matched.size === 1) return { kind: 'match', room: [...matched][0] };
-    if (matched.size > 1) return { kind: 'multi', rooms: candidates.filter((c) => matched.has(c)) };
+    if (matched.size > 1)
+      return { kind: 'multi', rooms: candidates.filter((c) => matched.has(c)) };
 
     // 2. A bare room attempt that doesn't match any candidate → invalid (re-prompt). Only when the
     //    reply, minus filler words, is a single room-shaped token — never a real sentence.
-    const substantive = tokens.filter((t) => !RoomSelectionService.FILLER.has(t));
-    if (substantive.length === 1 && /^[a-z]?-?\d{1,4}[a-z]?$/.test(substantive[0])) {
+    const substantive = tokens.filter(
+      (t) => !RoomSelectionService.FILLER.has(t),
+    );
+    if (
+      substantive.length === 1 &&
+      /^[a-z]?-?\d{1,4}[a-z]?$/.test(substantive[0])
+    ) {
       return { kind: 'invalid', typed: substantive[0] };
     }
 
@@ -238,11 +282,18 @@ export class RoomSelectionService {
       lower: c.toLowerCase(),
       digits: (c.match(/\d+/g) ?? []).join(''),
     }));
-    const digitLens = new Set(cand.map((c) => c.digits.length).filter((n) => n > 0));
+    const digitLens = new Set(
+      cand.map((c) => c.digits.length).filter((n) => n > 0),
+    );
     const byLower = new Map(cand.map((c) => [c.lower, c.room]));
-    const byDigits = new Map(cand.filter((c) => c.digits).map((c) => [c.digits, c.room]));
+    const byDigits = new Map(
+      cand.filter((c) => c.digits).map((c) => [c.digits, c.room]),
+    );
 
-    const tokens = raw.toLowerCase().split(/[^a-z0-9-]+/).filter(Boolean);
+    const tokens = raw
+      .toLowerCase()
+      .split(/[^a-z0-9-]+/)
+      .filter(Boolean);
     const validHits = new Set<string>();
     let wrongRoom: string | null = null;
 
@@ -258,9 +309,14 @@ export class RoomSelectionService {
       }
     }
 
-    if (validHits.size === 1 && !wrongRoom) return { kind: 'match', room: [...validHits][0] };
+    if (validHits.size === 1 && !wrongRoom)
+      return { kind: 'match', room: [...validHits][0] };
     if (validHits.size >= 1) {
-      return { kind: 'ambiguous', rooms: [...validHits], ...(wrongRoom ? { wrongRoom } : {}) };
+      return {
+        kind: 'ambiguous',
+        rooms: [...validHits],
+        ...(wrongRoom ? { wrongRoom } : {}),
+      };
     }
     if (wrongRoom) return { kind: 'invalid', typed: wrongRoom };
     return { kind: 'none' };
@@ -281,7 +337,10 @@ export class RoomSelectionService {
     if (hit.kind !== 'match') return null;
     const roomLower = hit.room.toLowerCase();
     const roomDigits = (hit.room.match(/\d+/g) ?? []).join('');
-    const tokens = (text ?? '').toLowerCase().split(/[^a-z0-9-]+/).filter(Boolean);
+    const tokens = (text ?? '')
+      .toLowerCase()
+      .split(/[^a-z0-9-]+/)
+      .filter(Boolean);
     const leftover = tokens.filter(
       (t) =>
         !RoomSelectionService.FILLER.has(t) &&

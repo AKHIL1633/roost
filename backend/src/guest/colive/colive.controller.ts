@@ -43,10 +43,16 @@ export class ColiveController {
   getPropertyDetail(
     @Param('property_id') propertyId: string,
     @Query('move_in_date') moveInDate: string,
-    @Query('duration_months', new DefaultValuePipe(1), ParseIntPipe) durationMonths: number,
+    @Query('duration_months', new DefaultValuePipe(1), ParseIntPipe)
+    durationMonths: number,
     @Query('stay_type', new DefaultValuePipe('solo')) stayType: string,
   ) {
-    return this.coliveService.getPropertyDetail(propertyId, moveInDate, durationMonths, stayType);
+    return this.coliveService.getPropertyDetail(
+      propertyId,
+      moveInDate,
+      durationMonths,
+      stayType,
+    );
   }
 
   /**
@@ -56,7 +62,8 @@ export class ColiveController {
   @Get('properties/:property_id/addons')
   getAddons(
     @Param('property_id') propertyId: string,
-    @Query('duration_months', new DefaultValuePipe(1), ParseIntPipe) durationMonths: number,
+    @Query('duration_months', new DefaultValuePipe(1), ParseIntPipe)
+    durationMonths: number,
   ) {
     return this.coliveService.getAddons(propertyId, durationMonths);
   }

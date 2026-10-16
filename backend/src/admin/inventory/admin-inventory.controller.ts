@@ -129,7 +129,10 @@ export class AdminInventoryController {
     @Query('q') query: string,
     @CurrentAdmin() actor: AdminJwtPayload,
   ) {
-    return this.inventoryService.searchActiveGuests(query || '', actor.property_id);
+    return this.inventoryService.searchActiveGuests(
+      query || '',
+      actor.property_id,
+    );
   }
 
   @Post('borrowables/:productId/checkout')
@@ -149,7 +152,11 @@ export class AdminInventoryController {
     @Body('staff_id') staffId: string,
     @CurrentAdmin() actor: AdminJwtPayload,
   ) {
-    return this.inventoryService.verifyReturn(id, staffId || actor.admin_id, actor);
+    return this.inventoryService.verifyReturn(
+      id,
+      staffId || actor.admin_id,
+      actor,
+    );
   }
 
   // ──── RETURNABLE TRACKING ───────────────────────────────────────────────
@@ -167,7 +174,11 @@ export class AdminInventoryController {
     @Query('days') days: string,
     @CurrentAdmin() actor: AdminJwtPayload,
   ) {
-    return this.inventoryService.getReturnableForecast(productId, Math.min(Number(days) || 7, 14), actor);
+    return this.inventoryService.getReturnableForecast(
+      productId,
+      Math.min(Number(days) || 7, 14),
+      actor,
+    );
   }
 
   @Get('returnables/entitlements/:eri')

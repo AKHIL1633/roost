@@ -22,7 +22,9 @@ export class AdminPlaceOrderDto {
   ezee_reservation_id: string;
 
   @IsNotEmpty()
-  @Matches(/^\d{4}-\d{2}-\d{2}$/, { message: 'service_date must be YYYY-MM-DD' })
+  @Matches(/^\d{4}-\d{2}-\d{2}$/, {
+    message: 'service_date must be YYYY-MM-DD',
+  })
   service_date: string;
 
   @IsIn(['ORDER', 'SKIP'])

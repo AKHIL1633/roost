@@ -36,11 +36,19 @@ import { EzeeRoomGuestsService } from '../../ezee/ezee-room-guests.service';
 describe('EzeeSyncWorker.postFolioPayment', () => {
   let worker: EzeeSyncWorker;
   let ezee: { addPayment: jest.Mock; fetchBooking: jest.Mock };
-  let syncLogs: Array<{ id: string; action: string; status: string; error?: string | null }>;
+  let syncLogs: Array<{
+    id: string;
+    action: string;
+    status: string;
+    error?: string | null;
+  }>;
 
   /** Builds a FetchSingleBooking-shaped folio: one BookingTran per room. */
   const folioOf = (subs: Array<{ sub: string; paid: string }>) => ({
-    BookingTran: subs.map((s) => ({ SubBookingId: s.sub, TotalPayment: s.paid })),
+    BookingTran: subs.map((s) => ({
+      SubBookingId: s.sub,
+      TotalPayment: s.paid,
+    })),
   });
 
   const run = (over: Partial<Parameters<any>[0]> = {}) =>
@@ -65,7 +73,11 @@ describe('EzeeSyncWorker.postFolioPayment', () => {
     const prisma = {
       ezee_sync_log: {
         create: jest.fn(({ data }: any) => {
-          syncLogs.push({ id: data.id, action: data.action, status: data.status });
+          syncLogs.push({
+            id: data.id,
+            action: data.action,
+            status: data.status,
+          });
           return Promise.resolve(data);
         }),
         update: jest.fn(({ where, data }: any) => {
@@ -133,12 +145,20 @@ describe('EzeeSyncWorker.postFolioPayment', () => {
 
   it('warns when the capture exceeds what the folio says the stay costs', async () => {
     // Surfaces a pricing mismatch instead of leaving a silent negative balance.
-    const warn = jest.spyOn((worker as any).logger, 'warn').mockImplementation(() => undefined);
+    const warn = jest
+      .spyOn((worker as any).logger, 'warn')
+      .mockImplementation(() => undefined);
 
     await run({
       amount: 1.29,
       folio: {
-        BookingTran: [{ SubBookingId: '500', TotalPayment: '0.00', TotalAmountAfterTax: '1.05' }],
+        BookingTran: [
+          {
+            SubBookingId: '500',
+            TotalPayment: '0.00',
+            TotalAmountAfterTax: '1.05',
+          },
+        ],
       },
     });
 
@@ -179,7 +199,9 @@ describe('EzeeSyncWorker.postFolioPayment', () => {
   });
 
   it('re-reads the folio when step 3 did not supply one', async () => {
-    ezee.fetchBooking.mockResolvedValue(folioOf([{ sub: '500', paid: '0.00' }]));
+    ezee.fetchBooking.mockResolvedValue(
+      folioOf([{ sub: '500', paid: '0.00' }]),
+    );
 
     await run({ folio: null });
 
@@ -195,7 +217,10 @@ describe('EzeeSyncWorker.postFolioPayment', () => {
     await run({ folio: null });
 
     expect(ezee.addPayment).not.toHaveBeenCalled();
-    expect(syncLogs[0]).toMatchObject({ action: 'ADD_PAYMENT', status: 'FAILED' });
+    expect(syncLogs[0]).toMatchObject({
+      action: 'ADD_PAYMENT',
+      status: 'FAILED',
+    });
   });
 
   it('posts nothing when the folio has no BookingTran to verify against', async () => {
@@ -229,8 +254,11 @@ describe('EzeeSyncWorker.postFolioPayment', () => {
    */
   describe('buildEzeeRooms — coupon discount baked to paise', () => {
     const sel = (pricePerNight: number, quantity = 1) => ({
-      ezeeRoomTypeId: 'rt', ezeeRatePlanId: 'rp', ezeeRateTypeId: 'rtype',
-      quantity, pricePerNight,
+      ezeeRoomTypeId: 'rt',
+      ezeeRatePlanId: 'rp',
+      ezeeRateTypeId: 'rtype',
+      quantity,
+      pricePerNight,
     });
     const build = (sels: any[], nights: number, discount: number) =>
       (worker as any).buildEzeeRooms(sels, nights, 'A', 'B', 'note', discount);
@@ -263,7 +291,9 @@ describe('EzeeSyncWorker.postFolioPayment', () => {
   });
 
   it('swallows an AddPayment failure so the booking sync is not dead-lettered', async () => {
-    ezee.addPayment.mockRejectedValue(new EzeeApiError('110', 'Invalid payment id', 'AddPayment'));
+    ezee.addPayment.mockRejectedValue(
+      new EzeeApiError('110', 'Invalid payment id', 'AddPayment'),
+    );
 
     await expect(run()).resolves.toBeUndefined();
 
@@ -298,15 +328,26 @@ describe('EzeeSyncWorker.handleAutosyncWebhook — reservation-key namespacing',
   let worker: EzeeSyncWorker;
   let table: Map<string, any>;
 
-  const push = (property_id: string, UniqueID: string, operation = 'RESERVATION') =>
+  const push = (
+    property_id: string,
+    UniqueID: string,
+    operation = 'RESERVATION',
+  ) =>
     (worker as any).handleAutosyncWebhook({
       property_id,
       operation,
       reservation: {
         UniqueID,
         BookingTran: [
-          { SubBookingId: `${UniqueID}-1`, RoomName: '206', RoomTypeName: 'Suite',
-            Start: '2026-08-06', End: '2026-08-09', Email: 'g@example.com', Mobile: '919986997827' },
+          {
+            SubBookingId: `${UniqueID}-1`,
+            RoomName: '206',
+            RoomTypeName: 'Suite',
+            Start: '2026-08-06',
+            End: '2026-08-09',
+            Email: 'g@example.com',
+            Mobile: '919986997827',
+          },
         ],
       },
     });
@@ -316,7 +357,9 @@ describe('EzeeSyncWorker.handleAutosyncWebhook — reservation-key namespacing',
 
     const prisma = {
       ezee_booking_cache: {
-        findUnique: jest.fn(({ where }: any) => Promise.resolve(table.get(where.ezee_reservation_id) ?? null)),
+        findUnique: jest.fn(({ where }: any) =>
+          Promise.resolve(table.get(where.ezee_reservation_id) ?? null),
+        ),
         findMany: jest.fn(({ where }: any) =>
           Promise.resolve(
             [...table.values()].filter(
@@ -329,20 +372,30 @@ describe('EzeeSyncWorker.handleAutosyncWebhook — reservation-key namespacing',
         ),
         create: jest.fn(({ data }: any) => {
           if (table.has(data.ezee_reservation_id)) {
-            return Promise.reject(Object.assign(new Error('Unique constraint'), { code: 'P2002' }));
+            return Promise.reject(
+              Object.assign(new Error('Unique constraint'), { code: 'P2002' }),
+            );
           }
           table.set(data.ezee_reservation_id, { ...data });
           return Promise.resolve(data);
         }),
         update: jest.fn(({ where, data }: any) => {
           const row = table.get(where.ezee_reservation_id);
-          if (!row) return Promise.reject(new Error('row not found: ' + where.ezee_reservation_id));
+          if (!row)
+            return Promise.reject(
+              new Error('row not found: ' + where.ezee_reservation_id),
+            );
           Object.assign(row, data);
           return Promise.resolve(row);
         }),
       },
-      ezee_sync_log: { create: jest.fn(({ data }: any) => Promise.resolve(data)), update: jest.fn().mockResolvedValue({}) },
-      properties: { findUnique: jest.fn().mockResolvedValue({ brand: 'BUTEAK' }) },
+      ezee_sync_log: {
+        create: jest.fn(({ data }: any) => Promise.resolve(data)),
+        update: jest.fn().mockResolvedValue({}),
+      },
+      properties: {
+        findUnique: jest.fn().mockResolvedValue({ brand: 'BUTEAK' }),
+      },
     };
 
     const module: TestingModule = await Test.createTestingModule({
@@ -351,32 +404,53 @@ describe('EzeeSyncWorker.handleAutosyncWebhook — reservation-key namespacing',
         { provide: EzeeService, useValue: {} },
         { provide: PrismaService, useValue: prisma },
         { provide: CacheService, useValue: {} },
-        { provide: AutosyncSideEffectsService, useValue: { dispatch: jest.fn().mockResolvedValue(undefined) } },
+        {
+          provide: AutosyncSideEffectsService,
+          useValue: { dispatch: jest.fn().mockResolvedValue(undefined) },
+        },
         { provide: EmailService, useValue: {} },
-        { provide: EzeeRoomGuestsService, useValue: { buildRoomGuests: () => [], applyRoomGuests: jest.fn().mockResolvedValue(undefined) } },
+        {
+          provide: EzeeRoomGuestsService,
+          useValue: {
+            buildRoomGuests: () => [],
+            applyRoomGuests: jest.fn().mockResolvedValue(undefined),
+          },
+        },
       ],
     }).compile();
 
     worker = module.get<EzeeSyncWorker>(EzeeSyncWorker);
     // Guest resolution and the payment mirror hit collaborators this test
     // doesn't care about; the key is what's under test.
-    jest.spyOn(worker as any, 'findOrCreateGuestByEmail').mockResolvedValue('guest-1');
-    jest.spyOn(worker as any, 'ensurePrimaryAccess').mockResolvedValue(undefined);
-    jest.spyOn(worker as any, 'mirrorEzeePayments').mockResolvedValue(undefined);
+    jest
+      .spyOn(worker as any, 'findOrCreateGuestByEmail')
+      .mockResolvedValue('guest-1');
+    jest
+      .spyOn(worker as any, 'ensurePrimaryAccess')
+      .mockResolvedValue(undefined);
+    jest
+      .spyOn(worker as any, 'mirrorEzeePayments')
+      .mockResolvedValue(undefined);
   });
 
   it('keys a new booking by property, not by the bare reservation number', async () => {
     await push('61766', '98');
 
     expect([...table.keys()]).toEqual(['61766-EZEE-98']);
-    expect(table.get('61766-EZEE-98')).toMatchObject({ property_id: '61766', ezee_reservation_no: '98' });
+    expect(table.get('61766-EZEE-98')).toMatchObject({
+      property_id: '61766',
+      ezee_reservation_no: '98',
+    });
   });
 
   it('keeps two hotels that both have reservation 98 in separate rows', async () => {
     await push('61766', '98');
     await push('55402', '98');
 
-    expect([...table.keys()].sort()).toEqual(['55402-EZEE-98', '61766-EZEE-98']);
+    expect([...table.keys()].sort()).toEqual([
+      '55402-EZEE-98',
+      '61766-EZEE-98',
+    ]);
     expect(table.get('61766-EZEE-98').property_id).toBe('61766');
     expect(table.get('55402-EZEE-98').property_id).toBe('55402');
   });
@@ -384,23 +458,42 @@ describe('EzeeSyncWorker.handleAutosyncWebhook — reservation-key namespacing',
   it('adopts a pre-namespacing bare row when it belongs to the pushing property', async () => {
     // Its payments, tickets and access grants hang off this key — a new row
     // would strand all of them and leave the old one stuck CHECKED_IN forever.
-    table.set('98', { ezee_reservation_id: '98', property_id: '61766', status: 'CONFIRMED', guest_id: 'guest-1' });
+    table.set('98', {
+      ezee_reservation_id: '98',
+      property_id: '61766',
+      status: 'CONFIRMED',
+      guest_id: 'guest-1',
+    });
 
     await push('61766', '98', 'CHECKIN');
 
     expect([...table.keys()]).toEqual(['98']);
-    expect(table.get('98')).toMatchObject({ property_id: '61766', status: 'CHECKED_IN' });
+    expect(table.get('98')).toMatchObject({
+      property_id: '61766',
+      status: 'CHECKED_IN',
+    });
   });
 
   it('never touches a bare row stamped with a different property', async () => {
     // The exact #479 shape: BTM Layout squatted on key "98", then Koramangala's
     // reservation 98 pushed and used to overwrite it in place.
-    table.set('98', { ezee_reservation_id: '98', property_id: '55402', status: 'CONFIRMED', room_number: '404' });
+    table.set('98', {
+      ezee_reservation_id: '98',
+      property_id: '55402',
+      status: 'CONFIRMED',
+      room_number: '404',
+    });
 
     await push('61766', '98');
 
-    expect(table.get('98')).toMatchObject({ property_id: '55402', room_number: '404' });
-    expect(table.get('61766-EZEE-98')).toMatchObject({ property_id: '61766', room_number: '206' });
+    expect(table.get('98')).toMatchObject({
+      property_id: '55402',
+      room_number: '404',
+    });
+    expect(table.get('61766-EZEE-98')).toMatchObject({
+      property_id: '61766',
+      room_number: '206',
+    });
   });
 
   it('updates the namespaced row on a repeat push instead of duplicating it', async () => {
@@ -417,24 +510,48 @@ describe('EzeeSyncWorker.handleAutosyncWebhook — reservation-key namespacing',
     // guest resolver matches. Updating only the namespaced row would freeze the
     // bare one at CHECKED_IN forever: the guest would keep resolving as
     // in-house after leaving, and their checkout would never land.
-    table.set('98', { ezee_reservation_id: '98', property_id: '61766', status: 'CHECKED_IN', is_active: true });
-    table.set('61766-EZEE-98', { ezee_reservation_id: '61766-EZEE-98', property_id: '61766', status: 'CONFIRMED', is_active: true });
+    table.set('98', {
+      ezee_reservation_id: '98',
+      property_id: '61766',
+      status: 'CHECKED_IN',
+      is_active: true,
+    });
+    table.set('61766-EZEE-98', {
+      ezee_reservation_id: '61766-EZEE-98',
+      property_id: '61766',
+      status: 'CONFIRMED',
+      is_active: true,
+    });
 
     await push('61766', '98', 'CHECKOUT');
 
-    expect(table.get('61766-EZEE-98')).toMatchObject({ status: 'CHECKED_OUT', is_active: false });
-    expect(table.get('98')).toMatchObject({ status: 'CHECKED_OUT', is_active: false });
+    expect(table.get('61766-EZEE-98')).toMatchObject({
+      status: 'CHECKED_OUT',
+      is_active: false,
+    });
+    expect(table.get('98')).toMatchObject({
+      status: 'CHECKED_OUT',
+      is_active: false,
+    });
   });
 
   it('backfills ezee_reservation_no when adopting a pre-namespacing row', async () => {
     // A null here reads as "created locally, never pushed to eZee", which puts
     // the booking back in reconcileUnsyncedBookings()'s InsertBooking queue for
     // a reservation that already exists in eZee.
-    table.set('98', { ezee_reservation_id: '98', property_id: '61766', status: 'CONFIRMED', ezee_reservation_no: null });
+    table.set('98', {
+      ezee_reservation_id: '98',
+      property_id: '61766',
+      status: 'CONFIRMED',
+      ezee_reservation_no: null,
+    });
 
     await push('61766', '98', 'CHECKIN');
 
-    expect(table.get('98')).toMatchObject({ ezee_reservation_no: '98', status: 'CHECKED_IN' });
+    expect(table.get('98')).toMatchObject({
+      ezee_reservation_no: '98',
+      status: 'CHECKED_IN',
+    });
   });
 
   it('adopts a synced -LCL- row rather than creating a parallel booking', async () => {
@@ -442,14 +559,20 @@ describe('EzeeSyncWorker.handleAutosyncWebhook — reservation-key namespacing',
     // back. Under the old code this produced a second row — 69 of the 79 synced
     // local bookings in production have exactly that duplicate.
     table.set('61766-LCL-ABC123', {
-      ezee_reservation_id: '61766-LCL-ABC123', property_id: '61766',
-      ezee_reservation_no: '98', status: 'CONFIRMED', is_test: false,
+      ezee_reservation_id: '61766-LCL-ABC123',
+      property_id: '61766',
+      ezee_reservation_no: '98',
+      status: 'CONFIRMED',
+      is_test: false,
     });
 
     await push('61766', '98', 'CHECKIN');
 
     expect([...table.keys()]).toEqual(['61766-LCL-ABC123']);
-    expect(table.get('61766-LCL-ABC123')).toMatchObject({ status: 'CHECKED_IN', room_number: '206' });
+    expect(table.get('61766-LCL-ABC123')).toMatchObject({
+      status: 'CHECKED_IN',
+      room_number: '206',
+    });
   });
 
   it('keeps the real LCL + bare shape in step, with the LCL row primary', async () => {
@@ -459,28 +582,54 @@ describe('EzeeSyncWorker.handleAutosyncWebhook — reservation-key namespacing',
     // an earlier revision did, because it checked the bare key first — leaves
     // the LCL row and the money attached to it frozen at a stale status.
     table.set('61766-LCL-ABC', {
-      ezee_reservation_id: '61766-LCL-ABC', property_id: '61766',
-      ezee_reservation_no: '98', status: 'CHECKED_IN', is_test: false,
+      ezee_reservation_id: '61766-LCL-ABC',
+      property_id: '61766',
+      ezee_reservation_no: '98',
+      status: 'CHECKED_IN',
+      is_test: false,
     });
-    table.set('98', { ezee_reservation_id: '98', property_id: '61766', status: 'CONFIRMED' });
+    table.set('98', {
+      ezee_reservation_id: '98',
+      property_id: '61766',
+      status: 'CONFIRMED',
+    });
 
     await push('61766', '98', 'CHECKOUT');
 
-    expect(table.get('61766-LCL-ABC')).toMatchObject({ status: 'CHECKED_OUT', is_active: false });
-    expect(table.get('98')).toMatchObject({ status: 'CHECKED_OUT', is_active: false });
+    expect(table.get('61766-LCL-ABC')).toMatchObject({
+      status: 'CHECKED_OUT',
+      is_active: false,
+    });
+    expect(table.get('98')).toMatchObject({
+      status: 'CHECKED_OUT',
+      is_active: false,
+    });
     expect([...table.keys()].sort()).toEqual(['61766-LCL-ABC', '98']);
   });
 
   it('mirrors rather than inventing a third row when several rows claim one reservation', async () => {
-    table.set('61766-LCL-AAA', { ezee_reservation_id: '61766-LCL-AAA', property_id: '61766', ezee_reservation_no: '98', is_test: false });
-    table.set('61766-LCL-BBB', { ezee_reservation_id: '61766-LCL-BBB', property_id: '61766', ezee_reservation_no: '98', is_test: false });
+    table.set('61766-LCL-AAA', {
+      ezee_reservation_id: '61766-LCL-AAA',
+      property_id: '61766',
+      ezee_reservation_no: '98',
+      is_test: false,
+    });
+    table.set('61766-LCL-BBB', {
+      ezee_reservation_id: '61766-LCL-BBB',
+      property_id: '61766',
+      ezee_reservation_no: '98',
+      is_test: false,
+    });
 
     await push('61766', '98', 'CHECKIN');
 
     // Two local rows for one reservation is a data anomaly, but compounding it
     // with a third row helps nobody. Pick one deterministically, keep the other
     // in step, create nothing.
-    expect([...table.keys()].sort()).toEqual(['61766-LCL-AAA', '61766-LCL-BBB']);
+    expect([...table.keys()].sort()).toEqual([
+      '61766-LCL-AAA',
+      '61766-LCL-BBB',
+    ]);
     expect(table.get('61766-LCL-AAA').status).toBe('CHECKED_IN');
     expect(table.get('61766-LCL-BBB').status).toBe('CHECKED_IN');
   });
@@ -490,10 +639,23 @@ describe('EzeeSyncWorker.handleAutosyncWebhook — reservation-key namespacing',
     await push('60765', '98', 'CHECKIN');
     await push('61766', '98', 'CHECKOUT');
 
-    expect([...table.keys()].sort()).toEqual(['55402-EZEE-98', '60765-EZEE-98', '61766-EZEE-98']);
+    expect([...table.keys()].sort()).toEqual([
+      '55402-EZEE-98',
+      '60765-EZEE-98',
+      '61766-EZEE-98',
+    ]);
     // Each hotel's lifecycle moves on its own row and touches no other.
-    expect(table.get('55402-EZEE-98')).toMatchObject({ property_id: '55402', status: 'PENDING_PAYMENT' });
-    expect(table.get('60765-EZEE-98')).toMatchObject({ property_id: '60765', status: 'CHECKED_IN' });
-    expect(table.get('61766-EZEE-98')).toMatchObject({ property_id: '61766', status: 'CHECKED_OUT' });
+    expect(table.get('55402-EZEE-98')).toMatchObject({
+      property_id: '55402',
+      status: 'PENDING_PAYMENT',
+    });
+    expect(table.get('60765-EZEE-98')).toMatchObject({
+      property_id: '60765',
+      status: 'CHECKED_IN',
+    });
+    expect(table.get('61766-EZEE-98')).toMatchObject({
+      property_id: '61766',
+      status: 'CHECKED_OUT',
+    });
   });
 });

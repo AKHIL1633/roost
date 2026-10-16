@@ -1,5 +1,12 @@
 import {
-  IsString, IsInt, IsOptional, IsIn, IsArray, ValidateNested, Min, Max,
+  IsString,
+  IsInt,
+  IsOptional,
+  IsIn,
+  IsArray,
+  ValidateNested,
+  Min,
+  Max,
 } from 'class-validator';
 import { Type } from 'class-transformer';
 

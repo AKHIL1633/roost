@@ -98,5 +98,3 @@ import { UploadsModule } from './uploads/uploads.module';
   ],
 })
 export class AppModule {}
-
-

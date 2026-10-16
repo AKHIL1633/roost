@@ -24,7 +24,10 @@ export class TicketsController {
   ) {}
 
   @Get()
-  list(@Query('status') status?: string, @Query('property_id') propertyId?: string) {
+  list(
+    @Query('status') status?: string,
+    @Query('property_id') propertyId?: string,
+  ) {
     return this.prisma.zoho_ticket_ref.findMany({
       where: {
         ticket_type: 'SERVICE_REQUEST',
@@ -67,7 +70,10 @@ export class TicketsController {
       },
     });
     // created_at is UTC; also expose the exact IST trigger time for ops.
-    return rows.map((r) => ({ ...r, created_at_ist: toIstString(r.created_at) }));
+    return rows.map((r) => ({
+      ...r,
+      created_at_ist: toIstString(r.created_at),
+    }));
   }
 
   @Post(':id/acknowledge')

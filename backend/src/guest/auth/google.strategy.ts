@@ -28,8 +28,8 @@ export class GoogleStrategy extends PassportStrategy(Strategy, 'google') {
       'http://localhost:8000/guest/auth/google/callback';
 
     super({
-      clientID: clientID!,
-      clientSecret: clientSecret!,
+      clientID: clientID,
+      clientSecret: clientSecret,
       callbackURL,
       scope: ['openid', 'email', 'profile'],
     });
@@ -38,11 +38,17 @@ export class GoogleStrategy extends PassportStrategy(Strategy, 'google') {
     const log = new Logger(GoogleStrategy.name);
     const isMock = !clientID || clientID === 'mock-google-client-id';
     log.log(`Google OAuth config:`);
-    log.log(`  clientID:     ${isMock ? '⚠️  MOCK / MISSING (Real OAuth will fail with Error 401: invalid_client)' : clientID.substring(0, 12) + '...'}`);
-    log.log(`  clientSecret: ${clientSecret && clientSecret !== 'mock-google-client-secret' ? '***SET***' : '⚠️  MOCK / MISSING'}`);
+    log.log(
+      `  clientID:     ${isMock ? '⚠️  MOCK / MISSING (Real OAuth will fail with Error 401: invalid_client)' : clientID.substring(0, 12) + '...'}`,
+    );
+    log.log(
+      `  clientSecret: ${clientSecret && clientSecret !== 'mock-google-client-secret' ? '***SET***' : '⚠️  MOCK / MISSING'}`,
+    );
     log.log(`  callbackURL:  ${callbackURL}`);
     if (isMock) {
-      log.warn(`Google OAuth is not configured with a valid client ID. Check GOOGLE_OAUTH_CLIENT_ID in .env.`);
+      log.warn(
+        `Google OAuth is not configured with a valid client ID. Check GOOGLE_OAUTH_CLIENT_ID in .env.`,
+      );
     }
   }
 
@@ -52,7 +58,9 @@ export class GoogleStrategy extends PassportStrategy(Strategy, 'google') {
     profile: Profile,
     done: VerifyCallback,
   ): Promise<void> {
-    this.logger.log(`Google OAuth validate() called for: ${profile.displayName ?? profile.id}`);
+    this.logger.log(
+      `Google OAuth validate() called for: ${profile.displayName ?? profile.id}`,
+    );
 
     const email = profile.emails?.[0]?.value ?? null;
     const photo = profile.photos?.[0]?.value ?? null;

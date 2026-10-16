@@ -1,8 +1,5 @@
 import { Injectable, Logger } from '@nestjs/common';
-import {
-  SQSClient,
-  SendMessageCommand,
-} from '@aws-sdk/client-sqs';
+import { SQSClient, SendMessageCommand } from '@aws-sdk/client-sqs';
 import { v4 as uuidv4 } from 'uuid';
 import {
   SQS_QUEUE_URLS,
@@ -55,7 +52,9 @@ export class SqsProducerService {
   ): Promise<void> {
     const queueUrl = process.env[queueUrlEnvKey];
     if (!queueUrl) {
-      this.logger.warn(`SQS queue URL not configured: ${queueUrlEnvKey} — message dropped`);
+      this.logger.warn(
+        `SQS queue URL not configured: ${queueUrlEnvKey} — message dropped`,
+      );
       return;
     }
 
@@ -74,7 +73,9 @@ export class SqsProducerService {
           MessageDeduplicationId: `${type}-${uuidv4()}`,
         }),
       );
-      this.logger.log(`SQS sent [${type}] → ${queueUrlEnvKey} (group: ${messageGroupId})`);
+      this.logger.log(
+        `SQS sent [${type}] → ${queueUrlEnvKey} (group: ${messageGroupId})`,
+      );
     } catch (err) {
       this.logger.error(`SQS send failed [${type}]: ${(err as Error).message}`);
       // Don't throw — SQS failures should not break the request path
@@ -95,7 +96,9 @@ export class SqsProducerService {
   ): Promise<void> {
     const queueUrl = process.env[queueUrlEnvKey];
     if (!queueUrl) {
-      this.logger.warn(`SQS queue URL not configured: ${queueUrlEnvKey} — message dropped`);
+      this.logger.warn(
+        `SQS queue URL not configured: ${queueUrlEnvKey} — message dropped`,
+      );
       return;
     }
 
@@ -106,7 +109,9 @@ export class SqsProducerService {
     };
 
     const delay =
-      delaySeconds && delaySeconds > 0 ? Math.min(Math.round(delaySeconds), 900) : undefined;
+      delaySeconds && delaySeconds > 0
+        ? Math.min(Math.round(delaySeconds), 900)
+        : undefined;
 
     try {
       await this.sqs.send(
@@ -195,7 +200,9 @@ export class SqsProducerService {
   /**
    * Queue an eZee InsertBooking API call (rate-limited, processed one at a time).
    */
-  async sendEzeeInsertBooking(payload: EzeeInsertBookingPayload): Promise<void> {
+  async sendEzeeInsertBooking(
+    payload: EzeeInsertBookingPayload,
+  ): Promise<void> {
     await this.sendFifo(
       SQS_QUEUE_URLS.EZEE_SYNC,
       EzeeSyncMessageType.INSERT_BOOKING,
@@ -207,7 +214,9 @@ export class SqsProducerService {
   /**
    * Queue an eZee AddExtraCharge API call.
    */
-  async sendEzeeAddExtraCharge(payload: EzeeAddExtraChargePayload): Promise<void> {
+  async sendEzeeAddExtraCharge(
+    payload: EzeeAddExtraChargePayload,
+  ): Promise<void> {
     await this.sendFifo(
       SQS_QUEUE_URLS.EZEE_SYNC,
       EzeeSyncMessageType.ADD_EXTRA_CHARGE,
@@ -220,7 +229,9 @@ export class SqsProducerService {
    * Queue an eZee InsertBooking for a colive (long-stay) booking.
    * Uses the same FIFO ezee-sync queue, keyed by draft_booking_id.
    */
-  async sendEzeeInsertColiveBooking(payload: EzeeInsertColiveBookingPayload): Promise<void> {
+  async sendEzeeInsertColiveBooking(
+    payload: EzeeInsertColiveBookingPayload,
+  ): Promise<void> {
     await this.sendFifo(
       SQS_QUEUE_URLS.EZEE_SYNC,
       EzeeSyncMessageType.INSERT_COLIVE_BOOKING,
@@ -258,7 +269,10 @@ export class SqsProducerService {
    * @param delaySeconds - optional delivery delay so this message lands after an
    *   earlier one on the (unordered) NOTIFY queue (e.g. feedback after completion).
    */
-  async sendNotifyGuest(payload: NotifyGuestPayload, delaySeconds?: number): Promise<void> {
+  async sendNotifyGuest(
+    payload: NotifyGuestPayload,
+    delaySeconds?: number,
+  ): Promise<void> {
     await this.sendStandard(
       SQS_QUEUE_URLS.NOTIFY,
       NotifyMessageType.NOTIFY_GUEST,

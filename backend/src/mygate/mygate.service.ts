@@ -49,7 +49,9 @@ export class MyGateService {
       partnerId: parts[0],
       adminMobile: conn.admin_phone ?? '',
       mygatePropertyId: parts.length > 1 ? parts[1] : parts[0],
-      baseUrl: (conn.api_endpoint ?? 'https://knoxapi.mygate.com/partner-access').replace(/\/+$/, ''),
+      baseUrl: (
+        conn.api_endpoint ?? 'https://knoxapi.mygate.com/partner-access'
+      ).replace(/\/+$/, ''),
     };
   }
 
@@ -87,7 +89,13 @@ export class MyGateService {
       ? (data.expires_in - SESSION_BUFFER_S) * 1000
       : 55 * 60 * 1000;
 
-    const ctx: AuthContext = { sessionToken: data.session_token, partnerId, adminMobile, mygatePropertyId, baseUrl };
+    const ctx: AuthContext = {
+      sessionToken: data.session_token,
+      partnerId,
+      adminMobile,
+      mygatePropertyId,
+      baseUrl,
+    };
     await this.cache.set(cacheKey, ctx, ttlMs);
     this.logger.log(`MyGate authenticated for property ${propertyId}`);
 
@@ -116,25 +124,28 @@ export class MyGateService {
     const startTime = Math.floor(params.checkin.getTime() / 1000);
     const endTime = Math.floor(params.checkout.getTime() / 1000);
 
-    const createResp = await fetch(`${auth.baseUrl}/v1/accesses/generate-access`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'partner-id': auth.partnerId,
-        'mobile': auth.adminMobile,
-        'platform': '3',
-        'session-token': auth.sessionToken,
+    const createResp = await fetch(
+      `${auth.baseUrl}/v1/accesses/generate-access`,
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'partner-id': auth.partnerId,
+          mobile: auth.adminMobile,
+          platform: '3',
+          'session-token': auth.sessionToken,
+        },
+        body: JSON.stringify({
+          property_id: auth.mygatePropertyId,
+          room_id: params.mygateRoomId,
+          access_type: 'PASSCODE',
+          validity_type: 'TIMED',
+          start_time: startTime,
+          end_time: endTime,
+          access_name: params.accessName,
+        }),
       },
-      body: JSON.stringify({
-        property_id: auth.mygatePropertyId,
-        room_id: params.mygateRoomId,
-        access_type: 'PASSCODE',
-        validity_type: 'TIMED',
-        start_time: startTime,
-        end_time: endTime,
-        access_name: params.accessName,
-      }),
-    });
+    );
 
     const createData: MyGateApiResponse = await createResp.json();
     if (createData.es !== 0) {
@@ -147,8 +158,8 @@ export class MyGateService {
       {
         headers: {
           'partner-id': auth.partnerId,
-          'mobile': auth.adminMobile,
-          'platform': '3',
+          mobile: auth.adminMobile,
+          platform: '3',
           'session-token': auth.sessionToken,
         },
       },
@@ -156,19 +167,26 @@ export class MyGateService {
 
     const listData: any = await listResp.json();
     if (listData.es !== 0) {
-      throw new Error(`MyGate fetch accesses failed after PIN creation: ${listData.message}`);
+      throw new Error(
+        `MyGate fetch accesses failed after PIN creation: ${listData.message}`,
+      );
     }
 
     // Match by start_time — the access we just created
     const match = (listData.accesses ?? []).find(
-      (a: any) => a.start_time === startTime && a.access_name === params.accessName,
+      (a: any) =>
+        a.start_time === startTime && a.access_name === params.accessName,
     );
 
     if (!match?.access_value) {
-      throw new Error(`MyGate PIN not found in accesses after creation (room ${params.mygateRoomId})`);
+      throw new Error(
+        `MyGate PIN not found in accesses after creation (room ${params.mygateRoomId})`,
+      );
     }
 
-    this.logger.log(`MyGate PIN created for room ${params.mygateRoomId}: ${match.access_value}`);
+    this.logger.log(
+      `MyGate PIN created for room ${params.mygateRoomId}: ${match.access_value}`,
+    );
     return String(match.access_value);
   }
 
@@ -178,15 +196,18 @@ export class MyGateService {
    * Revokes a specific access by its MyGate access ID.
    * The access ID is obtained from the accesses list (GET /v1/rooms/{roomId}/accesses).
    */
-  async revokeAccessById(propertyId: string, mygateAccessId: string): Promise<void> {
+  async revokeAccessById(
+    propertyId: string,
+    mygateAccessId: string,
+  ): Promise<void> {
     const auth = await this.authenticate(propertyId);
 
     const resp = await fetch(`${auth.baseUrl}/v1/accesses/${mygateAccessId}`, {
       method: 'DELETE',
       headers: {
         'partner-id': auth.partnerId,
-        'mobile': auth.adminMobile,
-        'platform': '3',
+        mobile: auth.adminMobile,
+        platform: '3',
         'session-token': auth.sessionToken,
       },
     });
@@ -216,8 +237,8 @@ export class MyGateService {
         method: 'GET',
         headers: {
           'partner-id': auth.partnerId,
-          'mobile': auth.adminMobile,
-          'platform': '3',
+          mobile: auth.adminMobile,
+          platform: '3',
           'session-token': auth.sessionToken,
         },
       },
@@ -226,9 +247,13 @@ export class MyGateService {
     const data: any = await resp.json();
     if (data.es !== 0) return;
 
-    const match = (data.accesses ?? []).find((a: any) => a.access_value === pin);
+    const match = (data.accesses ?? []).find(
+      (a: any) => a.access_value === pin,
+    );
     if (!match) {
-      this.logger.warn(`MyGate revokeByPin: no active access found with PIN ${pin} on room ${mygateRoomId}`);
+      this.logger.warn(
+        `MyGate revokeByPin: no active access found with PIN ${pin} on room ${mygateRoomId}`,
+      );
       return;
     }
 
@@ -271,11 +296,15 @@ export class MyGateService {
     }
 
     if (!roomNumber) {
-      this.logger.warn(`MyGate provision skipped for ${eri}: no room number assigned yet`);
+      this.logger.warn(
+        `MyGate provision skipped for ${eri}: no room number assigned yet`,
+      );
       return;
     }
     if (!checkin || !checkout) {
-      this.logger.warn(`MyGate provision skipped for ${eri}: missing checkin/checkout dates`);
+      this.logger.warn(
+        `MyGate provision skipped for ${eri}: missing checkin/checkout dates`,
+      );
       return;
     }
 
@@ -284,13 +313,19 @@ export class MyGateService {
       where: { ezee_reservation_id: eri, pin_status: 'ACTIVE' },
     });
     if (existing) {
-      this.logger.log(`MyGate provision skipped for ${eri}: active PIN already exists`);
+      this.logger.log(
+        `MyGate provision skipped for ${eri}: active PIN already exists`,
+      );
       return;
     }
 
     // Find the physical lock for this room
     const device = await this.prisma.mygate_devices.findFirst({
-      where: { property_id: propertyId, room_number: roomNumber, is_active: true },
+      where: {
+        property_id: propertyId,
+        room_number: roomNumber,
+        is_active: true,
+      },
     });
     if (!device) {
       this.logger.warn(
@@ -354,17 +389,21 @@ export class MyGateService {
         },
       });
 
-      this.logger.log(`MyGate PIN provisioned for ${eri}: room ${roomNumber}, PIN ${pin}`);
+      this.logger.log(
+        `MyGate PIN provisioned for ${eri}: room ${roomNumber}, PIN ${pin}`,
+      );
 
       if (guestEmail) {
-        await this.email.sendCheckinEmail({
-          toEmail: guestEmail,
-          firstName: guestName.split(' ')[0] ?? 'there',
-          passkeys: [{ key: pin, roomNumber }],
-          propertyId,
-        }).catch((e: Error) =>
-          this.logger.warn(`Check-in email failed for ${eri}: ${e.message}`),
-        );
+        await this.email
+          .sendCheckinEmail({
+            toEmail: guestEmail,
+            firstName: guestName.split(' ')[0] ?? 'there',
+            passkeys: [{ key: pin, roomNumber }],
+            propertyId,
+          })
+          .catch((e: Error) =>
+            this.logger.warn(`Check-in email failed for ${eri}: ${e.message}`),
+          );
       }
     } catch (err) {
       this.logger.error(

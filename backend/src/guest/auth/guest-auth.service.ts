@@ -111,14 +111,18 @@ export class GuestAuthService {
       otp_sent = true;
       this.logger.log(`Verification OTP auto-sent to ${dto.email} on signup`);
     } catch (err) {
-      this.logger.warn(`Auto-send OTP failed for ${dto.email}: ${(err as Error).message}`);
+      this.logger.warn(
+        `Auto-send OTP failed for ${dto.email}: ${(err as Error).message}`,
+      );
     }
 
     return {
       access_token: token,
       guest: this.formatGuest(guest),
       otp_sent,
-      ...(process.env.NODE_ENV !== 'production' && generatedOtp ? { dev_otp: generatedOtp } : {}),
+      ...(process.env.NODE_ENV !== 'production' && generatedOtp
+        ? { dev_otp: generatedOtp }
+        : {}),
     };
   }
 
@@ -138,10 +142,17 @@ export class GuestAuthService {
 
     // 2FA: send OTP email and require a second step before issuing the token
     if (guest.two_fa_enabled && guest.email) {
-      const twoFaOtp = await this.sendTwoFaOtp(guest.id, guest.email, guest.name, brand);
+      const twoFaOtp = await this.sendTwoFaOtp(
+        guest.id,
+        guest.email,
+        guest.name,
+        brand,
+      );
       return {
         requires_2fa: true,
-        ...(process.env.NODE_ENV !== 'production' && twoFaOtp ? { dev_otp: twoFaOtp } : {}),
+        ...(process.env.NODE_ENV !== 'production' && twoFaOtp
+          ? { dev_otp: twoFaOtp }
+          : {}),
       };
     }
 
@@ -168,7 +179,9 @@ export class GuestAuthService {
     });
 
     if (!log) {
-      throw new BadRequestException('OTP expired or not found. Please log in again.');
+      throw new BadRequestException(
+        'OTP expired or not found. Please log in again.',
+      );
     }
 
     const valid = await bcrypt.compare(otp, log.otp_hash);
@@ -194,7 +207,12 @@ export class GuestAuthService {
     return { two_fa_enabled: guest.two_fa_enabled };
   }
 
-  private async sendTwoFaOtp(guestId: string, email: string, name: string | null, brand: Brand): Promise<string | null> {
+  private async sendTwoFaOtp(
+    guestId: string,
+    email: string,
+    name: string | null,
+    brand: Brand,
+  ): Promise<string | null> {
     // Rate-limit: one OTP per 60 seconds
     const recent = await this.prisma.otp_logs.findFirst({
       where: {
@@ -235,7 +253,9 @@ export class GuestAuthService {
       });
       return otp;
     } catch (err) {
-      await this.prisma.otp_logs.delete({ where: { id: otpId } }).catch(() => null);
+      await this.prisma.otp_logs
+        .delete({ where: { id: otpId } })
+        .catch(() => null);
       throw err;
     }
   }
@@ -298,7 +318,9 @@ export class GuestAuthService {
       date_of_birth?: string;
     },
   ) {
-    const guest = await this.prisma.guests.findUnique({ where: { id: guestId } });
+    const guest = await this.prisma.guests.findUnique({
+      where: { id: guestId },
+    });
     if (!guest) {
       throw new NotFoundException('Guest not found');
     }
@@ -366,7 +388,9 @@ export class GuestAuthService {
   private parseDateOfBirth(raw: string): Date {
     const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(raw);
     if (!m) {
-      throw new BadRequestException('date_of_birth must be in YYYY-MM-DD format');
+      throw new BadRequestException(
+        'date_of_birth must be in YYYY-MM-DD format',
+      );
     }
     const [y, mo, d] = [Number(m[1]), Number(m[2]), Number(m[3])];
     const dob = new Date(Date.UTC(y, mo - 1, d));
@@ -376,7 +400,9 @@ export class GuestAuthService {
       dob.getUTCMonth() !== mo - 1 ||
       dob.getUTCDate() !== d
     ) {
-      throw new BadRequestException('date_of_birth is not a valid calendar date');
+      throw new BadRequestException(
+        'date_of_birth is not a valid calendar date',
+      );
     }
 
     const now = new Date();
@@ -453,7 +479,9 @@ export class GuestAuthService {
         propertyId: BRAND_TO_DEFAULT_PROPERTY[brand],
       });
     } catch (err) {
-      await this.prisma.otp_logs.delete({ where: { id: otpId } }).catch(() => null);
+      await this.prisma.otp_logs
+        .delete({ where: { id: otpId } })
+        .catch(() => null);
       throw err;
     }
 
@@ -483,7 +511,9 @@ export class GuestAuthService {
     });
 
     if (!log) {
-      throw new BadRequestException('OTP expired or not found. Please request a new one.');
+      throw new BadRequestException(
+        'OTP expired or not found. Please request a new one.',
+      );
     }
 
     const valid = await bcrypt.compare(otp, log.otp_hash);
@@ -570,7 +600,9 @@ export class GuestAuthService {
       });
     } catch (err) {
       // Roll back the OTP record so the guest isn't blocked by the rate limit
-      await this.prisma.otp_logs.delete({ where: { id: otpId } }).catch(() => null);
+      await this.prisma.otp_logs
+        .delete({ where: { id: otpId } })
+        .catch(() => null);
       throw err;
     }
 
@@ -581,7 +613,12 @@ export class GuestAuthService {
     };
   }
 
-  async resetPassword(email: string, otp: string, newPassword: string, brand: Brand) {
+  async resetPassword(
+    email: string,
+    otp: string,
+    newPassword: string,
+    brand: Brand,
+  ) {
     const guest = await this.prisma.guests.findUnique({ where: { email } });
     if (!guest) {
       throw new NotFoundException('No account found with this email address');
@@ -600,7 +637,9 @@ export class GuestAuthService {
     });
 
     if (!log) {
-      throw new BadRequestException('OTP expired or not found. Please request a new one.');
+      throw new BadRequestException(
+        'OTP expired or not found. Please request a new one.',
+      );
     }
 
     const valid = await bcrypt.compare(otp, log.otp_hash);
@@ -631,7 +670,9 @@ export class GuestAuthService {
   // ─── GOOGLE OAUTH ─────────────────────────────────────────────────────────
 
   async googleLogin(googleUser: GoogleOAuthUser, brand: Brand) {
-    this.logger.log(`[GoogleOAuth] Starting login for google_id=${googleUser.google_id}, email=${googleUser.email}, name=${googleUser.name}`);
+    this.logger.log(
+      `[GoogleOAuth] Starting login for google_id=${googleUser.google_id}, email=${googleUser.email}, name=${googleUser.name}`,
+    );
 
     // 1. Check if this Google ID is already linked
     const existingProvider = await this.prisma.auth_providers.findUnique({
@@ -647,7 +688,9 @@ export class GuestAuthService {
     if (existingProvider) {
       // Returning Google user — just issue token
       const guest = existingProvider.guests;
-      this.logger.log(`[GoogleOAuth] Returning user found: guest_id=${guest.id}`);
+      this.logger.log(
+        `[GoogleOAuth] Returning user found: guest_id=${guest.id}`,
+      );
       this.autoLinkBookings(guest, brand);
       return {
         access_token: this.issueToken(guest, brand),
@@ -655,15 +698,21 @@ export class GuestAuthService {
       };
     }
 
-    this.logger.log(`[GoogleOAuth] No existing provider found, checking email...`);
+    this.logger.log(
+      `[GoogleOAuth] No existing provider found, checking email...`,
+    );
 
     // 2. No Google provider found — check if email already exists (email/password account)
     let guest = googleUser.email
-      ? await this.prisma.guests.findUnique({ where: { email: googleUser.email } })
+      ? await this.prisma.guests.findUnique({
+          where: { email: googleUser.email },
+        })
       : null;
 
     if (guest) {
-      this.logger.log(`[GoogleOAuth] Email match found: guest_id=${guest.id}, linking Google provider...`);
+      this.logger.log(
+        `[GoogleOAuth] Email match found: guest_id=${guest.id}, linking Google provider...`,
+      );
       // Existing email account — link Google as an additional provider
       await this.prisma.auth_providers.create({
         data: {
@@ -681,7 +730,8 @@ export class GuestAuthService {
           where: { id: guest.id },
           data: {
             email_verified: true,
-            profile_photo_url: guest.profile_photo_url ?? googleUser.profile_photo_url,
+            profile_photo_url:
+              guest.profile_photo_url ?? googleUser.profile_photo_url,
           },
         });
         this.logger.log(`[GoogleOAuth] Email marked as verified`);
@@ -703,8 +753,8 @@ export class GuestAuthService {
         name: googleUser.name,
         email: googleUser.email || null,
         phone: null,
-        password_hash: null,           // OAuth-only account — no password
-        email_verified: true,          // Google already verified the email
+        password_hash: null, // OAuth-only account — no password
+        email_verified: true, // Google already verified the email
         phone_verified: false,
         profile_photo_url: googleUser.profile_photo_url,
       },
@@ -802,13 +852,19 @@ export class GuestAuthService {
       const existingLinks = await this.prisma.booking_guest_access.findMany({
         where: {
           guest_id: guest.id,
-          ezee_reservation_id: { in: matchingBookings.map((b) => b.ezee_reservation_id) },
+          ezee_reservation_id: {
+            in: matchingBookings.map((b) => b.ezee_reservation_id),
+          },
         },
         select: { ezee_reservation_id: true },
       });
-      const linkedSet = new Set(existingLinks.map((l) => l.ezee_reservation_id));
+      const linkedSet = new Set(
+        existingLinks.map((l) => l.ezee_reservation_id),
+      );
 
-      const toLink = matchingBookings.filter((b) => !linkedSet.has(b.ezee_reservation_id));
+      const toLink = matchingBookings.filter(
+        (b) => !linkedSet.has(b.ezee_reservation_id),
+      );
       if (toLink.length === 0) return;
 
       for (const booking of toLink) {
@@ -854,25 +910,45 @@ export class GuestAuthService {
               where: { id: booking.property_id },
               select: { name: true },
             });
-            this.emailService.sendOtaBookingLinkedEmail({
-              toEmail: guest.email,
-              firstName: guest.name?.split(' ')[0] ?? 'there',
-              bookingId: booking.ezee_reservation_id,
-              propertyName: prop?.name ?? 'The Daily Social',
-              roomTypeName: booking.room_type_name ?? 'your room',
-              checkinDate: booking.checkin_date?.toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }) ?? '',
-              checkoutDate: booking.checkout_date?.toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }) ?? '',
-              source: booking.source ?? 'an OTA',
-              propertyId: booking.property_id,
-            }).catch((e: Error) => this.logger.warn(`Auto-link email failed for ${booking.ezee_reservation_id}: ${e.message}`));
+            this.emailService
+              .sendOtaBookingLinkedEmail({
+                toEmail: guest.email,
+                firstName: guest.name?.split(' ')[0] ?? 'there',
+                bookingId: booking.ezee_reservation_id,
+                propertyName: prop?.name ?? 'The Daily Social',
+                roomTypeName: booking.room_type_name ?? 'your room',
+                checkinDate:
+                  booking.checkin_date?.toLocaleDateString('en-IN', {
+                    day: '2-digit',
+                    month: 'short',
+                    year: 'numeric',
+                  }) ?? '',
+                checkoutDate:
+                  booking.checkout_date?.toLocaleDateString('en-IN', {
+                    day: '2-digit',
+                    month: 'short',
+                    year: 'numeric',
+                  }) ?? '',
+                source: booking.source ?? 'an OTA',
+                propertyId: booking.property_id,
+              })
+              .catch((e: Error) =>
+                this.logger.warn(
+                  `Auto-link email failed for ${booking.ezee_reservation_id}: ${e.message}`,
+                ),
+              );
           } catch (emailErr) {
-            this.logger.warn(`Failed to resolve property for auto-link email: ${(emailErr as Error).message}`);
+            this.logger.warn(
+              `Failed to resolve property for auto-link email: ${(emailErr as Error).message}`,
+            );
           }
         }
       }
     } catch (err) {
       // Non-fatal — guest can always link manually
-      this.logger.warn(`Auto-link failed for guest ${guest.id}: ${(err as Error).message}`);
+      this.logger.warn(
+        `Auto-link failed for guest ${guest.id}: ${(err as Error).message}`,
+      );
     }
   }
 

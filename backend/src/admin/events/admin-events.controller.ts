@@ -39,7 +39,9 @@ export class AdminEventsController {
   @RequirePermission('events.view')
   listEvents(@CurrentAdmin() actor: AdminJwtPayload) {
     if (!actor.property_id) {
-      throw new BadRequestException('Active property missing from session — log in again');
+      throw new BadRequestException(
+        'Active property missing from session — log in again',
+      );
     }
     return this.eventsService.listEvents(actor.property_id);
   }
@@ -62,16 +64,15 @@ export class AdminEventsController {
 
   @Delete(':id')
   @RequirePermission('events.edit')
-  deleteEvent(
-    @Param('id') id: string,
-    @CurrentAdmin() actor: AdminJwtPayload,
-  ) {
+  deleteEvent(@Param('id') id: string, @CurrentAdmin() actor: AdminJwtPayload) {
     return this.eventsService.deleteEvent(id, actor);
   }
 
   @Post('upload-poster')
   @RequirePermission('events.edit')
-  @UseInterceptors(FileInterceptor('file', { limits: { fileSize: 10 * 1024 * 1024 } }))
+  @UseInterceptors(
+    FileInterceptor('file', { limits: { fileSize: 10 * 1024 * 1024 } }),
+  )
   uploadPoster(
     @UploadedFile() file: Express.Multer.File,
     @CurrentAdmin() actor: AdminJwtPayload,

@@ -20,7 +20,10 @@ import { AnonymousCreateBookingOrderDto } from './dto/anonymous-create-booking-o
 import { PreviewCouponDto } from './dto/preview-coupon.dto';
 import { CurrentGuest } from '../../common/decorators/current-guest.decorator';
 import type { GuestJwtPayload } from '../../common/guards/guest-jwt.strategy';
-import { resolveBrandFromRequest, resolvePropertyFromRequest } from '../../common/property-resolver';
+import {
+  resolveBrandFromRequest,
+  resolvePropertyFromRequest,
+} from '../../common/property-resolver';
 
 @Controller('guest/booking')
 export class GuestBookingController {
@@ -67,12 +70,18 @@ export class GuestBookingController {
     @Query('checkout') checkout: string,
   ) {
     if (!checkin || !checkout) {
-      throw new BadRequestException('checkin and checkout query params are required');
+      throw new BadRequestException(
+        'checkin and checkout query params are required',
+      );
     }
     if (!propertyId) {
       throw new BadRequestException('property_id query param is required');
     }
-    return this.bookingService.getRoomAvailability(propertyId, checkin, checkout);
+    return this.bookingService.getRoomAvailability(
+      propertyId,
+      checkin,
+      checkout,
+    );
   }
 
   /**
@@ -112,7 +121,10 @@ export class GuestBookingController {
    */
   @UseGuards(AuthGuard('guest-jwt'))
   @Get('mine')
-  async getMyBookings(@CurrentGuest() guest: GuestJwtPayload, @Req() req: Request) {
+  async getMyBookings(
+    @CurrentGuest() guest: GuestJwtPayload,
+    @Req() req: Request,
+  ) {
     // Brand comes from JWT (issued at login/signup time). For tokens issued
     // before brand-isolation rollout, the JWT strategy fills it in from Host
     // header, so we can safely assume it's always set here.
@@ -157,7 +169,9 @@ export class GuestBookingController {
   ) {
     const brand = resolveBrandFromRequest(req);
     if (brand !== 'BUTEAK') {
-      throw new ForbiddenException('Anonymous booking is available on BUTEAK only');
+      throw new ForbiddenException(
+        'Anonymous booking is available on BUTEAK only',
+      );
     }
 
     const property = await this.prisma.properties.findUnique({
@@ -208,7 +222,9 @@ export class GuestBookingController {
       throw new ForbiddenException('Anonymous coupon listing is BUTEAK-only');
     }
     if (!propertyId || !/^[0-9]+$/.test(propertyId)) {
-      throw new BadRequestException('property_id is required (numeric eZee hotel code)');
+      throw new BadRequestException(
+        'property_id is required (numeric eZee hotel code)',
+      );
     }
     const property = await this.prisma.properties.findUnique({
       where: { id: propertyId },
@@ -294,7 +310,9 @@ export class GuestBookingController {
   @Get('coupons/available')
   async listAvailableCoupons(@Query('property_id') propertyId: string) {
     if (!propertyId || !/^[0-9]+$/.test(propertyId)) {
-      throw new BadRequestException('property_id is required (numeric eZee hotel code)');
+      throw new BadRequestException(
+        'property_id is required (numeric eZee hotel code)',
+      );
     }
     const items = await this.bookingService.listAvailableCoupons(propertyId);
     return { items };

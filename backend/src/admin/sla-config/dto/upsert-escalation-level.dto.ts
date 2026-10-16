@@ -1,4 +1,10 @@
-import { IsIn, IsOptional, IsString, MaxLength, IsBoolean } from 'class-validator';
+import {
+  IsIn,
+  IsOptional,
+  IsString,
+  MaxLength,
+  IsBoolean,
+} from 'class-validator';
 
 /**
  * Upsert one escalation ladder level (identified by the level number in the URL).

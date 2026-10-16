@@ -11,14 +11,16 @@ export class SubmitKycDto {
   @IsNotEmpty()
   @IsString()
   @IsIn(['INDIAN'], {
-    message: 'International guests — please contact the front desk for manual check-in',
+    message:
+      'International guests — please contact the front desk for manual check-in',
   })
   nationality_type: string;
 
   @IsNotEmpty()
   @IsString()
   @IsIn(['AADHAAR', 'VOTER_ID', 'DRIVING_LICENCE', 'PASSPORT'], {
-    message: 'Accepted IDs: Aadhaar, Voter ID, Driving Licence, Passport. PAN is not accepted.',
+    message:
+      'Accepted IDs: Aadhaar, Voter ID, Driving Licence, Passport. PAN is not accepted.',
   })
   id_type: string;
 
@@ -53,7 +55,8 @@ export class SubmitKycDto {
   @IsNotEmpty()
   @IsString()
   @IsIn(['BUSINESS', 'LEISURE', 'MEDICAL', 'TRANSIT', 'OTHER'], {
-    message: 'Purpose must be one of: BUSINESS, LEISURE, MEDICAL, TRANSIT, OTHER',
+    message:
+      'Purpose must be one of: BUSINESS, LEISURE, MEDICAL, TRANSIT, OTHER',
   })
   purpose: string;
 

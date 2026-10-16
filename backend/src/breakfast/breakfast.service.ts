@@ -23,7 +23,12 @@ import { UpdateSlotDto } from './dto/update-slot.dto';
 import { SubmitBreakfastOrderDto } from './dto/submit-breakfast-order.dto';
 import { AdminPlaceOrderDto } from './dto/admin-place-order.dto';
 
-export type LinkState = 'valid' | 'checked_out' | 'revoked' | 'not_found' | 'disabled';
+export type LinkState =
+  | 'valid'
+  | 'checked_out'
+  | 'revoked'
+  | 'not_found'
+  | 'disabled';
 export type WindowState = 'open' | 'frozen';
 
 export interface OrderWindow {
@@ -224,7 +229,9 @@ export class BreakfastService {
   }
 
   private validHour(n: number | null | undefined): number | null {
-    return typeof n === 'number' && Number.isInteger(n) && n >= 0 && n <= 23 ? n : null;
+    return typeof n === 'number' && Number.isInteger(n) && n >= 0 && n <= 23
+      ? n
+      : null;
   }
 
   /**
@@ -232,13 +239,17 @@ export class BreakfastService {
    * source of truth; if a config row is missing (breakfast would be disabled anyway) we fall back
    * to the BREAKFAST_ORDER_OPEN_HOUR / BREAKFAST_FREEZE_HOUR env defaults.
    */
-  async windowForProperty(propertyId: string, now: Date = new Date()): Promise<OrderWindow> {
+  async windowForProperty(
+    propertyId: string,
+    now: Date = new Date(),
+  ): Promise<OrderWindow> {
     const cfg = await this.prisma.breakfast_config.findUnique({
       where: { property_id: propertyId },
       select: { order_open_hour: true, order_freeze_hour: true },
     });
     const open = this.validHour(cfg?.order_open_hour) ?? this.envOpenHour();
-    const freeze = this.validHour(cfg?.order_freeze_hour) ?? this.envFreezeHour();
+    const freeze =
+      this.validHour(cfg?.order_freeze_hour) ?? this.envFreezeHour();
     return this.computeWindow(now, open, freeze);
   }
 
@@ -278,7 +289,10 @@ export class BreakfastService {
   }
 
   /** Reservation-level head count — the only figure we have for a room eZee gave no snapshot for. */
-  private cacheCap(row: { no_of_adults: number | null; no_of_guests: number | null }): number {
+  private cacheCap(row: {
+    no_of_adults: number | null;
+    no_of_guests: number | null;
+  }): number {
     const n = row.no_of_adults ?? row.no_of_guests ?? 1;
     return n > 0 ? n : 0;
   }
@@ -358,7 +372,8 @@ export class BreakfastService {
     const nowRel = (isTodayTarget ? 0 : -1440) + hour * 60 + minute;
     const openRel = open * 60 - 1440; // opens the evening before serviceDate
     const closeRel = freeze * 60; // freezes on serviceDate morning
-    const state: WindowState = nowRel >= openRel && nowRel < closeRel ? 'open' : 'frozen';
+    const state: WindowState =
+      nowRel >= openRel && nowRel < closeRel ? 'open' : 'frozen';
 
     const opensDate = addDaysToDateStr(serviceDate, -1);
     return {
@@ -390,7 +405,12 @@ export class BreakfastService {
     // eZee is the source of truth: the link lives only while the booking is CHECKED_IN.
     const booking = await this.prisma.ezee_booking_cache.findUnique({
       where: { ezee_reservation_id: row.ezee_reservation_id },
-      select: { ezee_reservation_id: true, property_id: true, is_active: true, status: true },
+      select: {
+        ezee_reservation_id: true,
+        property_id: true,
+        is_active: true,
+        status: true,
+      },
     });
     if (!booking || !booking.is_active || booking.status !== 'CHECKED_IN') {
       return { link_state: 'checked_out' };
@@ -413,7 +433,10 @@ export class BreakfastService {
    * sibling sharing the same normalised (last-10-digit) booker_phone. Mirrors the group-booking
    * resolution used by the ticketing front door. eZee is the source of truth.
    */
-  private async siblingRooms(eri: string, propertyId: string): Promise<SiblingRoom[]> {
+  private async siblingRooms(
+    eri: string,
+    propertyId: string,
+  ): Promise<SiblingRoom[]> {
     const rows = await this.prisma.$queryRaw<CacheRow[]>`
       SELECT b.ezee_reservation_id, b.room_number, b.no_of_adults, b.no_of_guests,
              b.guest_id, b.checkout_date, b.ezee_room_guests_json
@@ -451,7 +474,10 @@ export class BreakfastService {
       return { link_state: 'disabled', brand: booking.brand };
     }
     const window = await this.windowForProperty(booking.property_id);
-    const siblings = await this.siblingRooms(booking.ezee_reservation_id, booking.property_id);
+    const siblings = await this.siblingRooms(
+      booking.ezee_reservation_id,
+      booking.property_id,
+    );
 
     const [menu, slots, rooms] = await Promise.all([
       this.activeMenu(booking.property_id),
@@ -486,7 +512,10 @@ export class BreakfastService {
   }
 
   /** Slots for a property with plate-based booked/remaining counts for a service date. */
-  private async slotsWithCapacity(propertyId: string, serviceDate: string): Promise<SlotView[]> {
+  private async slotsWithCapacity(
+    propertyId: string,
+    serviceDate: string,
+  ): Promise<SlotView[]> {
     const slots = await this.prisma.breakfast_slot.findMany({
       where: { property_id: propertyId, is_active: true },
       orderBy: [{ sort_order: 'asc' }, { slot_number: 'asc' }],
@@ -531,7 +560,11 @@ export class BreakfastService {
     status: string;
     special_requests: string | null;
     breakfast_slot?: { label: string } | null;
-    breakfast_order_items: { menu_item_id: string; qty: number; breakfast_menu_item?: { name: string } | null }[];
+    breakfast_order_items: {
+      menu_item_id: string;
+      qty: number;
+      breakfast_menu_item?: { name: string } | null;
+    }[];
   }): PlateView {
     return {
       plate_number: p.plate_number,
@@ -552,11 +585,17 @@ export class BreakfastService {
    * (`ezee_reservation_id` in the contract — an opaque room key) is the SUB-booking id, so two
    * rooms of one reservation are two distinct rooms with two distinct orders.
    */
-  private async roomsView(siblings: SiblingRoom[], serviceDate: string): Promise<RoomView[]> {
+  private async roomsView(
+    siblings: SiblingRoom[],
+    serviceDate: string,
+  ): Promise<RoomView[]> {
     const subIds = siblings.map((s) => s.sub_booking_id);
     const orders = subIds.length
       ? await this.prisma.breakfast_order.findMany({
-          where: { sub_booking_id: { in: subIds }, service_date: this.toDate(serviceDate) },
+          where: {
+            sub_booking_id: { in: subIds },
+            service_date: this.toDate(serviceDate),
+          },
           include: ORDER_WITH_PLATES,
         })
       : [];
@@ -570,7 +609,9 @@ export class BreakfastService {
         order_status: o?.status ?? null,
         plates:
           o && o.status === 'PLACED'
-            ? o.breakfast_plates.filter((p) => p.status === 'PLACED').map((p) => this.formatPlate(p))
+            ? o.breakfast_plates
+                .filter((p) => p.status === 'PLACED')
+                .map((p) => this.formatPlate(p))
             : [],
       };
     });
@@ -589,9 +630,13 @@ export class BreakfastService {
     dto: SubmitBreakfastOrderDto,
   ): Promise<{ ok: true; rooms: RoomView[] }> {
     const resolved = await this.resolveToken(token);
-    if (resolved.link_state === 'not_found') throw new NotFoundException({ ok: false, link_state: 'not_found' });
+    if (resolved.link_state === 'not_found')
+      throw new NotFoundException({ ok: false, link_state: 'not_found' });
     if (resolved.link_state !== 'valid' || !resolved.booking) {
-      throw new ConflictException({ ok: false, link_state: resolved.link_state });
+      throw new ConflictException({
+        ok: false,
+        link_state: resolved.link_state,
+      });
     }
     const propertyId = resolved.booking.property_id;
     if (!(await this.isEnabled(propertyId))) {
@@ -607,13 +652,18 @@ export class BreakfastService {
       });
     }
 
-    const siblings = await this.siblingRooms(resolved.booking.ezee_reservation_id, propertyId);
+    const siblings = await this.siblingRooms(
+      resolved.booking.ezee_reservation_id,
+      propertyId,
+    );
     // The FE echoes back the opaque room key we emitted (the sub-booking id). Older clients may
     // still send the bare reservation id — accept it when the booking has exactly one room.
     const sibById = new Map(siblings.map((s) => [s.sub_booking_id, s]));
     for (const s of siblings) {
       if (!sibById.has(s.ezee_reservation_id)) {
-        const roomsOfRes = siblings.filter((x) => x.ezee_reservation_id === s.ezee_reservation_id);
+        const roomsOfRes = siblings.filter(
+          (x) => x.ezee_reservation_id === s.ezee_reservation_id,
+        );
         if (roomsOfRes.length === 1) sibById.set(s.ezee_reservation_id, s);
       }
     }
@@ -640,11 +690,15 @@ export class BreakfastService {
         });
       }
       // The room must still be staying on the breakfast date.
-      if (sib.checkout_date && this.fromDate(sib.checkout_date) < window.service_date) {
+      if (
+        sib.checkout_date &&
+        this.fromDate(sib.checkout_date) < window.service_date
+      ) {
         throw new BadRequestException({
           ok: false,
           error: 'room_checked_out_before_service',
-          message: `Room ${sib.room_number ?? ''} is not staying on that breakfast date`.trim(),
+          message:
+            `Room ${sib.room_number ?? ''} is not staying on that breakfast date`.trim(),
           ezee_reservation_id: sib.ezee_reservation_id,
           service_date: window.service_date,
         });
@@ -653,7 +707,10 @@ export class BreakfastService {
         slot_id: p.slot_id,
         items: (p.items ?? [])
           .filter((i) => i && i.menu_item_id)
-          .map((i) => ({ menu_item_id: i.menu_item_id, qty: Math.max(1, i.qty ?? 1) })),
+          .map((i) => ({
+            menu_item_id: i.menu_item_id,
+            qty: Math.max(1, i.qty ?? 1),
+          })),
         special_requests: p.special_requests ?? null,
       }));
       // An explicit ORDER with no plates is a client error (don't silently skip the room).
@@ -662,11 +719,13 @@ export class BreakfastService {
         throw new BadRequestException({
           ok: false,
           error: 'plates_required',
-          message: `Room ${sib.room_number ?? ''} was set to ORDER but has no plates`.trim(),
+          message:
+            `Room ${sib.room_number ?? ''} was set to ORDER but has no plates`.trim(),
           ezee_reservation_id: sib.ezee_reservation_id,
         });
       }
-      const action: 'ORDER' | 'SKIP' = r.action === 'SKIP' || plates.length === 0 ? 'SKIP' : 'ORDER';
+      const action: 'ORDER' | 'SKIP' =
+        r.action === 'SKIP' || plates.length === 0 ? 'SKIP' : 'ORDER';
       intents.push({
         eri: sib.ezee_reservation_id,
         subId: sib.sub_booking_id,
@@ -686,7 +745,10 @@ export class BreakfastService {
       rooms: intents,
     });
 
-    return { ok: true, rooms: await this.roomsView(siblings, window.service_date) };
+    return {
+      ok: true,
+      rooms: await this.roomsView(siblings, window.service_date),
+    };
   }
 
   /**
@@ -740,7 +802,11 @@ export class BreakfastService {
     // Items + slots must belong to the property and be active.
     if (itemIds.size) {
       const valid = await this.prisma.breakfast_menu_item.findMany({
-        where: { id: { in: [...itemIds] }, property_id: p.propertyId, is_active: true },
+        where: {
+          id: { in: [...itemIds] },
+          property_id: p.propertyId,
+          is_active: true,
+        },
         select: { id: true },
       });
       if (valid.length !== itemIds.size) {
@@ -756,7 +822,11 @@ export class BreakfastService {
     const slotCap = new Map<string, number>();
     if (slotIds.size) {
       const valid = await this.prisma.breakfast_slot.findMany({
-        where: { id: { in: [...slotIds] }, property_id: p.propertyId, is_active: true },
+        where: {
+          id: { in: [...slotIds] },
+          property_id: p.propertyId,
+          is_active: true,
+        },
         select: { id: true, capacity: true },
       });
       if (valid.length !== slotIds.size) {
@@ -794,7 +864,8 @@ export class BreakfastService {
     const requested = new Map<string, number>();
     for (const r of p.rooms) {
       if (r.action !== 'ORDER') continue;
-      for (const pl of r.plates) requested.set(pl.slot_id, (requested.get(pl.slot_id) ?? 0) + 1);
+      for (const pl of r.plates)
+        requested.set(pl.slot_id, (requested.get(pl.slot_id) ?? 0) + 1);
     }
     for (const [sid, n] of requested) {
       const cap = slotCap.get(sid) ?? 0;
@@ -803,7 +874,8 @@ export class BreakfastService {
         throw new ConflictException({
           ok: false,
           error: 'slot_full',
-          message: 'A delivery slot you picked is full. Please choose another time.',
+          message:
+            'A delivery slot you picked is full. Please choose another time.',
           slots,
         });
       }
@@ -817,7 +889,12 @@ export class BreakfastService {
     const testEris = new Set(
       (
         await this.prisma.ezee_booking_cache.findMany({
-          where: { ezee_reservation_id: { in: [...new Set(p.rooms.map((r) => r.eri))] }, is_test: true },
+          where: {
+            ezee_reservation_id: {
+              in: [...new Set(p.rooms.map((r) => r.eri))],
+            },
+            is_test: true,
+          },
           select: { ezee_reservation_id: true },
         })
       ).map((b) => b.ezee_reservation_id),
@@ -911,7 +988,10 @@ export class BreakfastService {
   // ══ ADMIN: menu catalog ══════════════════════════════════════════════════════
 
   private requireActorProperty(actor: AdminJwtPayload): string {
-    if (!actor.property_id) throw new BadRequestException('Active property missing from session — log in again');
+    if (!actor.property_id)
+      throw new BadRequestException(
+        'Active property missing from session — log in again',
+      );
     return actor.property_id;
   }
 
@@ -926,31 +1006,44 @@ export class BreakfastService {
    * `lastDue` = the most recent scheduled firing ≤ now, `next` = the next firing > now.
    * Re-anchors to `anchor` each IST day, then steps by the interval.
    */
-  static scheduleInstants(now: Date, anchorMin: number, intervalHours: number): { lastDue: Date; next: Date } {
+  static scheduleInstants(
+    now: Date,
+    anchorMin: number,
+    intervalHours: number,
+  ): { lastDue: Date; next: Date } {
     const { dateStr } = istParts(now);
     let base = istWallclockToUtc(dateStr, anchorMin);
-    if (now.getTime() < base.getTime()) base = new Date(base.getTime() - 86_400_000); // before today's anchor
+    if (now.getTime() < base.getTime())
+      base = new Date(base.getTime() - 86_400_000); // before today's anchor
     const stepMs = (intervalHours > 0 ? intervalHours : 24) * 3_600_000;
     const k = Math.floor((now.getTime() - base.getTime()) / stepMs);
     const lastDue = new Date(base.getTime() + k * stepMs);
     return { lastDue, next: new Date(lastDue.getTime() + stepMs) };
   }
 
-  private formatConfig(propertyId: string, cfg: {
-    is_enabled: boolean;
-    order_open_hour: number;
-    order_freeze_hour: number;
-    invite_cron_enabled: boolean;
-    invite_anchor_min: number;
-    invite_interval_hours: number;
-    last_invite_run_at: Date | null;
-    updated_at: Date | null;
-  } | null) {
+  private formatConfig(
+    propertyId: string,
+    cfg: {
+      is_enabled: boolean;
+      order_open_hour: number;
+      order_freeze_hour: number;
+      invite_cron_enabled: boolean;
+      invite_anchor_min: number;
+      invite_interval_hours: number;
+      last_invite_run_at: Date | null;
+      updated_at: Date | null;
+    } | null,
+  ) {
     const anchorMin = cfg?.invite_anchor_min ?? 1080;
     const intervalHours = cfg?.invite_interval_hours ?? 24;
-    const next = BreakfastService.scheduleInstants(new Date(), anchorMin, intervalHours).next;
+    const next = BreakfastService.scheduleInstants(
+      new Date(),
+      anchorMin,
+      intervalHours,
+    ).next;
     const openHour = this.validHour(cfg?.order_open_hour) ?? this.envOpenHour();
-    const freezeHour = this.validHour(cfg?.order_freeze_hour) ?? this.envFreezeHour();
+    const freezeHour =
+      this.validHour(cfg?.order_freeze_hour) ?? this.envFreezeHour();
     return {
       property_id: propertyId,
       is_enabled: cfg?.is_enabled ?? false,
@@ -969,44 +1062,72 @@ export class BreakfastService {
   /** The active property's breakfast config (toggle + auto-send schedule). */
   async getConfig(actor: AdminJwtPayload) {
     const propertyId = this.requireActorProperty(actor);
-    const cfg = await this.prisma.breakfast_config.findUnique({ where: { property_id: propertyId } });
+    const cfg = await this.prisma.breakfast_config.findUnique({
+      where: { property_id: propertyId },
+    });
     return this.formatConfig(propertyId, cfg);
   }
 
   /** Update the active property's breakfast toggle and/or auto-send schedule (partial). */
-  async setConfig(actor: AdminJwtPayload, dto: {
-    enabled?: boolean;
-    order_open_hour?: number;
-    order_freeze_hour?: number;
-    invite_cron_enabled?: boolean;
-    invite_anchor_min?: number;
-    invite_interval_hours?: number;
-  }) {
+  async setConfig(
+    actor: AdminJwtPayload,
+    dto: {
+      enabled?: boolean;
+      order_open_hour?: number;
+      order_freeze_hour?: number;
+      invite_cron_enabled?: boolean;
+      invite_anchor_min?: number;
+      invite_interval_hours?: number;
+    },
+  ) {
     const propertyId = this.requireActorProperty(actor);
     this.assertManages(actor, propertyId);
-    if (dto.order_open_hour !== undefined && dto.order_freeze_hour !== undefined
-        && dto.order_open_hour === dto.order_freeze_hour) {
-      throw new BadRequestException('order_open_hour and order_freeze_hour cannot be the same');
+    if (
+      dto.order_open_hour !== undefined &&
+      dto.order_freeze_hour !== undefined &&
+      dto.order_open_hour === dto.order_freeze_hour
+    ) {
+      throw new BadRequestException(
+        'order_open_hour and order_freeze_hour cannot be the same',
+      );
     }
     const cfg = await this.prisma.breakfast_config.upsert({
       where: { property_id: propertyId },
       update: {
         ...(dto.enabled !== undefined ? { is_enabled: dto.enabled } : {}),
-        ...(dto.order_open_hour !== undefined ? { order_open_hour: dto.order_open_hour } : {}),
-        ...(dto.order_freeze_hour !== undefined ? { order_freeze_hour: dto.order_freeze_hour } : {}),
-        ...(dto.invite_cron_enabled !== undefined ? { invite_cron_enabled: dto.invite_cron_enabled } : {}),
-        ...(dto.invite_anchor_min !== undefined ? { invite_anchor_min: dto.invite_anchor_min } : {}),
-        ...(dto.invite_interval_hours !== undefined ? { invite_interval_hours: dto.invite_interval_hours } : {}),
+        ...(dto.order_open_hour !== undefined
+          ? { order_open_hour: dto.order_open_hour }
+          : {}),
+        ...(dto.order_freeze_hour !== undefined
+          ? { order_freeze_hour: dto.order_freeze_hour }
+          : {}),
+        ...(dto.invite_cron_enabled !== undefined
+          ? { invite_cron_enabled: dto.invite_cron_enabled }
+          : {}),
+        ...(dto.invite_anchor_min !== undefined
+          ? { invite_anchor_min: dto.invite_anchor_min }
+          : {}),
+        ...(dto.invite_interval_hours !== undefined
+          ? { invite_interval_hours: dto.invite_interval_hours }
+          : {}),
         updated_at: new Date(),
       },
       create: {
         property_id: propertyId,
         is_enabled: dto.enabled ?? false,
-        ...(dto.order_open_hour !== undefined ? { order_open_hour: dto.order_open_hour } : {}),
-        ...(dto.order_freeze_hour !== undefined ? { order_freeze_hour: dto.order_freeze_hour } : {}),
+        ...(dto.order_open_hour !== undefined
+          ? { order_open_hour: dto.order_open_hour }
+          : {}),
+        ...(dto.order_freeze_hour !== undefined
+          ? { order_freeze_hour: dto.order_freeze_hour }
+          : {}),
         invite_cron_enabled: dto.invite_cron_enabled ?? false,
-        ...(dto.invite_anchor_min !== undefined ? { invite_anchor_min: dto.invite_anchor_min } : {}),
-        ...(dto.invite_interval_hours !== undefined ? { invite_interval_hours: dto.invite_interval_hours } : {}),
+        ...(dto.invite_anchor_min !== undefined
+          ? { invite_anchor_min: dto.invite_anchor_min }
+          : {}),
+        ...(dto.invite_interval_hours !== undefined
+          ? { invite_interval_hours: dto.invite_interval_hours }
+          : {}),
       },
     });
     return this.formatConfig(propertyId, cfg);
@@ -1014,7 +1135,9 @@ export class BreakfastService {
 
   async createMenuItem(dto: CreateMenuItemDto, actor: AdminJwtPayload) {
     this.assertManages(actor, dto.property_id);
-    const property = await this.prisma.properties.findUnique({ where: { id: dto.property_id } });
+    const property = await this.prisma.properties.findUnique({
+      where: { id: dto.property_id },
+    });
     if (!property) throw new NotFoundException('Property not found');
     return this.prisma.breakfast_menu_item.create({
       data: {
@@ -1033,28 +1156,41 @@ export class BreakfastService {
   async listMenu(actor: AdminJwtPayload, includeInactive = true) {
     const propertyId = this.requireActorProperty(actor);
     return this.prisma.breakfast_menu_item.findMany({
-      where: { property_id: propertyId, ...(includeInactive ? {} : { is_active: true }) },
+      where: {
+        property_id: propertyId,
+        ...(includeInactive ? {} : { is_active: true }),
+      },
       orderBy: [{ sort_order: 'asc' }, { name: 'asc' }],
     });
   }
 
   async getMenuItem(id: string, actor: AdminJwtPayload) {
-    const item = await this.prisma.breakfast_menu_item.findUnique({ where: { id } });
+    const item = await this.prisma.breakfast_menu_item.findUnique({
+      where: { id },
+    });
     if (!item) throw new NotFoundException('Menu item not found');
     this.assertManages(actor, item.property_id);
     return item;
   }
 
-  async updateMenuItem(id: string, dto: UpdateMenuItemDto, actor: AdminJwtPayload) {
+  async updateMenuItem(
+    id: string,
+    dto: UpdateMenuItemDto,
+    actor: AdminJwtPayload,
+  ) {
     const item = await this.getMenuItem(id, actor);
     return this.prisma.breakfast_menu_item.update({
       where: { id: item.id },
       data: {
         ...(dto.name !== undefined ? { name: dto.name } : {}),
-        ...(dto.description !== undefined ? { description: dto.description } : {}),
+        ...(dto.description !== undefined
+          ? { description: dto.description }
+          : {}),
         ...(dto.category !== undefined ? { category: dto.category } : {}),
         ...(dto.is_veg !== undefined ? { is_veg: dto.is_veg } : {}),
-        ...(dto.forecast_key !== undefined ? { forecast_key: dto.forecast_key } : {}),
+        ...(dto.forecast_key !== undefined
+          ? { forecast_key: dto.forecast_key }
+          : {}),
         ...(dto.sort_order !== undefined ? { sort_order: dto.sort_order } : {}),
         ...(dto.is_active !== undefined ? { is_active: dto.is_active } : {}),
         updated_at: new Date(),
@@ -1087,7 +1223,10 @@ export class BreakfastService {
     const existing = await this.prisma.breakfast_slot.findFirst({
       where: { property_id: dto.property_id, slot_number: dto.slot_number },
     });
-    if (existing) throw new ConflictException('A slot with that number already exists for this property');
+    if (existing)
+      throw new ConflictException(
+        'A slot with that number already exists for this property',
+      );
     return this.prisma.breakfast_slot.create({
       data: {
         id: uuidv4(),
@@ -1143,7 +1282,10 @@ export class BreakfastService {
    * live one (orderable until the freeze, then served). So: before open_hour → today, after →
    * tomorrow. An explicit ?date= always wins.
    */
-  private async resolveDate(propertyId: string, dateStr?: string): Promise<string> {
+  private async resolveDate(
+    propertyId: string,
+    dateStr?: string,
+  ): Promise<string> {
     if (dateStr && /^\d{4}-\d{2}-\d{2}$/.test(dateStr)) return dateStr;
     const { open_hour } = await this.windowForProperty(propertyId);
     const { hour, dateStr: today } = istParts(new Date());
@@ -1181,7 +1323,10 @@ export class BreakfastService {
     const propertyId = this.requireActorProperty(actor);
     const serviceDate = await this.resolveDate(propertyId, dateStr);
     const orders = await this.prisma.breakfast_order.findMany({
-      where: { property_id: propertyId, service_date: this.toDate(serviceDate) },
+      where: {
+        property_id: propertyId,
+        service_date: this.toDate(serviceDate),
+      },
       include: ORDER_WITH_PLATES,
       orderBy: [{ room_number: 'asc' }],
     });
@@ -1200,14 +1345,22 @@ export class BreakfastService {
   async listCheckedInBookings(
     actor: AdminJwtPayload,
     dateStr?: string,
-  ): Promise<{ service_date: string; count: number; bookings: AdminBookingRosterRow[] }> {
+  ): Promise<{
+    service_date: string;
+    count: number;
+    bookings: AdminBookingRosterRow[];
+  }> {
     const propertyId = this.requireActorProperty(actor);
     const serviceDate = await this.resolveDate(propertyId, dateStr);
     // Test bookings are LISTED here (not filtered out) — the roster is how an admin places an
     // order on a test guest's behalf, so hiding them would make the flow untestable. They carry
     // is_test so the UI can tag the row; only the cooked/reported totals leave them out.
     const cached = await this.prisma.$queryRaw<
-      (CacheRow & { booker_phone: string | null; booker_email: string | null; is_test: boolean })[]
+      (CacheRow & {
+        booker_phone: string | null;
+        booker_email: string | null;
+        is_test: boolean;
+      })[]
     >`
       SELECT b.ezee_reservation_id, b.room_number, b.no_of_adults, b.no_of_guests, b.guest_id,
              b.checkout_date, b.ezee_room_guests_json, b.booker_phone, b.booker_email, b.is_test
@@ -1247,7 +1400,10 @@ export class BreakfastService {
         ezee_reservation_id: r.sub_booking_id, // the room key POST /orders expects
         room_number: r.room_number,
         guest_name:
-          r.guest_name ?? (r.guest_id ? names.get(r.guest_id) ?? null : null) ?? r.booker_email ?? null,
+          r.guest_name ??
+          (r.guest_id ? (names.get(r.guest_id) ?? null) : null) ??
+          r.booker_email ??
+          null,
         booker_phone: r.booker_phone,
         no_of_adults: r.cap,
         max_plates: r.cap,
@@ -1264,11 +1420,15 @@ export class BreakfastService {
     return {
       service_date: serviceDate,
       count: rows.length,
-      bookings: rows.sort((a, b) => (a.room_number ?? '').localeCompare(b.room_number ?? '')),
+      bookings: rows.sort((a, b) =>
+        (a.room_number ?? '').localeCompare(b.room_number ?? ''),
+      ),
     };
   }
 
-  private async guestNames(ids: (string | null)[]): Promise<Map<string, string>> {
+  private async guestNames(
+    ids: (string | null)[],
+  ): Promise<Map<string, string>> {
     const known = [...new Set(ids.filter((i): i is string => !!i))];
     if (known.length === 0) return new Map();
     const rows = await this.prisma.guests.findMany({
@@ -1332,7 +1492,10 @@ export class BreakfastService {
     ]);
     const agg = new Map<string, { key: string; name: string; qty: number }>();
     for (const r of rows) {
-      const key = r.breakfast_menu_item?.forecast_key || r.breakfast_menu_item?.name || r.menu_item_id;
+      const key =
+        r.breakfast_menu_item?.forecast_key ||
+        r.breakfast_menu_item?.name ||
+        r.menu_item_id;
       const name = r.breakfast_menu_item?.name || key;
       const cur = agg.get(key) ?? { key, name, qty: 0 };
       cur.qty += r.qty;
@@ -1354,56 +1517,63 @@ export class BreakfastService {
     // checked_in_bookings, so the two must be drawn from the same population — mixing a test
     // order into the numerator while excluding test bookings from the denominator would report a
     // take-up rate that never happened. Test volume is reported separately instead.
-    const [placed, skipped, plates, checkedIn, testOrders, slotSummary] = await Promise.all([
-      this.prisma.breakfast_order.count({
-        where: {
-          property_id: propertyId,
-          service_date: this.toDate(serviceDate),
-          status: 'PLACED',
-          is_test: false,
-        },
-      }),
-      this.prisma.breakfast_order.count({
-        where: {
-          property_id: propertyId,
-          service_date: this.toDate(serviceDate),
-          status: 'SKIPPED',
-          is_test: false,
-        },
-      }),
-      this.prisma.breakfast_plate.count({
-        where: {
-          status: 'PLACED',
-          breakfast_order: {
+    const [placed, skipped, plates, checkedIn, testOrders, slotSummary] =
+      await Promise.all([
+        this.prisma.breakfast_order.count({
+          where: {
             property_id: propertyId,
             service_date: this.toDate(serviceDate),
             status: 'PLACED',
             is_test: false,
           },
-        },
-      }),
-      this.prisma.ezee_booking_cache.count({
-        // Real checked-in bookings only: this is the participation denominator, and a test
-        // booking would silently deflate the kitchen's take-up rate for as long as it exists.
-        where: { property_id: propertyId, is_active: true, status: 'CHECKED_IN', is_test: false },
-      }),
-      this.prisma.breakfast_order.count({
-        where: {
-          property_id: propertyId,
-          service_date: this.toDate(serviceDate),
-          status: 'PLACED',
-          is_test: true,
-        },
-      }),
-      this.slotSummary(actor, serviceDate),
-    ]);
+        }),
+        this.prisma.breakfast_order.count({
+          where: {
+            property_id: propertyId,
+            service_date: this.toDate(serviceDate),
+            status: 'SKIPPED',
+            is_test: false,
+          },
+        }),
+        this.prisma.breakfast_plate.count({
+          where: {
+            status: 'PLACED',
+            breakfast_order: {
+              property_id: propertyId,
+              service_date: this.toDate(serviceDate),
+              status: 'PLACED',
+              is_test: false,
+            },
+          },
+        }),
+        this.prisma.ezee_booking_cache.count({
+          // Real checked-in bookings only: this is the participation denominator, and a test
+          // booking would silently deflate the kitchen's take-up rate for as long as it exists.
+          where: {
+            property_id: propertyId,
+            is_active: true,
+            status: 'CHECKED_IN',
+            is_test: false,
+          },
+        }),
+        this.prisma.breakfast_order.count({
+          where: {
+            property_id: propertyId,
+            service_date: this.toDate(serviceDate),
+            status: 'PLACED',
+            is_test: true,
+          },
+        }),
+        this.slotSummary(actor, serviceDate),
+      ]);
     return {
       service_date: serviceDate,
       rooms_ordered: placed,
       plates_ordered: plates,
       skipped,
       checked_in_bookings: checkedIn,
-      participation_rate: checkedIn > 0 ? Math.round((placed / checkedIn) * 100) : null,
+      participation_rate:
+        checkedIn > 0 ? Math.round((placed / checkedIn) * 100) : null,
       /** Test orders for the date — excluded from every figure above. Normally 0. */
       test_orders: testOrders,
       slots: slotSummary.slots,
@@ -1415,7 +1585,9 @@ export class BreakfastService {
     // `ezee_reservation_id` here is the ROOM key the roster emitted — a sub-booking id for a
     // multi-room reservation, the reservation id otherwise. Find the cache row that owns it.
     const key = dto.ezee_reservation_id;
-    const cached = await this.prisma.$queryRaw<(CacheRow & { property_id: string })[]>`
+    const cached = await this.prisma.$queryRaw<
+      (CacheRow & { property_id: string })[]
+    >`
       SELECT b.ezee_reservation_id, b.property_id, b.room_number, b.no_of_adults, b.no_of_guests,
              b.guest_id, b.checkout_date, b.ezee_room_guests_json
         FROM ezee_booking_cache b
@@ -1430,29 +1602,43 @@ export class BreakfastService {
     if (!booking) throw new NotFoundException('Booking not found');
     this.assertManages(actor, booking.property_id);
     if (!(await this.isEnabled(booking.property_id))) {
-      throw new BadRequestException('Breakfast is turned off for this property');
+      throw new BadRequestException(
+        'Breakfast is turned off for this property',
+      );
     }
-    if (booking.checkout_date && this.fromDate(booking.checkout_date) < dto.service_date) {
-      throw new BadRequestException('Guest is not staying on that breakfast date');
+    if (
+      booking.checkout_date &&
+      this.fromDate(booking.checkout_date) < dto.service_date
+    ) {
+      throw new BadRequestException(
+        'Guest is not staying on that breakfast date',
+      );
     }
 
     const rooms = this.expandRooms(booking);
     const room =
-      rooms.find((r) => r.sub_booking_id === key) ?? (rooms.length === 1 ? rooms[0] : undefined);
+      rooms.find((r) => r.sub_booking_id === key) ??
+      (rooms.length === 1 ? rooms[0] : undefined);
     if (!room) {
       throw new BadRequestException({
         ok: false,
         error: 'room_required',
         message:
           'That reservation has several rooms — send the room key from GET /admin/breakfast/bookings, not the reservation id',
-        rooms: rooms.map((r) => ({ ezee_reservation_id: r.sub_booking_id, room_number: r.room_number })),
+        rooms: rooms.map((r) => ({
+          ezee_reservation_id: r.sub_booking_id,
+          room_number: r.room_number,
+        })),
       });
     }
     const plates = (dto.plates ?? []).map((p) => ({
       slot_id: p.slot_id,
       items: (p.items ?? [])
         .filter((i) => i && i.menu_item_id)
-        .map((i) => ({ menu_item_id: i.menu_item_id, qty: Math.max(1, i.qty ?? 1) })),
+        .map((i) => ({
+          menu_item_id: i.menu_item_id,
+          qty: Math.max(1, i.qty ?? 1),
+        })),
       special_requests: p.special_requests ?? null,
     }));
     // Fail loudly rather than silently downgrading an ORDER to a SKIP — an explicit ORDER
@@ -1463,7 +1649,8 @@ export class BreakfastService {
         'action ORDER requires at least one plate — send { plates: [{ slot_id, items: [{ menu_item_id, qty }] }] }',
       );
     }
-    const action: 'ORDER' | 'SKIP' = dto.action === 'SKIP' || plates.length === 0 ? 'SKIP' : 'ORDER';
+    const action: 'ORDER' | 'SKIP' =
+      dto.action === 'SKIP' || plates.length === 0 ? 'SKIP' : 'ORDER';
     await this.writeRoomOrders({
       propertyId: booking.property_id,
       brand: await this.brandOfProperty(booking.property_id),

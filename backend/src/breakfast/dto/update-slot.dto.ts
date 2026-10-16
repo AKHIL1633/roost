@@ -1,4 +1,12 @@
-import { IsString, IsInt, Min, Max, IsOptional, IsBoolean, MaxLength } from 'class-validator';
+import {
+  IsString,
+  IsInt,
+  Min,
+  Max,
+  IsOptional,
+  IsBoolean,
+  MaxLength,
+} from 'class-validator';
 
 /** Patch a slot (capacity, label, times, active). `is_active:false` retires the slot. */
 export class UpdateSlotDto {

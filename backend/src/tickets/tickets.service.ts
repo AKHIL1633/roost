@@ -9,7 +9,11 @@ import { propertyShortLabel } from '../common/property-resolver';
 import { resolveTemplate } from '../wati/wati-templates';
 import { WatiService, guestUnfulfilledDone } from '../wati/wati.service';
 import { toIstString } from '../common/utils/time.util';
-import { CRITICAL_CLASS, DEFAULT_CLASS, UNFULFILLED_CLASS } from './task-classes';
+import {
+  CRITICAL_CLASS,
+  DEFAULT_CLASS,
+  UNFULFILLED_CLASS,
+} from './task-classes';
 import { completedWithinTat } from './tat';
 
 /**
@@ -119,7 +123,10 @@ export class TicketsService {
     // and the watchdog pages L1 (last resort).
     let fallbackAssigned = false;
     if (!assignee && !isCritical) {
-      assignee = await this.firstLevelStaffFallback(input.property_id, input.department);
+      assignee = await this.firstLevelStaffFallback(
+        input.property_id,
+        input.department,
+      );
       fallbackAssigned = !!assignee;
     }
 
@@ -138,13 +145,18 @@ export class TicketsService {
       }
     }
     // slaBreachAt = the full TAT (completion window), shown to staff as turn-around.
-    const slaBreachAt = sla ? new Date(now.getTime() + sla.completion_timeout_min * 60_000) : null;
+    const slaBreachAt = sla
+      ? new Date(now.getTime() + sla.completion_timeout_min * 60_000)
+      : null;
     // The FIRST watchdog deadline is the ACK window = ack_percent% of the TAT (min 1 min).
     // If the assignee doesn't acknowledge by then, escalation begins (advanceEscalation,
     // ACK phase). On ack, the timer is re-armed to the FULL TAT for completion.
     const ackWindowMin =
       sla && sla.completion_timeout_min > 0
-        ? Math.max(1, Math.ceil((sla.completion_timeout_min * sla.ack_percent) / 100))
+        ? Math.max(
+            1,
+            Math.ceil((sla.completion_timeout_min * sla.ack_percent) / 100),
+          )
         : 0;
     // First watchdog deadline:
     //   • emergency (T4)     → null: broadcastAllLevels pages everyone right now.
@@ -221,7 +233,10 @@ export class TicketsService {
         ? `${Math.max(1, Math.round((slaBreachAt.getTime() - now.getTime()) / 60_000))} min`
         : 'soon';
       // Group booking → show the staffer every room the guest holds, not just one.
-      const roomsLabel = await this.allRoomsLabel(input.ezee_reservation_id, input.property_id);
+      const roomsLabel = await this.allRoomsLabel(
+        input.ezee_reservation_id,
+        input.property_id,
+      );
       await this.sqs.sendNotifyStaff({
         staff_phone: assignee.phone,
         staff_name: assignee.name,
@@ -262,7 +277,9 @@ export class TicketsService {
     // Emergency → broadcast to every escalation level right away.
     if (isCritical) {
       await this.broadcastAllLevels(ticketId).catch((e) =>
-        this.logger.error(`${CRITICAL_CLASS} broadcast failed for ${ticketId}: ${(e as Error).message}`),
+        this.logger.error(
+          `${CRITICAL_CLASS} broadcast failed for ${ticketId}: ${(e as Error).message}`,
+        ),
       );
     }
 
@@ -272,15 +289,20 @@ export class TicketsService {
   // ─── STAFF ACTIONS (Phase 1: via admin/ops; WhatsApp staff replies in Phase 2) ──
 
   async acknowledge(ticketId: string) {
-    const ticket = await this.prisma.zoho_ticket_ref.findUnique({ where: { id: ticketId } });
+    const ticket = await this.prisma.zoho_ticket_ref.findUnique({
+      where: { id: ticketId },
+    });
     if (!ticket) throw new NotFoundException('Ticket not found');
-    if (ticket.status === 'COMPLETED' || ticket.status === 'IN_PROGRESS') return ticket;
+    if (ticket.status === 'COMPLETED' || ticket.status === 'IN_PROGRESS')
+      return ticket;
 
     // Ack STOPS the ack-phase escalation and STARTS the completion-phase timer:
     // if the work isn't completed within completion_timeout_min, escalation resumes.
     const now = new Date();
     const sla = ticket.task_category
-      ? await this.prisma.sla_config.findUnique({ where: { task_category: ticket.task_category } })
+      ? await this.prisma.sla_config.findUnique({
+          where: { task_category: ticket.task_category },
+        })
       : null;
     const completionDeadline =
       sla && sla.completion_timeout_min > 0
@@ -308,7 +330,9 @@ export class TicketsService {
       .catch(() => undefined);
     this.logger.log(
       `Ticket ${ticketId} acknowledged → completion timer armed` +
-        (completionDeadline ? ` (due ${completionDeadline.toISOString()})` : ' (no completion SLA)'),
+        (completionDeadline
+          ? ` (due ${completionDeadline.toISOString()})`
+          : ' (no completion SLA)'),
     );
     await this.flowLog.log({
       trace_id: ticketId,
@@ -320,13 +344,19 @@ export class TicketsService {
   }
 
   async complete(ticketId: string) {
-    const ticket = await this.prisma.zoho_ticket_ref.findUnique({ where: { id: ticketId } });
+    const ticket = await this.prisma.zoho_ticket_ref.findUnique({
+      where: { id: ticketId },
+    });
     if (!ticket) throw new NotFoundException('Ticket not found');
     if (ticket.status === 'COMPLETED') return ticket;
 
     const updated = await this.prisma.zoho_ticket_ref.update({
       where: { id: ticketId },
-      data: { status: 'COMPLETED', completed_at: new Date(), next_deadline: null },
+      data: {
+        status: 'COMPLETED',
+        completed_at: new Date(),
+        next_deadline: null,
+      },
     });
     if (ticket.assigned_staff_id) {
       await this.prisma.staff.update({
@@ -335,12 +365,18 @@ export class TicketsService {
       });
     }
     const staffName = ticket.assigned_staff_id
-      ? (await this.prisma.staff.findUnique({ where: { id: ticket.assigned_staff_id } }))?.name ??
-        'our team'
+      ? ((
+          await this.prisma.staff.findUnique({
+            where: { id: ticket.assigned_staff_id },
+          })
+        )?.name ?? 'our team')
       : 'our team';
     const elapsedMin = Math.max(
       1,
-      Math.round((updated.completed_at!.getTime() - ticket.created_at.getTime()) / 60_000),
+      Math.round(
+        (updated.completed_at!.getTime() - ticket.created_at.getTime()) /
+          60_000,
+      ),
     );
     // "Completed_Within_TAT" (checkbox) — the GUEST's measure: did the close land inside
     // the window we promised at creation. Deliberately not the escalation engine's view;
@@ -357,7 +393,9 @@ export class TicketsService {
       .updateTicket(ticket.zoho_ticket_id, {
         status: 'Closed',
         resolution: `Completed by ${staffName} at ${updated.completed_at!.toISOString()} (${elapsedMin} min from request).`,
-        ...(withinTat !== null ? { customFields: { cf_completed_within_tat: withinTat } } : {}),
+        ...(withinTat !== null
+          ? { customFields: { cf_completed_within_tat: withinTat } }
+          : {}),
       })
       .catch(() => undefined);
     await this.zohoDesk
@@ -367,7 +405,10 @@ export class TicketsService {
       })
       .catch(() => undefined);
     await this.zohoDesk
-      .addComment(ticket.zoho_ticket_id, `Ticket completed by ${staffName}. Total time: ${elapsedMin} min.`)
+      .addComment(
+        ticket.zoho_ticket_id,
+        `Ticket completed by ${staffName}. Total time: ${elapsedMin} min.`,
+      )
       .catch(() => undefined);
 
     // Notify guest the task is done, then invite them to rate the service.
@@ -388,7 +429,13 @@ export class TicketsService {
       const brand = await this.brandFor(ticket.ezee_reservation_id);
       const guestPhone = ticket.guest_phone ?? guest.phone ?? undefined;
       if (unfulfilled) {
-        await this.closeUnfulfilledToGuest(ticketId, brand, guestPhone, ticket.guest_id, ticket.subject);
+        await this.closeUnfulfilledToGuest(
+          ticketId,
+          brand,
+          guestPhone,
+          ticket.guest_id,
+          ticket.subject,
+        );
       } else {
         await this.sqs.sendNotifyGuest({
           guest_id: ticket.guest_id,
@@ -417,9 +464,19 @@ export class TicketsService {
           status: 'SKIP',
         });
       } else if ((process.env.FEEDBACK_CHANNEL ?? 'buttons') === 'buttons') {
-        await this.feedback.issueButtonInvite(updated, brand, guest, ticket.guest_phone);
+        await this.feedback.issueButtonInvite(
+          updated,
+          brand,
+          guest,
+          ticket.guest_phone,
+        );
       } else {
-        await this.feedback.issueInvite(updated, brand, guest, ticket.guest_phone);
+        await this.feedback.issueInvite(
+          updated,
+          brand,
+          guest,
+          ticket.guest_phone,
+        );
       }
     }
     this.logger.log(`Ticket ${ticketId} completed`);
@@ -506,7 +563,9 @@ export class TicketsService {
    * the ladder is walked dynamically up to however many escalation_levels exist (Ln).
    */
   async advanceEscalation(ticketId: string) {
-    const ticket = await this.prisma.zoho_ticket_ref.findUnique({ where: { id: ticketId } });
+    const ticket = await this.prisma.zoho_ticket_ref.findUnique({
+      where: { id: ticketId },
+    });
     if (!ticket || ticket.next_deadline === null) return; // completed in the meantime
     const phase =
       ticket.status === 'IN_PROGRESS'
@@ -517,7 +576,9 @@ export class TicketsService {
     if (!phase) return; // COMPLETED / closed
 
     const sla = ticket.task_category
-      ? await this.prisma.sla_config.findUnique({ where: { task_category: ticket.task_category } })
+      ? await this.prisma.sla_config.findUnique({
+          where: { task_category: ticket.task_category },
+        })
       : null;
     const gapMin = sla ? sla.escalation_gap_min : null;
     // The paged person's ack/snooze window before the ladder climbs again is
@@ -535,25 +596,48 @@ export class TicketsService {
     // Context for the staff templates: who originally owned it + how long the paged
     // person has to ack before the ladder climbs again (the snooze window).
     const originalAssignee = ticket.assigned_staff_id
-      ? (await this.prisma.staff.findUnique({ where: { id: ticket.assigned_staff_id }, select: { name: true } }))?.name ?? 'Unassigned'
+      ? ((
+          await this.prisma.staff.findUnique({
+            where: { id: ticket.assigned_staff_id },
+            select: { name: true },
+          })
+        )?.name ?? 'Unassigned')
       : 'Unassigned';
-    const timeToNext = snoozeMin && snoozeMin > 0 ? this.fmtDuration(snoozeMin) : 'shortly';
+    const timeToNext =
+      snoozeMin && snoozeMin > 0 ? this.fmtDuration(snoozeMin) : 'shortly';
     // Short property label (e.g. "TDS Koramangala") so a paged director covering several
     // sites can tell which property — and whom to call — the request belongs to. Shown
     // next to the room number in the staff templates (no template change needed).
     const propertyLabel = propertyShortLabel(propertyId, brand);
     // Group booking → page every room the guest holds, not just this ticket's room.
-    const roomsLabel = await this.allRoomsLabel(ticket.ezee_reservation_id, propertyId);
-    const staffCtx = { timeToNext, originalAssignee, propertyLabel, roomsLabel };
+    const roomsLabel = await this.allRoomsLabel(
+      ticket.ezee_reservation_id,
+      propertyId,
+    );
+    const staffCtx = {
+      timeToNext,
+      originalAssignee,
+      propertyLabel,
+      roomsLabel,
+    };
 
     if (n === 0 && ticket.assigned_staff_id) {
       // Assigned but unacked (ack phase), or acked-but-not-done (completion phase):
       // nudge the assignee first, then climb the ladder from ONE LEVEL ABOVE the
       // assignee's own rung (so we never page peers/juniors below them, or re-page
       // the assignee). If their role isn't in the ladder, climb from L1.
-      const staff = await this.prisma.staff.findUnique({ where: { id: ticket.assigned_staff_id } });
+      const staff = await this.prisma.staff.findUnique({
+        where: { id: ticket.assigned_staff_id },
+      });
       if (staff) {
-        await this.notifyStaff(staff.phone, staff.name, brand, 'Reminder', ticket, staffCtx);
+        await this.notifyStaff(
+          staff.phone,
+          staff.name,
+          brand,
+          'Reminder',
+          ticket,
+          staffCtx,
+        );
         newLevel = await this.assigneeLadderStart(propertyId, staff.role);
         paged =
           newLevel > maxLevel
@@ -566,7 +650,14 @@ export class TicketsService {
       const level = n === 0 ? 1 : n;
       const targets = await this.escalationTargets(propertyId, level, brand);
       for (const t of targets) {
-        await this.notifyStaff(t.phone, t.name, t.brand, `L${level}`, ticket, staffCtx);
+        await this.notifyStaff(
+          t.phone,
+          t.name,
+          t.brand,
+          `L${level}`,
+          ticket,
+          staffCtx,
+        );
       }
       paged = `L${level} → ${targets.length ? targets.map((t) => t.name).join(', ') : 'no one configured'}`;
       if (n === 0) newLevel = 2; // paged L1 in the level-0 slot → next step is L2
@@ -615,7 +706,9 @@ export class TicketsService {
     const firedIst = toIstString(new Date());
     this.logger.log(
       `Ticket ${ticketId} ${phase}-phase escalation fired at level ${n} → ${newLevel} [${firedIst}]` +
-        (nextDeadline ? `, next at ${nextDeadline.toISOString()}` : ' (ladder complete)'),
+        (nextDeadline
+          ? `, next at ${nextDeadline.toISOString()}`
+          : ' (ladder complete)'),
     );
     await this.flowLog.log({
       trace_id: ticketId,
@@ -641,7 +734,9 @@ export class TicketsService {
    * Loop-safe: acknowledge()/complete() no-op once we're already IN_PROGRESS/COMPLETED,
    * and our own outbound status PATCH just reads back as the same state (no action).
    */
-  async syncOpenTicketsFromZoho(limit = 50): Promise<{ checked: number; changed: number }> {
+  async syncOpenTicketsFromZoho(
+    limit = 50,
+  ): Promise<{ checked: number; changed: number }> {
     const open = await this.prisma.zoho_ticket_ref.findMany({
       where: {
         ticket_type: 'SERVICE_REQUEST',
@@ -660,10 +755,16 @@ export class TicketsService {
       checked++;
       const s = zStatus.trim().toLowerCase();
       let action: string | null = null;
-      if (s === 'in progress' && (t.status === 'PENDING' || t.status === 'OPEN')) {
+      if (
+        s === 'in progress' &&
+        (t.status === 'PENDING' || t.status === 'OPEN')
+      ) {
         await this.acknowledge(t.id);
         action = 'acknowledged (Zoho In Progress)';
-      } else if ((s === 'closed' || s === 'resolved') && t.status !== 'COMPLETED') {
+      } else if (
+        (s === 'closed' || s === 'resolved') &&
+        t.status !== 'COMPLETED'
+      ) {
         await this.complete(t.id);
         action = `completed (Zoho ${zStatus})`;
       }
@@ -688,10 +789,18 @@ export class TicketsService {
    * peers/juniors below the assignee, and re-paging the assignee themselves.
    * Example: ladder B(L1)→A(L2)→C(L3), assignee = A → escalation starts at L3 (C).
    */
-  private async assigneeLadderStart(propertyId: string, assigneeRole: string | null): Promise<number> {
+  private async assigneeLadderStart(
+    propertyId: string,
+    assigneeRole: string | null,
+  ): Promise<number> {
     if (!assigneeRole) return 1;
     const rung = await this.prisma.escalation_levels.findFirst({
-      where: { property_id: propertyId, is_active: true, lookup_source: 'staff', role: assigneeRole },
+      where: {
+        property_id: propertyId,
+        is_active: true,
+        lookup_source: 'staff',
+        role: assigneeRole,
+      },
       orderBy: { level: 'desc' }, // if the role appears at multiple rungs, skip past the highest
       select: { level: true },
     });
@@ -706,7 +815,10 @@ export class TicketsService {
    * required: L1 is the safety net and is paged regardless of the availability flag
    * (mirrors escalationTargets, which filters only on is_active).
    */
-  private async firstLevelStaffFallback(propertyId: string, requestRole: string) {
+  private async firstLevelStaffFallback(
+    propertyId: string,
+    requestRole: string,
+  ) {
     const l1 = await this.prisma.escalation_levels.findUnique({
       where: { property_id_level: { property_id: propertyId, level: 1 } },
     });
@@ -749,7 +861,9 @@ export class TicketsService {
 
   /** T4 critical: notify every configured escalation level at once, no waiting. */
   private async broadcastAllLevels(ticketId: string) {
-    const ticket = await this.prisma.zoho_ticket_ref.findUnique({ where: { id: ticketId } });
+    const ticket = await this.prisma.zoho_ticket_ref.findUnique({
+      where: { id: ticketId },
+    });
     if (!ticket) return;
     const propertyId = await this.propertyIdFor(ticket.ezee_reservation_id);
     const brand = await this.brandFor(ticket.ezee_reservation_id);
@@ -769,16 +883,35 @@ export class TicketsService {
     const originalAssignee = owner?.name ?? 'Unassigned';
     const ownerPhone = owner?.phone ?? null;
     const propertyLabel = propertyShortLabel(propertyId, brand);
-    const roomsLabel = await this.allRoomsLabel(ticket.ezee_reservation_id, propertyId);
-    const staffCtx = { timeToNext: 'now (critical)', originalAssignee, propertyLabel, roomsLabel };
+    const roomsLabel = await this.allRoomsLabel(
+      ticket.ezee_reservation_id,
+      propertyId,
+    );
+    const staffCtx = {
+      timeToNext: 'now (critical)',
+      originalAssignee,
+      propertyLabel,
+      roomsLabel,
+    };
     const paged = new Set<string>();
     if (ownerPhone) paged.add(ownerPhone);
     for (const lvl of levels) {
-      const targets = await this.escalationTargets(propertyId, lvl.level, brand);
+      const targets = await this.escalationTargets(
+        propertyId,
+        lvl.level,
+        brand,
+      );
       for (const t of targets) {
         if (paged.has(t.phone)) continue; // owner already got the resolvable ticket, or dedupe across rungs
         paged.add(t.phone);
-        await this.notifyStaff(t.phone, t.name, t.brand, 'CRITICAL', ticket, staffCtx);
+        await this.notifyStaff(
+          t.phone,
+          t.name,
+          t.brand,
+          'CRITICAL',
+          ticket,
+          staffCtx,
+        );
       }
     }
     // Park the ticket at the TOP of this property's ladder — everyone has already been
@@ -860,10 +993,15 @@ export class TicketsService {
    * caller keeps the ticket's own room_number. Staff-facing only — the guest ack/done
    * message still shows the ticket's own room. Best-effort; any error → null.
    */
-  private async allRoomsLabel(eri: string | null, propertyId: string | null): Promise<string | null> {
+  private async allRoomsLabel(
+    eri: string | null,
+    propertyId: string | null,
+  ): Promise<string | null> {
     if (!eri || !propertyId) return null;
     try {
-      const rows = await this.prisma.$queryRaw<{ room_number: string | null }[]>`
+      const rows = await this.prisma.$queryRaw<
+        { room_number: string | null }[]
+      >`
         SELECT DISTINCT b.room_number
         FROM ezee_booking_cache b
         WHERE b.property_id = ${propertyId}
@@ -878,7 +1016,9 @@ export class TicketsService {
             LIMIT 1
           )
       `;
-      const rooms = rows.map((r) => r.room_number).filter((r): r is string => !!r);
+      const rooms = rows
+        .map((r) => r.room_number)
+        .filter((r): r is string => !!r);
       if (rooms.length <= 1) return null; // single room → caller keeps ticket.room_number
       rooms.sort((a, b) => a.localeCompare(b, undefined, { numeric: true }));
       return rooms.join(', ');
@@ -901,16 +1041,25 @@ export class TicketsService {
       guest_id: string | null;
       created_at: Date;
     },
-    ctx: { timeToNext: string; originalAssignee: string; propertyLabel: string; roomsLabel?: string | null },
+    ctx: {
+      timeToNext: string;
+      originalAssignee: string;
+      propertyLabel: string;
+      roomsLabel?: string | null;
+    },
   ) {
-    const guestName = ticket.guest_id ? (await this.guestInfo(ticket.guest_id)).name : 'Guest';
+    const guestName = ticket.guest_id
+      ? (await this.guestInfo(ticket.guest_id)).name
+      : 'Guest';
     const isReminder = levelLabel === 'Reminder';
     // Room number with the property appended so the recipient (esp. a director paged
     // across properties) knows the site — e.g. "101A (TDS Koramangala)". For a group
     // booking, ctx.roomsLabel lists ALL the guest's rooms ("105, 106, 107"); otherwise
     // we show the ticket's single room. Falls back to just the property label when unknown.
     const roomBase = ctx.roomsLabel ?? ticket.room_number;
-    const roomNo = roomBase ? `${roomBase} (${ctx.propertyLabel})` : ctx.propertyLabel;
+    const roomNo = roomBase
+      ? `${roomBase} (${ctx.propertyLabel})`
+      : ctx.propertyLabel;
 
     if (isReminder) {
       await this.sqs.sendNotifyStaff({
@@ -956,7 +1105,9 @@ export class TicketsService {
     });
   }
 
-  private async guestInfo(guestId: string): Promise<{ name: string; phone: string | null }> {
+  private async guestInfo(
+    guestId: string,
+  ): Promise<{ name: string; phone: string | null }> {
     const g = await this.prisma.guests.findUnique({
       where: { id: guestId },
       select: { name: true, phone: true },

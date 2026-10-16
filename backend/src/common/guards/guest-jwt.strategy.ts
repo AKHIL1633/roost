@@ -73,4 +73,3 @@ export class GuestJwtStrategy extends PassportStrategy(Strategy, 'guest-jwt') {
     return payload; // attached as req.user
   }
 }
-

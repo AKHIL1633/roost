@@ -28,7 +28,12 @@ export class AdminBookingsService {
 
   async listBookings(
     actor: AdminJwtPayload,
-    filters?: { status?: string; property_id?: string; page?: number; limit?: number },
+    filters?: {
+      status?: string;
+      property_id?: string;
+      page?: number;
+      limit?: number;
+    },
   ) {
     const page = filters?.page ?? 1;
     const limit = filters?.limit ?? 20;
@@ -41,7 +46,9 @@ export class AdminBookingsService {
     // peek into another of their properties without a switch round-trip).
     if (filters?.property_id) {
       if (!actor.property_ids.includes(filters.property_id)) {
-        throw new ForbiddenException('You are not authorised for this property');
+        throw new ForbiddenException(
+          'You are not authorised for this property',
+        );
       }
       where.property_id = filters.property_id;
     } else if (actor.property_id) {
@@ -59,10 +66,19 @@ export class AdminBookingsService {
         skip,
         take: limit,
         include: {
-          guests: { select: { id: true, name: true, email: true, phone: true } },
+          guests: {
+            select: { id: true, name: true, email: true, phone: true },
+          },
           properties: { select: { id: true, name: true } },
           payments: {
-            select: { id: true, amount: true, status: true, purpose: true, razorpay_order_id: true, created_at: true },
+            select: {
+              id: true,
+              amount: true,
+              status: true,
+              purpose: true,
+              razorpay_order_id: true,
+              created_at: true,
+            },
             orderBy: { created_at: 'desc' },
             take: 1,
           },
@@ -77,8 +93,17 @@ export class AdminBookingsService {
     return {
       bookings: bookings.map((b) => ({
         ezee_reservation_id: b.ezee_reservation_id,
-        property: b.properties ? { id: b.properties.id, name: b.properties.name } : null,
-        guest: b.guests ? { id: b.guests.id, name: b.guests.name, email: b.guests.email, phone: b.guests.phone } : null,
+        property: b.properties
+          ? { id: b.properties.id, name: b.properties.name }
+          : null,
+        guest: b.guests
+          ? {
+              id: b.guests.id,
+              name: b.guests.name,
+              email: b.guests.email,
+              phone: b.guests.phone,
+            }
+          : null,
         room_type_name: b.room_type_name,
         room_number: b.room_number,
         checkin_date: b.checkin_date,
@@ -144,7 +169,9 @@ export class AdminBookingsService {
           include: {
             addon_order_items: {
               include: {
-                product_catalog: { select: { id: true, name: true, category: true } },
+                product_catalog: {
+                  select: { id: true, name: true, category: true },
+                },
               },
             },
           },
@@ -207,7 +234,9 @@ export class AdminBookingsService {
   async flushRoomCache(propertyId: string): Promise<{ flushed: string[] }> {
     const catalogKey = CacheService.catalogKey(propertyId);
     await this.cache.del(catalogKey);
-    this.logger.log(`Admin flushed room catalog cache for property ${propertyId}`);
+    this.logger.log(
+      `Admin flushed room catalog cache for property ${propertyId}`,
+    );
     return { flushed: [catalogKey] };
   }
 
@@ -238,7 +267,11 @@ export class AdminBookingsService {
       select: { id: true, name: true, brand: true },
     });
     if (!property) {
-      throw new NotFoundException({ ok: false, error: 'property_not_found', property_id: propertyId });
+      throw new NotFoundException({
+        ok: false,
+        error: 'property_not_found',
+        property_id: propertyId,
+      });
     }
 
     const last10 = phoneLast10(dto.phone);
@@ -255,7 +288,9 @@ export class AdminBookingsService {
     // the LATEST check-in (ORDER BY checkin_date DESC LIMIT 1), so a test booking on a number that
     // already belongs to a live stay would hijack that guest's WhatsApp thread — their requests
     // would be filed against a fake room and routed to test staff who don't exist. Never allow it.
-    const realBooking = await this.prisma.$queryRaw<{ ezee_reservation_id: string }[]>`
+    const realBooking = await this.prisma.$queryRaw<
+      { ezee_reservation_id: string }[]
+    >`
       SELECT b.ezee_reservation_id
         FROM ezee_booking_cache b
         LEFT JOIN guests g ON g.id = b.guest_id
@@ -398,10 +433,19 @@ export class AdminBookingsService {
   async deleteTestBooking(eri: string, actor: AdminJwtPayload) {
     const booking = await this.prisma.ezee_booking_cache.findUnique({
       where: { ezee_reservation_id: eri },
-      select: { ezee_reservation_id: true, property_id: true, is_test: true, guest_id: true },
+      select: {
+        ezee_reservation_id: true,
+        property_id: true,
+        is_test: true,
+        guest_id: true,
+      },
     });
     if (!booking) {
-      throw new NotFoundException({ ok: false, error: 'booking_not_found', ezee_reservation_id: eri });
+      throw new NotFoundException({
+        ok: false,
+        error: 'booking_not_found',
+        ezee_reservation_id: eri,
+      });
     }
     // The whole point of the flag: this endpoint can only ever destroy data it created. A real
     // booking is never deletable here, whatever the caller passes.
@@ -413,12 +457,17 @@ export class AdminBookingsService {
       });
     }
     if (!actor.property_ids?.includes(booking.property_id)) {
-      throw new ForbiddenException({ ok: false, error: 'not_authorised_for_property' });
+      throw new ForbiddenException({
+        ok: false,
+        error: 'not_authorised_for_property',
+      });
     }
 
     const deleted = await this.purgeTestBookingRows(eri);
 
-    this.logger.warn(`TEST booking ${eri} deleted by admin ${actor.admin_id}: ${JSON.stringify(deleted)}`);
+    this.logger.warn(
+      `TEST booking ${eri} deleted by admin ${actor.admin_id}: ${JSON.stringify(deleted)}`,
+    );
     // The guests row is deliberately left behind: it may be shared with a prior real stay (phone is
     // UNIQUE, so we reuse rather than duplicate), and deleting it could orphan real history.
     return { ok: true, ezee_reservation_id: eri, deleted };
@@ -434,8 +483,12 @@ export class AdminBookingsService {
   private async purgeTestBookingRows(eri: string) {
     try {
       return await this.prisma.$transaction(async (tx) => {
-        const orders = await tx.breakfast_order.deleteMany({ where: { ezee_reservation_id: eri } });
-        const tokens = await tx.breakfast_access_token.deleteMany({ where: { ezee_reservation_id: eri } });
+        const orders = await tx.breakfast_order.deleteMany({
+          where: { ezee_reservation_id: eri },
+        });
+        const tokens = await tx.breakfast_access_token.deleteMany({
+          where: { ezee_reservation_id: eri },
+        });
 
         // The WhatsApp request rows and the CSAT rows both hang off zoho_ticket_ref and must go
         // FIRST. wa_service_request.ticket_id is a real FK (ON DELETE NO ACTION, added in
@@ -450,14 +503,29 @@ export class AdminBookingsService {
           })
         ).map((t) => t.id);
         const requests = await tx.wa_service_request.deleteMany({
-          where: { OR: [{ ezee_reservation_id: eri }, { ticket_id: { in: ticketIds } }] },
+          where: {
+            OR: [
+              { ezee_reservation_id: eri },
+              { ticket_id: { in: ticketIds } },
+            ],
+          },
         });
-        const feedback = await tx.ticket_feedback.deleteMany({ where: { ticket_id: { in: ticketIds } } });
+        const feedback = await tx.ticket_feedback.deleteMany({
+          where: { ticket_id: { in: ticketIds } },
+        });
 
-        const tickets = await tx.zoho_ticket_ref.deleteMany({ where: { ezee_reservation_id: eri } });
-        const access = await tx.booking_guest_access.deleteMany({ where: { ezee_reservation_id: eri } });
-        const checkins = await tx.checkin_records.deleteMany({ where: { ezee_reservation_id: eri } });
-        await tx.ezee_booking_cache.delete({ where: { ezee_reservation_id: eri } });
+        const tickets = await tx.zoho_ticket_ref.deleteMany({
+          where: { ezee_reservation_id: eri },
+        });
+        const access = await tx.booking_guest_access.deleteMany({
+          where: { ezee_reservation_id: eri },
+        });
+        const checkins = await tx.checkin_records.deleteMany({
+          where: { ezee_reservation_id: eri },
+        });
+        await tx.ezee_booking_cache.delete({
+          where: { ezee_reservation_id: eri },
+        });
         return {
           breakfast_orders: orders.count,
           breakfast_tokens: tokens.count,

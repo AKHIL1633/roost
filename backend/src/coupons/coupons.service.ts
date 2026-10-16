@@ -49,14 +49,23 @@ export class CouponsService {
 
   // ─── Public ─────────────────────────────────────────────────────────────
 
-  async findApplicableForBooking(input: FindApplicableInput): Promise<FindApplicableResult> {
+  async findApplicableForBooking(
+    input: FindApplicableInput,
+  ): Promise<FindApplicableResult> {
     const now = input.now ?? new Date();
     const errors: FindApplicableResult['errors'] = [];
 
     // Guest can opt out of the auto coupon (e.g. to use a better code they hold).
-    const auto = input.skipAuto ? null : await this.findBestAutoCoupon(input, now, errors);
+    const auto = input.skipAuto
+      ? null
+      : await this.findBestAutoCoupon(input, now, errors);
     const code = input.code
-      ? await this.resolveCodeCoupon(input.code.trim().toUpperCase(), input, now, errors)
+      ? await this.resolveCodeCoupon(
+          input.code.trim().toUpperCase(),
+          input,
+          now,
+          errors,
+        )
       : null;
 
     return { auto, code, errors };
@@ -141,7 +150,8 @@ export class CouponsService {
    *           "10% off (min ₹2000)".
    */
   private discountSummary(c: coupons): string {
-    const isPercent = c.discount_type === 'PERCENT' || c.discount_type === 'PERCENTAGE';
+    const isPercent =
+      c.discount_type === 'PERCENT' || c.discount_type === 'PERCENTAGE';
     const base = isPercent
       ? `${Number(c.discount_value)}% off`
       : `₹${Number(c.discount_value)} off`;
@@ -205,7 +215,9 @@ export class CouponsService {
           { OR: [{ valid_from: null }, { valid_from: { lte: now } }] },
           { OR: [{ valid_until: null }, { valid_until: { gte: now } }] },
         ],
-        min_booking_amount: { lte: new Prisma.Decimal(input.subtotal.toFixed(2)) },
+        min_booking_amount: {
+          lte: new Prisma.Decimal(input.subtotal.toFixed(2)),
+        },
       },
     });
 
@@ -245,7 +257,11 @@ export class CouponsService {
     for (const coupon of candidates) {
       // Type-specific check
       if (coupon.type === 'STAY_LENGTH') {
-        if (!coupon.min_stay_nights || input.stayNights < coupon.min_stay_nights) continue;
+        if (
+          !coupon.min_stay_nights ||
+          input.stayNights < coupon.min_stay_nights
+        )
+          continue;
       } else if (coupon.type === 'NEW_GUEST') {
         // Hard gate: anonymous flows can't claim NEW_GUEST.
         if (await isAnonymous()) continue;
@@ -307,7 +323,10 @@ export class CouponsService {
       coupon.applies_to_all_properties ||
       coupon.coupon_properties.some((p) => p.property_id === input.propertyId);
     if (!scoped) {
-      errors.push({ field: 'code', message: 'This code is not valid for this property' });
+      errors.push({
+        field: 'code',
+        message: 'This code is not valid for this property',
+      });
       return null;
     }
     if (new Prisma.Decimal(coupon.min_booking_amount).gt(input.subtotal)) {
@@ -318,17 +337,26 @@ export class CouponsService {
       return null;
     }
     if (await this.exceededPerGuestCap(coupon, input.guestId)) {
-      errors.push({ field: 'code', message: 'You have already used this code the maximum number of times' });
+      errors.push({
+        field: 'code',
+        message: 'You have already used this code the maximum number of times',
+      });
       return null;
     }
     if (await this.exceededGlobalCap(coupon)) {
-      errors.push({ field: 'code', message: 'This code has reached its usage limit' });
+      errors.push({
+        field: 'code',
+        message: 'This code has reached its usage limit',
+      });
       return null;
     }
 
     const discount = this.computeDiscount(coupon, input.subtotal);
     if (discount <= 0) {
-      errors.push({ field: 'code', message: 'This code does not apply to your booking' });
+      errors.push({
+        field: 'code',
+        message: 'This code does not apply to your booking',
+      });
       return null;
     }
     return { coupon, discount, label: this.couponLabel(coupon) };
@@ -343,7 +371,10 @@ export class CouponsService {
    * a test, a stray test row must not silently disqualify them from a first-time-guest coupon —
    * a discount lost this way is invisible to us and only noticed by the guest.
    */
-  private async isNewGuest(guestId: string, excludeEri?: string): Promise<boolean> {
+  private async isNewGuest(
+    guestId: string,
+    excludeEri?: string,
+  ): Promise<boolean> {
     const count = await this.prisma.ezee_booking_cache.count({
       where: {
         guest_id: guestId,
@@ -355,7 +386,10 @@ export class CouponsService {
     return count === 0;
   }
 
-  private async exceededPerGuestCap(coupon: coupons, guestId: string): Promise<boolean> {
+  private async exceededPerGuestCap(
+    coupon: coupons,
+    guestId: string,
+  ): Promise<boolean> {
     if (coupon.max_uses_per_guest === 0) return false; // 0 = unlimited
     const used = await this.prisma.coupon_redemptions.count({
       where: { coupon_id: coupon.id, guest_id: guestId },
@@ -364,7 +398,8 @@ export class CouponsService {
   }
 
   private async exceededGlobalCap(coupon: coupons): Promise<boolean> {
-    if (coupon.max_total_uses === null || coupon.max_total_uses === undefined) return false;
+    if (coupon.max_total_uses === null || coupon.max_total_uses === undefined)
+      return false;
     const used = await this.prisma.coupon_redemptions.count({
       where: { coupon_id: coupon.id },
     });
@@ -377,10 +412,15 @@ export class CouponsService {
    */
   private computeDiscount(coupon: coupons, subtotal: number): number {
     let discount: number;
-    const isPercent = coupon.discount_type === 'PERCENT' || coupon.discount_type === 'PERCENTAGE';
+    const isPercent =
+      coupon.discount_type === 'PERCENT' ||
+      coupon.discount_type === 'PERCENTAGE';
     if (isPercent) {
       discount = (subtotal * Number(coupon.discount_value)) / 100;
-      if (coupon.max_discount_amount !== null && coupon.max_discount_amount !== undefined) {
+      if (
+        coupon.max_discount_amount !== null &&
+        coupon.max_discount_amount !== undefined
+      ) {
         const cap = Number(coupon.max_discount_amount);
         if (discount > cap) discount = cap;
       }
@@ -392,7 +432,9 @@ export class CouponsService {
   }
 
   private couponLabel(coupon: coupons): string {
-    const isPercent = coupon.discount_type === 'PERCENT' || coupon.discount_type === 'PERCENTAGE';
+    const isPercent =
+      coupon.discount_type === 'PERCENT' ||
+      coupon.discount_type === 'PERCENTAGE';
     const value = isPercent
       ? `${coupon.discount_value}% off`
       : `₹${coupon.discount_value} off`;

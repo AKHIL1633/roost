@@ -1,4 +1,9 @@
-import { ForbiddenException, Injectable, Logger, NotFoundException } from '@nestjs/common';
+import {
+  ForbiddenException,
+  Injectable,
+  Logger,
+  NotFoundException,
+} from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import type { UpdateColivePriceDto } from './dto/update-colive-price.dto';
 import type { AdminJwtPayload } from '../../common/guards/admin-jwt.strategy';
@@ -39,7 +44,9 @@ export class AdminRoomTypesService {
       type: rt.type,
       total_beds: rt.total_beds,
       base_price_per_night: Number(rt.base_price_per_night),
-      colive_price_month: rt.colive_price_month ? Number(rt.colive_price_month) : null,
+      colive_price_month: rt.colive_price_month
+        ? Number(rt.colive_price_month)
+        : null,
       ezee_room_type_id: rt.ezee_room_type_id,
     }));
   }

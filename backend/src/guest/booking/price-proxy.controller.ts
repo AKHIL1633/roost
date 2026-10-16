@@ -24,7 +24,12 @@ export class PriceProxyController {
   @Post('api/prices')
   @Header('Cache-Control', 'no-store')
   async getPrices(@Body() dto: PriceQuoteDto): Promise<{
-    items: Array<{ roomTypeId: string; price: number; priceWithTax: number; taxRate: number }>;
+    items: Array<{
+      roomTypeId: string;
+      price: number;
+      priceWithTax: number;
+      taxRate: number;
+    }>;
   }> {
     // Reuses live eZee availability (cached 30 min). On eZee outage it degrades
     // to the DB-estimate path internally and never leaks upstream error bodies.

@@ -46,7 +46,9 @@ export const OWN_CHANNEL_SOURCES = new Set(
 
 export type BookingChannel = 'ota' | 'direct' | 'own' | 'other';
 
-export function classifyBookingSource(source: string | null | undefined): BookingChannel {
+export function classifyBookingSource(
+  source: string | null | undefined,
+): BookingChannel {
   if (!source) return 'direct'; // null source = walk-in entered at the desk
   const key = source.trim().toLowerCase();
   if (OTA_SOURCES.has(key)) return 'ota';

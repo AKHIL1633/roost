@@ -27,10 +27,7 @@ export class GuestKycController {
    * List all slots for a booking with KYC status.
    */
   @Get(':eri/slots')
-  listSlots(
-    @CurrentGuest() guest: GuestJwtPayload,
-    @Param('eri') eri: string,
-  ) {
+  listSlots(@CurrentGuest() guest: GuestJwtPayload, @Param('eri') eri: string) {
     return this.kycService.listSlots(guest.guest_id, eri);
   }
 
@@ -40,10 +37,7 @@ export class GuestKycController {
    * MUST be declared before GET :eri/slots/:slotId to prevent "add" being matched as slotId.
    */
   @Post(':eri/slots/add')
-  addSlot(
-    @CurrentGuest() guest: GuestJwtPayload,
-    @Param('eri') eri: string,
-  ) {
+  addSlot(@CurrentGuest() guest: GuestJwtPayload, @Param('eri') eri: string) {
     return this.kycService.addSlot(guest.guest_id, eri);
   }
 

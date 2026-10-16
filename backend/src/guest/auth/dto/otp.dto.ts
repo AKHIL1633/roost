@@ -1,4 +1,10 @@
-import { IsBoolean, IsEmail, IsString, Length, MinLength } from 'class-validator';
+import {
+  IsBoolean,
+  IsEmail,
+  IsString,
+  Length,
+  MinLength,
+} from 'class-validator';
 
 export class SendOtpDto {
   @IsEmail()
@@ -45,4 +51,3 @@ export class ToggleTwoFaDto {
   @IsBoolean()
   enabled: boolean;
 }
-

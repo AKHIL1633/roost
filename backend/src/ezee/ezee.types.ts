@@ -25,10 +25,10 @@ export interface EzeeRoomAvailabilityResult {
 // room_id here = roomtypeunkid used in RoomList / InsertBooking APIs.
 
 export interface EzeePhysicalRoomCatalogEntry {
-  roomId: string;            // = roomtypeunkid in other APIs
+  roomId: string; // = roomtypeunkid in other APIs
   roomName: string;
   physicalRoomNos: string[]; // e.g. ["106", "107"]
-  physicalRoomCodes: string[];// e.g. ["106 : Active", "107 : Active"]
+  physicalRoomCodes: string[]; // e.g. ["106 : Active", "107 : Active"]
 }
 
 export interface EzeePhysicalRoomCatalogResult {
@@ -82,8 +82,8 @@ export interface EzeeBookingRoom {
 }
 
 export interface EzeeBookingInput {
-  checkin: string;   // YYYY-MM-DD (converted to eZee format internally)
-  checkout: string;  // YYYY-MM-DD
+  checkin: string; // YYYY-MM-DD (converted to eZee format internally)
+  checkout: string; // YYYY-MM-DD
   email: string;
   phone: string;
   address?: string;

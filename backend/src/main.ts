@@ -76,15 +76,25 @@ async function bootstrap() {
   ]);
 
   app.enableCors({
-    origin: (origin: string | undefined, cb: (err: Error | null, allow?: boolean) => void) => {
+    origin: (
+      origin: string | undefined,
+      cb: (err: Error | null, allow?: boolean) => void,
+    ) => {
       // Allow non-browser requests (curl, Postman, server-to-server) which
       // omit the Origin header. Browser requests always set it.
       if (!origin) return cb(null, true);
       if (allowedOrigins.has(origin)) return cb(null, true);
-      if (process.env.FRONTEND_URL && origin === process.env.FRONTEND_URL.replace(/\/+$/, '')) {
+      if (
+        process.env.FRONTEND_URL &&
+        origin === process.env.FRONTEND_URL.replace(/\/+$/, '')
+      ) {
         return cb(null, true);
       }
-      if (process.env.ALLOWED_ORIGINS?.split(',').map(s => s.trim()).includes(origin)) {
+      if (
+        process.env.ALLOWED_ORIGINS?.split(',')
+          .map((s) => s.trim())
+          .includes(origin)
+      ) {
         return cb(null, true);
       }
       // Allow Netlify & Render preview/production domains as well as local development origins

@@ -110,7 +110,9 @@ export class WatiService {
     // why front-desk guests never got their "assigned to XYZ" message). Assume +91.
     const phone = toIndianMsisdn(whatsappNumber);
     if (!phone) {
-      this.logger.warn(`[SKIP] WATI template="${templateName}": unusable number "${whatsappNumber}"`);
+      this.logger.warn(
+        `[SKIP] WATI template="${templateName}": unusable number "${whatsappNumber}"`,
+      );
       return { ok: false, skipped: true };
     }
     const url = `${cfg.baseUrl}/api/v1/sendTemplateMessage?whatsappNumber=${phone}`;
@@ -190,7 +192,9 @@ export class WatiService {
 
     const phone = toIndianMsisdn(whatsappNumber);
     if (!phone) {
-      this.logger.warn(`[SKIP] WATI session message: unusable number "${whatsappNumber}"`);
+      this.logger.warn(
+        `[SKIP] WATI session message: unusable number "${whatsappNumber}"`,
+      );
       return { ok: false, skipped: true };
     }
     // WATI's sendSessionMessage takes `messageText` as a QUERY PARAMETER, not a
@@ -252,7 +256,8 @@ export class WatiService {
       return true; // non-JSON 200 — assume ok
     }
     if (j?.result === false || j?.ok === false) return false;
-    if (typeof j?.result === 'string' && /fail|error|false/i.test(j.result)) return false;
+    if (typeof j?.result === 'string' && /fail|error|false/i.test(j.result))
+      return false;
     return true;
   }
 }

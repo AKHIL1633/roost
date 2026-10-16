@@ -51,18 +51,25 @@ const TEMPLATE_DEFAULTS: Record<TemplateKey, string> = {
   PAYMENT_REQUEST: 'service_payment_request_v1',
   PAYMENT_SUCCESS: 'service_payment_success_v1',
   PAYMENT_FAILED: 'service_payment_failed_v1',
-  FEEDBACK_BUTTONS: process.env.FEEDBACK_BUTTON_TEMPLATE || 'service_feedback_buttons_v1',
+  FEEDBACK_BUTTONS:
+    process.env.FEEDBACK_BUTTON_TEMPLATE || 'service_feedback_buttons_v1',
   FEEDBACK_LINK: 'service_feedback_request_v1',
-  PROPERTY_SELECTOR: process.env.PROSPECT_SELECTOR_TEMPLATE || 'property_selector_v3',
-  PROSPECT_NOTIFY: process.env.PROSPECT_STAFF_NOTIFY_TEMPLATE || 'prospect_question_notify_v3',
-  BREAKFAST_INVITE: process.env.BREAKFAST_INVITE_TEMPLATE || 'breakfast_order_invite_v1',
+  PROPERTY_SELECTOR:
+    process.env.PROSPECT_SELECTOR_TEMPLATE || 'property_selector_v3',
+  PROSPECT_NOTIFY:
+    process.env.PROSPECT_STAFF_NOTIFY_TEMPLATE || 'prospect_question_notify_v3',
+  BREAKFAST_INVITE:
+    process.env.BREAKFAST_INVITE_TEMPLATE || 'breakfast_order_invite_v1',
 };
 
 /**
  * The registered WATI template name for a brand. Checks `WATI_{BRAND}_TPL_{KEY}`
  * first (e.g. `WATI_BUTEAK_TPL_GUEST_ACK`), else the default above.
  */
-export function resolveTemplate(brand: string | null | undefined, key: TemplateKey): string {
+export function resolveTemplate(
+  brand: string | null | undefined,
+  key: TemplateKey,
+): string {
   const b = (brand || 'TDS').toUpperCase();
   const override = process.env[`WATI_${b}_TPL_${key}`];
   return override && override.trim() ? override.trim() : TEMPLATE_DEFAULTS[key];

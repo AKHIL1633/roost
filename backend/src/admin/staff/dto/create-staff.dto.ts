@@ -1,4 +1,11 @@
-import { IsString, IsOptional, IsBoolean, IsIn, MaxLength, Matches } from 'class-validator';
+import {
+  IsString,
+  IsOptional,
+  IsBoolean,
+  IsIn,
+  MaxLength,
+  Matches,
+} from 'class-validator';
 
 // `role` is validated against the staff_roles catalog in the service (so ops can add
 // roles without a code change); departments stay a fixed enum for now.
@@ -15,7 +22,9 @@ export class CreateStaffDto {
 
   /** WhatsApp number, digits only (country code, no +). e.g. 919812345678 */
   @IsString()
-  @Matches(/^[0-9]{10,15}$/, { message: 'phone must be 10–15 digits (country code, no +)' })
+  @Matches(/^[0-9]{10,15}$/, {
+    message: 'phone must be 10–15 digits (country code, no +)',
+  })
   phone: string;
 
   /** Must exist (and be active) in the staff_roles catalog — validated in the service. */

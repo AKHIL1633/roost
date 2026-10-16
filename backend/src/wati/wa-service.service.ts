@@ -6,19 +6,34 @@ import {
   type ClassifierCatalogItem,
   type GuestMessageClassification,
 } from '../llm/llm.service';
-import { WatiService, GUEST_RECEPTION_ACK, GUEST_UNFULFILLED_ACK } from './wati.service';
+import {
+  WatiService,
+  GUEST_RECEPTION_ACK,
+  GUEST_UNFULFILLED_ACK,
+} from './wati.service';
 import { resolveTemplate } from './wati-templates';
 import { TicketsService } from '../tickets/tickets.service';
-import { DEFAULT_CLASS, UNFULFILLED_CLASS, type TaskClass } from '../tickets/task-classes';
+import {
+  DEFAULT_CLASS,
+  UNFULFILLED_CLASS,
+  type TaskClass,
+} from '../tickets/task-classes';
 import { PaymentService } from '../payment/payment.service';
-import { FeedbackService, type PendingFeedback } from '../feedback/feedback.service';
+import {
+  FeedbackService,
+  type PendingFeedback,
+} from '../feedback/feedback.service';
 import { ProspectService } from './prospect.service';
 import { RoomSelectionService } from './room-selection.service';
 import { BreakfastService } from '../breakfast/breakfast.service';
 import { BreakfastInviteService } from '../breakfast/breakfast-invite.service';
 import type { WatiInboundMessage } from './wati-inbound.types';
 import { phoneLast10 } from '../common/utils/phone.util';
-import { brandDisplayName, brandBookingUrl, propertyShortLabel } from '../common/property-resolver';
+import {
+  brandDisplayName,
+  brandBookingUrl,
+  propertyShortLabel,
+} from '../common/property-resolver';
 import { FlowLogService } from '../flow-log/flow-log.service';
 import { toIstString } from '../common/utils/time.util';
 
@@ -76,7 +91,13 @@ export class WaServiceService {
         where: { wati_message_id: msg.messageId },
       });
       if (seen) {
-        await this.flowLog.log({ trace_id: traceId, brand, module: 'WA_INBOUND', output: 'deduped (retry)', status: 'SKIP' });
+        await this.flowLog.log({
+          trace_id: traceId,
+          brand,
+          module: 'WA_INBOUND',
+          output: 'deduped (retry)',
+          status: 'SKIP',
+        });
         return { deduped: true, request_id: seen.id };
       }
     }
@@ -102,7 +123,10 @@ export class WaServiceService {
     const ctx = await this.flowLog.timed(
       { trace_id: traceId, brand, module: 'IDENTITY', input: msg.waId },
       () => this.resolveCheckedInGuest(brand, msg.waId),
-      (c) => (c ? `checked-in: Yes (room ${c.roomNumber ?? '-'}, eri ${c.eri}, guest ${c.guestId.slice(0, 8)})` : 'checked-in: No'),
+      (c) =>
+        c
+          ? `checked-in: Yes (room ${c.roomNumber ?? '-'}, eri ${c.eri}, guest ${c.guestId.slice(0, 8)})`
+          : 'checked-in: No',
     );
     if (!ctx) {
       // Non-checked-in (prospect) path: resolve which property the prospect means
@@ -141,7 +165,14 @@ export class WaServiceService {
           output: `room ${pick.room} → resuming "${pick.pendingText.slice(0, 60)}"`,
         });
         // Resume the stashed request against the chosen room.
-        return this.handleResolvedGuestText(traceId, brand, msg, ctx, pick.pendingText, pick.room);
+        return this.handleResolvedGuestText(
+          traceId,
+          brand,
+          msg,
+          ctx,
+          pick.pendingText,
+          pick.room,
+        );
       }
       if (pick.state === 're_prompt') {
         await this.replyAndLog(
@@ -227,12 +258,22 @@ export class WaServiceService {
     // buttons and ask for something else, we leave the feedback pending and fall through.
     // Only active in buttons mode: the legacy link flow also leaves feedback rows with a
     // null sentiment, and we must not mistake a casual "good" for a button tap there.
-    const feedbackButtons = (process.env.FEEDBACK_CHANNEL ?? 'buttons') === 'buttons';
-    const pending = feedbackButtons ? await this.feedback.findPendingForGuest(ctx.guestId) : null;
+    const feedbackButtons =
+      (process.env.FEEDBACK_CHANNEL ?? 'buttons') === 'buttons';
+    const pending = feedbackButtons
+      ? await this.feedback.findPendingForGuest(ctx.guestId)
+      : null;
     if (pending && pending.stage === 'rating') {
       const sentiment = FeedbackService.toSentiment(text);
       if (sentiment) {
-        return this.handleFeedbackRating(traceId, brand, msg, ctx, pending, sentiment);
+        return this.handleFeedbackRating(
+          traceId,
+          brand,
+          msg,
+          ctx,
+          pending,
+          sentiment,
+        );
       }
     }
 
@@ -275,11 +316,18 @@ export class WaServiceService {
     // on resume. Greetings / FAQ / status checks don't need a room, so we gate on intent using one
     // classify that is reused below as `cls`. Skipped on the resume path and for single-room guests.
     // The catalog is only loaded early for this probe; single-room guests keep the original order.
-    const disambigEnabled = (process.env.WA_ROOM_DISAMBIGUATION_ENABLED ?? 'true') === 'true';
-    const isMultiRoom = !forcedRoom && disambigEnabled && ctx.roomNumbers.length > 1;
+    const disambigEnabled =
+      (process.env.WA_ROOM_DISAMBIGUATION_ENABLED ?? 'true') === 'true';
+    const isMultiRoom =
+      !forcedRoom && disambigEnabled && ctx.roomNumbers.length > 1;
     let catalog = isMultiRoom
       ? await this.flowLog.timed(
-          { trace_id: traceId, brand, module: 'CATALOG', input: ctx.propertyId },
+          {
+            trace_id: traceId,
+            brand,
+            module: 'CATALOG',
+            input: ctx.propertyId,
+          },
           () => this.loadCatalog(ctx.propertyId),
           (items) => `${items.length} catalog item(s)`,
         )
@@ -390,7 +438,9 @@ export class WaServiceService {
     // great" isn't torn into tickets — a pending Good/Bad *rating* (the normal state right
     // after any completed ticket) must NOT block a genuine new multi-request.
     const inReviewCapture =
-      !!pending && pending.stage === 'comment' && this.feedback.commentWindowOpen(pending);
+      !!pending &&
+      pending.stage === 'comment' &&
+      this.feedback.commentWindowOpen(pending);
     if (!inReviewCapture && this.looksMultiRequest(text)) {
       const segments = await this.flowLog.timed(
         { trace_id: traceId, brand, module: 'LLM_SPLIT', input: text },
@@ -400,7 +450,12 @@ export class WaServiceService {
       if (segments.length > 1) {
         if (!catalog) {
           catalog = await this.flowLog.timed(
-            { trace_id: traceId, brand, module: 'CATALOG', input: ctx.propertyId },
+            {
+              trace_id: traceId,
+              brand,
+              module: 'CATALOG',
+              input: ctx.propertyId,
+            },
             () => this.loadCatalog(ctx.propertyId),
             (items) => `${items.length} catalog item(s)`,
           );
@@ -411,8 +466,16 @@ export class WaServiceService {
         // into junk tickets, so the split only wins when it yields 2+ genuinely actionable
         // asks; otherwise we hand the whole message back to the normal single-message pipeline,
         // which knows how to answer a greeting, a status check or an FAQ.
-        const segs = await this.classifySegments(traceId, brand, segments, catalog, ctx.propertyId);
-        const actionable = segs.filter((s) => WaServiceService.ACTIONABLE_INTENTS.has(s.cls.intent));
+        const segs = await this.classifySegments(
+          traceId,
+          brand,
+          segments,
+          catalog,
+          ctx.propertyId,
+        );
+        const actionable = segs.filter((s) =>
+          WaServiceService.ACTIONABLE_INTENTS.has(s.cls.intent),
+        );
         if (actionable.length > 1) {
           return this.handleMultiRequest(traceId, brand, msg, ctx, segs);
         }
@@ -462,12 +525,19 @@ export class WaServiceService {
       probeCls ??
       (await this.flowLog.timed(
         { trace_id: traceId, brand, module: 'LLM_CLASSIFY', input: text },
-        () => this.llm.classifyGuestMessage(text, catalog!),
+        () => this.llm.classifyGuestMessage(text, catalog),
         (c) => `message_type=${c.intent} → ${this.intentLabel(c.intent)}`,
       ));
     // The model proposes; the routing policy disposes. Applied BEFORE the LLM_ROUTE log
     // and the row update, so both record where the request actually went.
-    const cls = await this.applyRoutingPolicy(traceId, brand, proposed, catalog!, text, ctx.propertyId);
+    const cls = await this.applyRoutingPolicy(
+      traceId,
+      brand,
+      proposed,
+      catalog,
+      text,
+      ctx.propertyId,
+    );
     await this.flowLog.log({
       trace_id: traceId,
       brand,
@@ -495,7 +565,11 @@ export class WaServiceService {
     //   • a request_update that means the work is STILL not done ("still waiting", "where
     //     is it") — a real status check, NOT a review. "It took forever" (a past-tense
     //     complaint) stays a review; classifyFeedbackFollowup draws that line.
-    if (pending && pending.stage === 'comment' && this.feedback.commentWindowOpen(pending)) {
+    if (
+      pending &&
+      pending.stage === 'comment' &&
+      this.feedback.commentWindowOpen(pending)
+    ) {
       // The FIRST classifier is the authority — a reply in the review window is captured as
       // the CSAT remark ONLY when it's a genuine REVIEW of the completed service. Everything
       // else FALLS THROUGH to its normal route below, so it is never swallowed by the
@@ -518,7 +592,8 @@ export class WaServiceService {
       } else if (cls.intent === 'unclear') {
         // A terse-but-real review ("Slow") also lands as `unclear`; keep those, let
         // keyboard-mash fall through to the "please resend" prompt.
-        capture = (await this.llm.classifyFeedbackRemark(text)) === 'meaningful';
+        capture =
+          (await this.llm.classifyFeedbackRemark(text)) === 'meaningful';
       }
 
       if (capture) {
@@ -543,7 +618,12 @@ export class WaServiceService {
           });
         }
         await this.finish(reqId, 'FEEDBACK');
-        return { intent: 'feedback_remark', request_id: reqId, feedback_id: pending.id, appended: !first };
+        return {
+          intent: 'feedback_remark',
+          request_id: reqId,
+          feedback_id: pending.id,
+          appended: !first,
+        };
       }
 
       // Not a review → hand it to the normal pipeline. Close the review window only when the
@@ -563,7 +643,10 @@ export class WaServiceService {
 
     // 5a. Greeting → personalised welcome.
     if (cls.intent === 'greeting_hello') {
-      const guest = await this.prisma.guests.findUnique({ where: { id: ctx.guestId }, select: { name: true } });
+      const guest = await this.prisma.guests.findUnique({
+        where: { id: ctx.guestId },
+        select: { name: true },
+      });
       // Name the SPECIFIC property (e.g. "Buteak BTM" vs "Buteak Koramangala" vs "TDS
       // Koramangala"), not the brand — a guest at BTM must never be welcomed to Koramangala.
       // Uses the curated short-label map, which is property-distinct and consistent, rather
@@ -585,7 +668,10 @@ export class WaServiceService {
     // asked about: with an iron-board AND a towel open, "where is my towel?" must not
     // answer about the iron board. Match the message to one of their live requests.
     if (cls.intent === 'request_update') {
-      const guest = await this.prisma.guests.findUnique({ where: { id: ctx.guestId }, select: { name: true } });
+      const guest = await this.prisma.guests.findUnique({
+        where: { id: ctx.guestId },
+        select: { name: true },
+      });
       const name = guest?.name ?? 'there';
 
       // Candidates: everything still open, plus anything completed in the last 24h —
@@ -623,14 +709,20 @@ export class WaServiceService {
         () =>
           this.llm.matchUpdateTarget(
             text,
-            candidates.map((c) => ({ id: c.id, subject: c.subject, status: c.status })),
+            candidates.map((c) => ({
+              id: c.id,
+              subject: c.subject,
+              status: c.status,
+            })),
           ),
         (m) =>
           m.ticket_id
             ? `matched ticket ${m.ticket_id.slice(0, 8)}`
             : `no match${m.item ? ` (asked for "${m.item}")` : ' (generic)'}`,
       );
-      const matched = match.ticket_id ? candidates.find((c) => c.id === match.ticket_id) : null;
+      const matched = match.ticket_id
+        ? candidates.find((c) => c.id === match.ticket_id)
+        : null;
 
       let reply: string;
       let route: string;
@@ -657,7 +749,10 @@ export class WaServiceService {
         const open = candidates.filter((c) => c.status !== 'COMPLETED');
         if (open.length) {
           const lines = open
-            .map((c) => `• *${c.subject ?? 'request'}* — ${this.statusLabel(c.status)}`)
+            .map(
+              (c) =>
+                `• *${c.subject ?? 'request'}* — ${this.statusLabel(c.status)}`,
+            )
             .join('\n');
           reply = `Hi ${name}, here’s where your open requests stand:\n${lines}\nSomeone’s already on it and will have it sorted shortly. 🙌`;
           route = 'request_update:list';
@@ -688,12 +783,21 @@ export class WaServiceService {
         ? await this.flowLog.timed(
             { trace_id: traceId, brand, module: 'FAQ_RAG', input: text },
             () => this.prospect.askChatbot(ctx.propertyId, text),
-            (a) => (a.answered ? 'answered from knowledge base' : 'no KB answer → L1 ticket'),
+            (a) =>
+              a.answered
+                ? 'answered from knowledge base'
+                : 'no KB answer → L1 ticket',
           )
         : { answered: false, answer: null };
 
       if (answer.answered && answer.answer) {
-        await this.replyAndLog(traceId, brand, msg.waId, answer.answer, 'faq:answered');
+        await this.replyAndLog(
+          traceId,
+          brand,
+          msg.waId,
+          answer.answer,
+          'faq:answered',
+        );
         await this.finish(reqId, 'DROPPED');
         return { intent: cls.intent, request_id: reqId, answered: true };
       }
@@ -701,14 +805,39 @@ export class WaServiceService {
       // Couldn't answer → Reception ticket, and ack the guest. A question we simply
       // failed to look up is ROUTINE — someone at the desk knows the answer — so it is
       // T0, never the unfulfillable class.
-      const ticket = await this.raiseTicket(ctx, 'FRONT_OFFICE', cls.request_text || text, 'FREE', DEFAULT_CLASS, msg.waId, text);
+      const ticket = await this.raiseTicket(
+        ctx,
+        'FRONT_OFFICE',
+        cls.request_text || text,
+        'FREE',
+        DEFAULT_CLASS,
+        msg.waId,
+        text,
+      );
       await this.flowLog.linkTicket(traceId, ticket.id);
       await this.prisma.wa_service_request.update({
         where: { id: reqId },
-        data: { request_type: 'ANONYMOUS', department: 'FRONT_OFFICE', status: 'TICKETED', ticket_id: ticket.id },
+        data: {
+          request_type: 'ANONYMOUS',
+          department: 'FRONT_OFFICE',
+          status: 'TICKETED',
+          ticket_id: ticket.id,
+        },
       });
-      await this.ackTicketToGuest(reqId, brand, msg, ticket, cls.request_text || text);
-      return { intent: cls.intent, request_type: 'RECEPTION', request_id: reqId, ticket_id: ticket.id, answered: false };
+      await this.ackTicketToGuest(
+        reqId,
+        brand,
+        msg,
+        ticket,
+        cls.request_text || text,
+      );
+      return {
+        intent: cls.intent,
+        request_type: 'RECEPTION',
+        request_id: reqId,
+        ticket_id: ticket.id,
+        answered: false,
+      };
     }
 
     // 5b-ter. Breakfast — the guest wants to ORDER breakfast ("breakfast", "order my
@@ -729,10 +858,17 @@ export class WaServiceService {
               phone: msg.waId, // reach them on the number that just messaged
               room_number: ctx.roomNumber,
             }),
-          (sent) => (sent ? 'breakfast ordering link sent' : 'link send skipped (no phone/disabled)'),
+          (sent) =>
+            sent
+              ? 'breakfast ordering link sent'
+              : 'link send skipped (no phone/disabled)',
         );
         await this.finish(reqId, 'DROPPED');
-        return { intent: cls.intent, request_id: reqId, breakfast: 'link_sent' };
+        return {
+          intent: cls.intent,
+          request_id: reqId,
+          breakfast: 'link_sent',
+        };
       }
       await this.replyAndLog(
         traceId,
@@ -742,7 +878,11 @@ export class WaServiceService {
         'breakfast:unavailable',
       );
       await this.finish(reqId, 'DROPPED');
-      return { intent: cls.intent, request_id: reqId, breakfast: 'unavailable' };
+      return {
+        intent: cls.intent,
+        request_id: reqId,
+        breakfast: 'unavailable',
+      };
     }
 
     // 5c. Ambiguous — a genuine property/stay request the bot can't confidently route
@@ -755,14 +895,38 @@ export class WaServiceService {
     // you" rather than "Praveer is on it" — which also makes an OpenAI outage (every
     // message falls back to `ambiguous`) degrade honestly instead of lying at scale.
     if (cls.intent === 'ambiguous') {
-      const ticket = await this.raiseTicket(ctx, 'FRONT_OFFICE', cls.request_text || text, 'FREE', UNFULFILLED_CLASS, msg.waId, text);
+      const ticket = await this.raiseTicket(
+        ctx,
+        'FRONT_OFFICE',
+        cls.request_text || text,
+        'FREE',
+        UNFULFILLED_CLASS,
+        msg.waId,
+        text,
+      );
       await this.flowLog.linkTicket(traceId, ticket.id);
       await this.prisma.wa_service_request.update({
         where: { id: reqId },
-        data: { request_type: 'ANONYMOUS', department: 'FRONT_OFFICE', status: 'TICKETED', ticket_id: ticket.id },
+        data: {
+          request_type: 'ANONYMOUS',
+          department: 'FRONT_OFFICE',
+          status: 'TICKETED',
+          ticket_id: ticket.id,
+        },
       });
-      await this.ackTicketToGuest(reqId, brand, msg, ticket, cls.request_text || text);
-      return { intent: cls.intent, request_type: 'RECEPTION', request_id: reqId, ticket_id: ticket.id };
+      await this.ackTicketToGuest(
+        reqId,
+        brand,
+        msg,
+        ticket,
+        cls.request_text || text,
+      );
+      return {
+        intent: cls.intent,
+        request_type: 'RECEPTION',
+        request_id: reqId,
+        ticket_id: ticket.id,
+      };
     }
 
     // 5c-bis. Unclear — gibberish, a fragment, or contextless text that ISN'T a readable
@@ -793,14 +957,32 @@ export class WaServiceService {
         await this.finish(reqId, 'DROPPED');
         return { intent: cls.intent, request_id: reqId };
       }
-      const ticket = await this.raiseTicket(ctx, 'FRONT_OFFICE', text, 'FREE', UNFULFILLED_CLASS, msg.waId, text);
+      const ticket = await this.raiseTicket(
+        ctx,
+        'FRONT_OFFICE',
+        text,
+        'FREE',
+        UNFULFILLED_CLASS,
+        msg.waId,
+        text,
+      );
       await this.flowLog.linkTicket(traceId, ticket.id);
       await this.prisma.wa_service_request.update({
         where: { id: reqId },
-        data: { request_type: 'ANONYMOUS', department: 'FRONT_OFFICE', status: 'TICKETED', ticket_id: ticket.id },
+        data: {
+          request_type: 'ANONYMOUS',
+          department: 'FRONT_OFFICE',
+          status: 'TICKETED',
+          ticket_id: ticket.id,
+        },
       });
       await this.ackTicketToGuest(reqId, brand, msg, ticket, text);
-      return { intent: cls.intent, request_type: 'RECEPTION', request_id: reqId, ticket_id: ticket.id };
+      return {
+        intent: cls.intent,
+        request_type: 'RECEPTION',
+        request_id: reqId,
+        ticket_id: ticket.id,
+      };
     }
 
     // 5c-ter. booking_confirm / booking_deny → the bot must NOT answer these on its
@@ -810,19 +992,49 @@ export class WaServiceService {
     // guest — a human decides, not the AI.
     if (cls.intent === 'booking_confirm' || cls.intent === 'booking_deny') {
       // A booking question the desk can answer → routine (T0), not unfulfillable.
-      const ticket = await this.raiseTicket(ctx, 'FRONT_OFFICE', cls.request_text || text, 'FREE', DEFAULT_CLASS, msg.waId, text);
+      const ticket = await this.raiseTicket(
+        ctx,
+        'FRONT_OFFICE',
+        cls.request_text || text,
+        'FREE',
+        DEFAULT_CLASS,
+        msg.waId,
+        text,
+      );
       await this.flowLog.linkTicket(traceId, ticket.id);
       await this.prisma.wa_service_request.update({
         where: { id: reqId },
-        data: { request_type: 'ANONYMOUS', department: 'FRONT_OFFICE', status: 'TICKETED', ticket_id: ticket.id },
+        data: {
+          request_type: 'ANONYMOUS',
+          department: 'FRONT_OFFICE',
+          status: 'TICKETED',
+          ticket_id: ticket.id,
+        },
       });
-      await this.ackTicketToGuest(reqId, brand, msg, ticket, cls.request_text || text);
-      return { intent: cls.intent, request_type: 'RECEPTION', request_id: reqId, ticket_id: ticket.id };
+      await this.ackTicketToGuest(
+        reqId,
+        brand,
+        msg,
+        ticket,
+        cls.request_text || text,
+      );
+      return {
+        intent: cls.intent,
+        request_type: 'RECEPTION',
+        request_id: reqId,
+        ticket_id: ticket.id,
+      };
     }
 
     // 5d. greeting_acknowledge / feedback → short canned closer, no ticket.
     if (cls.intent !== 'request_new') {
-      await this.replyAndLog(traceId, brand, msg.waId, this.replyForIntent(cls.intent), cls.intent);
+      await this.replyAndLog(
+        traceId,
+        brand,
+        msg.waId,
+        this.replyForIntent(cls.intent),
+        cls.intent,
+      );
       await this.finish(reqId, 'DROPPED');
       return { intent: cls.intent, request_id: reqId };
     }
@@ -862,7 +1074,11 @@ export class WaServiceService {
     // Match the ask to a catalog product (null = not in catalog → anonymous ticket).
     let product = cls.product_id
       ? await this.prisma.product_catalog.findFirst({
-          where: { id: cls.product_id, property_id: ctx.propertyId, is_active: true },
+          where: {
+            id: cls.product_id,
+            property_id: ctx.propertyId,
+            is_active: true,
+          },
         })
       : null;
 
@@ -872,7 +1088,10 @@ export class WaServiceService {
     // payment for something they never asked for). Before we branch on the product —
     // and especially before charging — require that its name overlaps the guest's
     // actual words. If it doesn't, drop it and route the REAL request as a ticket.
-    if (product && !this.productMatchesRequest(product.name, cls.request_text, requestText)) {
+    if (
+      product &&
+      !this.productMatchesRequest(product.name, cls.request_text, requestText)
+    ) {
       await this.flowLog.log({
         trace_id: reqId,
         brand,
@@ -885,14 +1104,37 @@ export class WaServiceService {
     }
 
     if (!product) {
-      const ticket = await this.raiseTicket(ctx, cls.department, cls.request_text || requestText, 'FREE', cls.task_category, msg.waId, requestText);
+      const ticket = await this.raiseTicket(
+        ctx,
+        cls.department,
+        cls.request_text || requestText,
+        'FREE',
+        cls.task_category,
+        msg.waId,
+        requestText,
+      );
       await this.flowLog.linkTicket(reqId, ticket.id);
       await this.prisma.wa_service_request.update({
         where: { id: reqId },
-        data: { request_type: 'ANONYMOUS', status: 'TICKETED', ticket_id: ticket.id },
+        data: {
+          request_type: 'ANONYMOUS',
+          status: 'TICKETED',
+          ticket_id: ticket.id,
+        },
       });
-      await this.ackTicketToGuest(reqId, brand, msg, ticket, cls.request_text || requestText);
-      return { intent: cls.intent, request_type: 'ANONYMOUS', request_id: reqId, ticket_id: ticket.id };
+      await this.ackTicketToGuest(
+        reqId,
+        brand,
+        msg,
+        ticket,
+        cls.request_text || requestText,
+      );
+      return {
+        intent: cls.intent,
+        request_type: 'ANONYMOUS',
+        request_id: reqId,
+        ticket_id: ticket.id,
+      };
     }
 
     const price = Number(product.base_price);
@@ -900,14 +1142,33 @@ export class WaServiceService {
     // 7a. BORROWABLE catalog item → ticket (no payment).
     if (product.category === 'BORROWABLE') {
       // Borrowable items (iron, umbrella, hairdryer) are a standard delivery → T0.
-      const ticket = await this.raiseTicket(ctx, 'HOUSEKEEPING', product.name, 'BORROWABLE', DEFAULT_CLASS, msg.waId, requestText);
+      const ticket = await this.raiseTicket(
+        ctx,
+        'HOUSEKEEPING',
+        product.name,
+        'BORROWABLE',
+        DEFAULT_CLASS,
+        msg.waId,
+        requestText,
+      );
       await this.flowLog.linkTicket(reqId, ticket.id);
       await this.prisma.wa_service_request.update({
         where: { id: reqId },
-        data: { request_type: 'BORROWABLE', product_id: product.id, department: 'HOUSEKEEPING', task_category: 'T0', status: 'TICKETED', ticket_id: ticket.id },
+        data: {
+          request_type: 'BORROWABLE',
+          product_id: product.id,
+          department: 'HOUSEKEEPING',
+          task_category: 'T0',
+          status: 'TICKETED',
+          ticket_id: ticket.id,
+        },
       });
       await this.ackTicketToGuest(reqId, brand, msg, ticket, product.name);
-      return { request_type: 'BORROWABLE', request_id: reqId, ticket_id: ticket.id };
+      return {
+        request_type: 'BORROWABLE',
+        request_id: reqId,
+        ticket_id: ticket.id,
+      };
     }
 
     // 7b. FREE catalog item → (inventory-- if physical) → ticket. When out of stock we
@@ -915,7 +1176,10 @@ export class WaServiceService {
     // with an apology here; the worker's "request received" covers it.
     if (price === 0) {
       if (product.category === 'COMMODITY') {
-        const ok = await this.decrementFreeCommodity(product.id, ctx.propertyId);
+        const ok = await this.decrementFreeCommodity(
+          product.id,
+          ctx.propertyId,
+        );
         if (!ok) {
           await this.flowLog.log({
             trace_id: reqId,
@@ -927,11 +1191,24 @@ export class WaServiceService {
           });
         }
       }
-      const ticket = await this.raiseTicket(ctx, cls.department, product.name, 'FREE', cls.task_category, msg.waId, requestText);
+      const ticket = await this.raiseTicket(
+        ctx,
+        cls.department,
+        product.name,
+        'FREE',
+        cls.task_category,
+        msg.waId,
+        requestText,
+      );
       await this.flowLog.linkTicket(reqId, ticket.id);
       await this.prisma.wa_service_request.update({
         where: { id: reqId },
-        data: { request_type: 'FREE', product_id: product.id, status: 'TICKETED', ticket_id: ticket.id },
+        data: {
+          request_type: 'FREE',
+          product_id: product.id,
+          status: 'TICKETED',
+          ticket_id: ticket.id,
+        },
       });
       await this.ackTicketToGuest(reqId, brand, msg, ticket, product.name);
       return { request_type: 'FREE', request_id: reqId, ticket_id: ticket.id };
@@ -945,18 +1222,32 @@ export class WaServiceService {
     // priced ₹100 that isn't actually stocked). Forward to the team and send NO payment
     // link. (SERVICE items carry no stock → skip this check.) The guest is told by the
     // worker's "request received" — no separate apology here.
-    const physical = product.category === 'COMMODITY' || product.category === 'RETURNABLE';
+    const physical =
+      product.category === 'COMMODITY' || product.category === 'RETURNABLE';
     if (physical) {
       const inv = await this.prisma.inventory.findFirst({
         where: { product_id: product.id, property_id: ctx.propertyId },
         select: { available_stock: true },
       });
       if (!inv || inv.available_stock <= 0) {
-        const ticket = await this.raiseTicket(ctx, cls.department, product.name, 'FREE', cls.task_category, msg.waId, requestText);
+        const ticket = await this.raiseTicket(
+          ctx,
+          cls.department,
+          product.name,
+          'FREE',
+          cls.task_category,
+          msg.waId,
+          requestText,
+        );
         await this.flowLog.linkTicket(reqId, ticket.id);
         await this.prisma.wa_service_request.update({
           where: { id: reqId },
-          data: { request_type: 'ANONYMOUS', product_id: product.id, status: 'TICKETED', ticket_id: ticket.id },
+          data: {
+            request_type: 'ANONYMOUS',
+            product_id: product.id,
+            status: 'TICKETED',
+            ticket_id: ticket.id,
+          },
         });
         await this.flowLog.log({
           trace_id: reqId,
@@ -967,7 +1258,11 @@ export class WaServiceService {
           status: 'SKIP',
         });
         await this.ackTicketToGuest(reqId, brand, msg, ticket, product.name);
-        return { request_type: 'UNAVAILABLE', request_id: reqId, ticket_id: ticket.id };
+        return {
+          request_type: 'UNAVAILABLE',
+          request_id: reqId,
+          ticket_id: ticket.id,
+        };
       }
     }
 
@@ -975,7 +1270,11 @@ export class WaServiceService {
       where: { id: ctx.guestId },
       select: { name: true, phone: true },
     });
-    const addonOrderId = await this.createSingleItemCart(ctx, product.id, price);
+    const addonOrderId = await this.createSingleItemCart(
+      ctx,
+      product.id,
+      price,
+    );
 
     const link = await this.payments.createWhatsappServiceLink({
       brand: ctx.brand,
@@ -1007,13 +1306,18 @@ export class WaServiceService {
       // button URL is https://rzp.io/i/{{1}} — {{1}} is the code at the tail of
       // the Razorpay short_url (e.g. https://rzp.io/i/AbCdEf → "AbCdEf").
       const code = link.short_url.split('/').filter(Boolean).pop() ?? '';
-      const tpl = await this.wati.sendTemplateMessage(brand, msg.waId, resolveTemplate(brand, 'PAYMENT_REQUEST'), [
-        { name: 'name', value: guest?.name ?? 'Guest' },
-        { name: 'item', value: product.name },
-        { name: 'amount', value: String(price) },
-        { name: 'room_no', value: ctx.roomNumber ?? 'NA' },
-        { name: '1', value: code }, // Pay Now button → https://rzp.io/i/{{1}}
-      ]);
+      const tpl = await this.wati.sendTemplateMessage(
+        brand,
+        msg.waId,
+        resolveTemplate(brand, 'PAYMENT_REQUEST'),
+        [
+          { name: 'name', value: guest?.name ?? 'Guest' },
+          { name: 'item', value: product.name },
+          { name: 'amount', value: String(price) },
+          { name: 'room_no', value: ctx.roomNumber ?? 'NA' },
+          { name: '1', value: code }, // Pay Now button → https://rzp.io/i/{{1}}
+        ],
+      );
       await this.flowLog.log({
         trace_id: reqId,
         brand,
@@ -1023,10 +1327,21 @@ export class WaServiceService {
         status: tpl.ok ? 'OK' : tpl.skipped ? 'SKIP' : 'ERROR',
       });
     } else {
-      await this.replyAndLog(reqId, brand, msg.waId, `We couldn’t create a payment link just now — our team will reach out shortly.`, 'request_new:chargeable_link_failed');
+      await this.replyAndLog(
+        reqId,
+        brand,
+        msg.waId,
+        `We couldn’t create a payment link just now — our team will reach out shortly.`,
+        'request_new:chargeable_link_failed',
+      );
     }
 
-    return { request_type: 'CHARGEABLE', request_id: reqId, payment_id: link.payment_id, pending_payment: true };
+    return {
+      request_type: 'CHARGEABLE',
+      request_id: reqId,
+      payment_id: link.payment_id,
+      pending_payment: true,
+    };
   }
 
   /**
@@ -1097,7 +1412,11 @@ export class WaServiceService {
             status: 'RECEIVED',
           },
         })
-        .catch((e) => this.logger.error(`multi-request row create failed: ${(e as Error).message}`));
+        .catch((e) =>
+          this.logger.error(
+            `multi-request row create failed: ${(e as Error).message}`,
+          ),
+        );
 
       await this.flowLog.log({
         trace_id: reqId,
@@ -1138,8 +1457,20 @@ export class WaServiceService {
 
       // Every ask that survived the noise filter becomes its own ticket/payment via the
       // shared fulfilment — independent department + TAT.
-      const segCls = await this.sanitiseSegmentClassification(reqId, brand, cls, seg);
-      const r = await this.fulfilRequestNew(reqId, brand, msg, segCtx, segCls, seg);
+      const segCls = await this.sanitiseSegmentClassification(
+        reqId,
+        brand,
+        cls,
+        seg,
+      );
+      const r = await this.fulfilRequestNew(
+        reqId,
+        brand,
+        msg,
+        segCtx,
+        segCls,
+        seg,
+      );
       results.push({ request: seg, ...r });
     }
 
@@ -1151,7 +1482,10 @@ export class WaServiceService {
    * "is this genuinely a multi-request?" test — a message whose pieces are all greetings,
    * status checks or FAQs is one message with a joiner in it, not several requests.
    */
-  private static readonly ACTIONABLE_INTENTS = new Set(['request_new', 'ambiguous']);
+  private static readonly ACTIONABLE_INTENTS = new Set([
+    'request_new',
+    'ambiguous',
+  ]);
 
   /** Social noise the splitter should have dropped — never worth a ticket on its own. */
   private static readonly NOISE_INTENTS = new Set([
@@ -1179,9 +1513,17 @@ export class WaServiceService {
       const raw2 = await this.flowLog.timed(
         { trace_id: traceId, brand, module: 'LLM_CLASSIFY', input: text },
         () => this.llm.classifyGuestMessage(text, catalog),
-        (c) => `message_type=${c.intent} · dept=${c.department} · ${c.task_category}`,
+        (c) =>
+          `message_type=${c.intent} · dept=${c.department} · ${c.task_category}`,
       );
-      const cls = await this.applyRoutingPolicy(traceId, brand, raw2, catalog, text, propertyId);
+      const cls = await this.applyRoutingPolicy(
+        traceId,
+        brand,
+        raw2,
+        catalog,
+        text,
+        propertyId,
+      );
       out.push({ text, cls });
     }
     return out;
@@ -1193,12 +1535,9 @@ export class WaServiceService {
    * a technician themselves — so a T2/T3 must never be routed away from them, and an
    * unfulfillable ask (T-1) or an emergency (T4) is theirs by definition.
    */
-  private static readonly RECEPTION_ONLY_CLASSES: ReadonlySet<string> = new Set([
-    UNFULFILLED_CLASS,
-    'T2',
-    'T3',
-    'T4',
-  ]);
+  private static readonly RECEPTION_ONLY_CLASSES: ReadonlySet<string> = new Set(
+    [UNFULFILLED_CLASS, 'T2', 'T3', 'T4'],
+  );
 
   /**
    * The model PROPOSES a department and a class; this table DISPOSES. Two corrections,
@@ -1220,7 +1559,10 @@ export class WaServiceService {
    * "irons" and "ironing" — which is the whole point, since a property that stopped
    * lending irons certainly does not press shirts either.
    */
-  private async retiredCatalogMatch(propertyId: string, text: string): Promise<string | null> {
+  private async retiredCatalogMatch(
+    propertyId: string,
+    text: string,
+  ): Promise<string | null> {
     const retired = await this.prisma.product_catalog.findMany({
       where: { property_id: propertyId, is_active: false },
       select: { name: true },
@@ -1230,7 +1572,10 @@ export class WaServiceService {
     for (const { name } of retired) {
       const needle = name.trim().toLowerCase();
       if (!needle) continue;
-      const re = new RegExp(`\\b${needle.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\w*`, 'i');
+      const re = new RegExp(
+        `\\b${needle.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\w*`,
+        'i',
+      );
       if (re.test(haystack)) return name;
     }
     return null;
@@ -1328,7 +1673,8 @@ export class WaServiceService {
       });
     }
 
-    if (department === cls.department && taskCategory === cls.task_category) return cls;
+    if (department === cls.department && taskCategory === cls.task_category)
+      return cls;
     return { ...cls, department, task_category: taskCategory };
   }
 
@@ -1354,7 +1700,10 @@ export class WaServiceService {
     seg: string,
   ): Promise<GuestMessageClassification> {
     const subject = (cls.request_text ?? '').trim();
-    const meta = cls.intent !== 'request_new' || !subject || WaServiceService.META_SUBJECT.test(subject);
+    const meta =
+      cls.intent !== 'request_new' ||
+      !subject ||
+      WaServiceService.META_SUBJECT.test(subject);
     if (!meta) return cls;
     await this.flowLog.log({
       trace_id: reqId,
@@ -1381,7 +1730,9 @@ export class WaServiceService {
   private looksMultiRequest(text: string): boolean {
     const t = (text || '').trim();
     if (t.split(/\s+/).length < 3) return false;
-    return /\b(and|also|plus|then|as well as|along with)\b|[,&/+]|\r?\n/i.test(t);
+    return /\b(and|also|plus|then|as well as|along with)\b|[,&/+]|\r?\n/i.test(
+      t,
+    );
   }
 
   /**
@@ -1390,8 +1741,12 @@ export class WaServiceService {
    * (GET /wati/pay/retry?rid=<wa_service_request.id>). Returns the new Razorpay
    * short_url to redirect the guest to, or a reason when retry isn't possible.
    */
-  async retryPayment(rid: string): Promise<{ url: string | null; reason?: string }> {
-    const wa = await this.prisma.wa_service_request.findUnique({ where: { id: rid } });
+  async retryPayment(
+    rid: string,
+  ): Promise<{ url: string | null; reason?: string }> {
+    const wa = await this.prisma.wa_service_request.findUnique({
+      where: { id: rid },
+    });
     if (!wa) return { url: null, reason: 'not_found' };
     if (wa.status === 'TICKETED' || wa.status === 'FULFILLED') {
       return { url: null, reason: 'already_paid' };
@@ -1405,8 +1760,11 @@ export class WaServiceService {
     ) {
       return { url: null, reason: 'not_retryable' };
     }
-    const product = await this.prisma.product_catalog.findUnique({ where: { id: wa.product_id } });
-    if (!product || Number(product.base_price) <= 0) return { url: null, reason: 'not_retryable' };
+    const product = await this.prisma.product_catalog.findUnique({
+      where: { id: wa.product_id },
+    });
+    if (!product || Number(product.base_price) <= 0)
+      return { url: null, reason: 'not_retryable' };
     const price = Number(product.base_price);
     const guest = await this.prisma.guests.findUnique({
       where: { id: wa.guest_id },
@@ -1416,7 +1774,11 @@ export class WaServiceService {
     // Reuse the existing cart if present, else create one.
     const addonOrderId =
       wa.addon_order_id ??
-      (await this.createSingleItemCart({ guestId: wa.guest_id, eri: wa.ezee_reservation_id }, product.id, price));
+      (await this.createSingleItemCart(
+        { guestId: wa.guest_id, eri: wa.ezee_reservation_id },
+        product.id,
+        price,
+      ));
 
     const link = await this.payments.createWhatsappServiceLink({
       brand: wa.brand,
@@ -1441,7 +1803,10 @@ export class WaServiceService {
       },
     });
 
-    return { url: link.short_url, reason: link.short_url ? undefined : 'link_failed' };
+    return {
+      url: link.short_url,
+      reason: link.short_url ? undefined : 'link_failed',
+    };
   }
 
   // ─── post-completion feedback (Good/Bad) ────────────────────────────────────
@@ -1481,7 +1846,13 @@ export class WaServiceService {
       sentiment === 'Good'
         ? 'Thank you! 🌟 So glad we could help. If you have a moment, please reply with a quick review — it really helps our team.'
         : 'Thank you for the honest feedback. 🙏 We’re sorry it fell short — please reply telling us what went wrong so we can put it right.';
-    await this.replyAndLog(traceId, brand, msg.waId, ask, `feedback_rating:${sentiment.toLowerCase()}`);
+    await this.replyAndLog(
+      traceId,
+      brand,
+      msg.waId,
+      ask,
+      `feedback_rating:${sentiment.toLowerCase()}`,
+    );
 
     await this.flowLog.log({
       trace_id: traceId,
@@ -1493,13 +1864,21 @@ export class WaServiceService {
       status: recorded ? 'OK' : 'SKIP',
     });
 
-    return { intent: 'feedback_rating', sentiment, request_id: reqId, feedback_id: pending.id };
+    return {
+      intent: 'feedback_rating',
+      sentiment,
+      request_id: reqId,
+      feedback_id: pending.id,
+    };
   }
 
   // ─── helpers ────────────────────────────────────────────────────────────────
 
   /** Resolve a WhatsApp number → checked-in guest + active booking, or null. */
-  private async resolveCheckedInGuest(brand: string, waId: string): Promise<{
+  private async resolveCheckedInGuest(
+    brand: string,
+    waId: string,
+  ): Promise<{
     guestId: string;
     eri: string;
     propertyId: string;
@@ -1539,17 +1918,19 @@ export class WaServiceService {
     // It is aggregated, not a single pick: on a group booking one person holds several rooms (eZee
     // stamps the same guest on each sub-booking), so taking the first match named 306 and silently
     // dropped 406 — the guest and the staff task must name both rooms the requester actually holds.
-    const rows = await this.prisma.$queryRaw<{
-      booking_guest_id: string | null;
-      number_guest_id: string | null;
-      eri: string;
-      property_id: string;
-      room_number: string | null;
-      matched_room: string | null;
-      all_rooms: string | null;
-      unit_code: string | null;
-      brand: string | null;
-    }[]>`
+    const rows = await this.prisma.$queryRaw<
+      {
+        booking_guest_id: string | null;
+        number_guest_id: string | null;
+        eri: string;
+        property_id: string;
+        room_number: string | null;
+        matched_room: string | null;
+        all_rooms: string | null;
+        unit_code: string | null;
+        brand: string | null;
+      }[]
+    >`
       SELECT b.guest_id            AS booking_guest_id,
              ng.id                 AS number_guest_id,
              b.ezee_reservation_id AS eri,
@@ -1622,7 +2003,9 @@ export class WaServiceService {
           // sub-booking), name EVERY room on the reservation rather than assert one of them —
           // sending staff to the wrong room is worse than sending them to check both.
           roomNumber: r.matched_room ?? r.all_rooms ?? r.room_number,
-          roomNumbers: this.splitRooms(r.matched_room ?? r.all_rooms ?? r.room_number),
+          roomNumbers: this.splitRooms(
+            r.matched_room ?? r.all_rooms ?? r.room_number,
+          ),
           unitCode: r.unit_code,
         };
       }
@@ -1725,7 +2108,13 @@ export class WaServiceService {
     if (rows.length === 0) return null;
     return this.prisma.staff.findUnique({
       where: { id: rows[0].id },
-      select: { id: true, name: true, property_id: true, is_active: true, is_available: true },
+      select: {
+        id: true,
+        name: true,
+        property_id: true,
+        is_active: true,
+        is_available: true,
+      },
     });
   }
 
@@ -1738,7 +2127,13 @@ export class WaServiceService {
     traceId: string,
     brand: string,
     msg: WatiInboundMessage,
-    staff: { id: string; name: string; property_id: string; is_active: boolean; is_available: boolean },
+    staff: {
+      id: string;
+      name: string;
+      property_id: string;
+      is_active: boolean;
+      is_available: boolean;
+    },
     cmd: 'login' | 'logout',
   ) {
     const reqId = traceId;
@@ -1774,7 +2169,12 @@ export class WaServiceService {
         output: `login refused — ${staff.name} (${staff.id.slice(0, 8)}) is_active=false`,
         status: 'SKIP',
       });
-      return { staff_command: cmd, staff_id: staff.id, applied: false, reason: 'inactive' };
+      return {
+        staff_command: cmd,
+        staff_id: staff.id,
+        applied: false,
+        reason: 'inactive',
+      };
     }
 
     // Idempotent: if they're already in the target state, tell them so (no-op write);
@@ -1797,7 +2197,13 @@ export class WaServiceService {
         ? `✅ You're *logged in* and on shift, ${staff.name}. You'll now receive assigned requests.`
         : `👋 You're *logged out*, ${staff.name}. You won't receive new requests until you log in again.`;
     }
-    await this.replyAndLog(traceId, brand, msg.waId, reply, `staff_${cmd}${alreadyInState ? ':noop' : ''}`);
+    await this.replyAndLog(
+      traceId,
+      brand,
+      msg.waId,
+      reply,
+      `staff_${cmd}${alreadyInState ? ':noop' : ''}`,
+    );
 
     await this.flowLog.log({
       trace_id: traceId,
@@ -1805,11 +2211,18 @@ export class WaServiceService {
       module: 'STAFF_CMD',
       input: msg.text,
       output: `${staff.name} (${staff.id.slice(0, 8)}) → ${
-        goingOnShift ? 'ON shift (is_available=true)' : 'OFF shift (is_available=false)'
+        goingOnShift
+          ? 'ON shift (is_available=true)'
+          : 'OFF shift (is_available=false)'
       }${alreadyInState ? ' (already)' : ''}`,
     });
 
-    return { staff_command: cmd, staff_id: staff.id, applied: true, is_available: goingOnShift };
+    return {
+      staff_command: cmd,
+      staff_id: staff.id,
+      applied: true,
+      is_available: goingOnShift,
+    };
   }
 
   /**
@@ -1862,7 +2275,9 @@ export class WaServiceService {
     return { staff_command: null, staff_id: staff.id, blocked: true };
   }
 
-  private async loadCatalog(propertyId: string): Promise<ClassifierCatalogItem[]> {
+  private async loadCatalog(
+    propertyId: string,
+  ): Promise<ClassifierCatalogItem[]> {
     const rows = await this.prisma.product_catalog.findMany({
       where: { property_id: propertyId, is_active: true },
       select: { id: true, name: true, category: true },
@@ -1872,7 +2287,13 @@ export class WaServiceService {
   }
 
   private async raiseTicket(
-    ctx: { guestId: string; eri: string; propertyId: string; roomNumber: string | null; unitCode: string | null },
+    ctx: {
+      guestId: string;
+      eri: string;
+      propertyId: string;
+      roomNumber: string | null;
+      unitCode: string | null;
+    },
     department: string,
     subject: string,
     requestType: 'FREE' | 'BORROWABLE' | 'CHARGEABLE',
@@ -1918,7 +2339,11 @@ export class WaServiceService {
   private ticketSubject(interpreted: string, original?: string): string {
     const clean = (interpreted || '').trim();
     const raw = (original || '').trim();
-    if (!raw || clean.toLowerCase() === raw.toLowerCase() || clean.toLowerCase().includes(raw.toLowerCase())) {
+    if (
+      !raw ||
+      clean.toLowerCase() === raw.toLowerCase() ||
+      clean.toLowerCase().includes(raw.toLowerCase())
+    ) {
       return clean.slice(0, 240);
     }
     return `${clean} (${raw})`.slice(0, 240);
@@ -1936,7 +2361,11 @@ export class WaServiceService {
     traceId: string,
     brand: string,
     msg: WatiInboundMessage,
-    ticket: { assigned_staff_id: string | null; room_number: string | null; task_category: string | null },
+    ticket: {
+      assigned_staff_id: string | null;
+      room_number: string | null;
+      task_category: string | null;
+    },
     displayRequest: string,
   ): Promise<void> {
     // UNFULFILLED — we don't offer this, or we couldn't tell what was asked. Someone will
@@ -1944,7 +2373,13 @@ export class WaServiceService {
     // that is never coming. Read the class off the ticket so every call site gets this
     // for free.
     if (ticket.task_category === UNFULFILLED_CLASS) {
-      await this.replyAndLog(traceId, brand, msg.waId, GUEST_UNFULFILLED_ACK, 'ticket_ack:unfulfilled');
+      await this.replyAndLog(
+        traceId,
+        brand,
+        msg.waId,
+        GUEST_UNFULFILLED_ACK,
+        'ticket_ack:unfulfilled',
+      );
       return;
     }
     let staffName: string | null = null;
@@ -1961,16 +2396,31 @@ export class WaServiceService {
       const text =
         `✅ Got it! Your request *"${req}"* has been assigned to *${staffName}*` +
         `${room ? ` — Room ${room}` : ''}. Our team is on it. 🙌`;
-      await this.replyAndLog(traceId, brand, msg.waId, text, 'ticket_ack:assigned');
+      await this.replyAndLog(
+        traceId,
+        brand,
+        msg.waId,
+        text,
+        'ticket_ack:assigned',
+      );
     } else {
       // No one on the request's team was free → routed to Reception; keep the existing
       // reassurance so the guest still hears back.
-      await this.replyAndLog(traceId, brand, msg.waId, GUEST_RECEPTION_ACK, 'ticket_ack:reception');
+      await this.replyAndLog(
+        traceId,
+        brand,
+        msg.waId,
+        GUEST_RECEPTION_ACK,
+        'ticket_ack:reception',
+      );
     }
   }
 
   /** Decrement a free COMMODITY's stock under a row lock. Returns false if OOS. */
-  private async decrementFreeCommodity(productId: string, propertyId: string): Promise<boolean> {
+  private async decrementFreeCommodity(
+    productId: string,
+    propertyId: string,
+  ): Promise<boolean> {
     const inv = await this.prisma.inventory.findFirst({
       where: { product_id: productId, property_id: propertyId },
       select: { id: true },
@@ -1985,12 +2435,17 @@ export class WaServiceService {
         if (!locked[0] || locked[0].available_stock <= 0) return false;
         await tx.inventory.update({
           where: { id: inv.id },
-          data: { available_stock: { decrement: 1 }, sold_count: { increment: 1 } },
+          data: {
+            available_stock: { decrement: 1 },
+            sold_count: { increment: 1 },
+          },
         });
         return true;
       });
     } catch (e) {
-      this.logger.error(`Free commodity decrement failed (${productId}): ${(e as Error).message}`);
+      this.logger.error(
+        `Free commodity decrement failed (${productId}): ${(e as Error).message}`,
+      );
       return false;
     }
   }
@@ -2038,15 +2493,29 @@ export class WaServiceService {
    *                them reception will follow up AND notify the bottom of the escalation
    *                ladder (L1) so a human replies on WATI. No ticket is created.
    */
-  private async handleProspect(traceId: string, brand: string, msg: WatiInboundMessage) {
-    const resolution = await this.prospect.resolveForInbound(traceId, brand, msg);
+  private async handleProspect(
+    traceId: string,
+    brand: string,
+    msg: WatiInboundMessage,
+  ) {
+    const resolution = await this.prospect.resolveForInbound(
+      traceId,
+      brand,
+      msg,
+    );
 
     if (resolution.state === 'awaiting_selection') {
-      await this.recordDropped(traceId, brand, msg, 'prospect_awaiting_property');
+      await this.recordDropped(
+        traceId,
+        brand,
+        msg,
+        'prospect_awaiting_property',
+      );
       return { prospect: true, awaiting_property: true };
     }
 
-    const { propertyId, propertyName, pendingQuery, viaSelectionTap } = resolution;
+    const { propertyId, propertyName, pendingQuery, viaSelectionTap } =
+      resolution;
     // A bare property tap with nothing asked yet → invite them to ask.
     const question = (pendingQuery ?? msg.text ?? '').trim();
     if (viaSelectionTap && !question) {
@@ -2057,12 +2526,27 @@ export class WaServiceService {
         `Thanks! How can we help you with ${propertyName}? 💬`,
         'prospect_property_ack',
       );
-      await this.recordProspect(traceId, brand, msg, propertyId, 'prospect_property_ack');
-      return { prospect: true, property_id: propertyId, awaiting_question: true };
+      await this.recordProspect(
+        traceId,
+        brand,
+        msg,
+        propertyId,
+        'prospect_property_ack',
+      );
+      return {
+        prospect: true,
+        property_id: propertyId,
+        awaiting_question: true,
+      };
     }
 
     const intent = await this.flowLog.timed(
-      { trace_id: traceId, brand, module: 'PROSPECT_CLASSIFY', input: question },
+      {
+        trace_id: traceId,
+        brand,
+        module: 'PROSPECT_CLASSIFY',
+        input: question,
+      },
       () => this.llm.classifyProspectMessage(question),
       (i) => `intent=${i}`,
     );
@@ -2075,7 +2559,13 @@ export class WaServiceService {
         `Hi! 👋 Welcome to ${brandDisplayName(brand)}. How can we help you today? 💬`,
         'prospect_greeting',
       );
-      await this.recordProspect(traceId, brand, msg, propertyId, 'prospect_greeting');
+      await this.recordProspect(
+        traceId,
+        brand,
+        msg,
+        propertyId,
+        'prospect_greeting',
+      );
       return { prospect: true, property_id: propertyId, intent };
     }
 
@@ -2088,7 +2578,13 @@ export class WaServiceService {
           `If you'd like a hand, just reply here and our team will help. 🙏`,
         'prospect_booking',
       );
-      await this.recordProspect(traceId, brand, msg, propertyId, 'prospect_booking');
+      await this.recordProspect(
+        traceId,
+        brand,
+        msg,
+        propertyId,
+        'prospect_booking',
+      );
       return { prospect: true, property_id: propertyId, intent };
     }
 
@@ -2105,26 +2601,61 @@ export class WaServiceService {
         `Thanks for reaching out! 🙏 Our reception team will get back to you shortly to help with this.`,
         'prospect_service_escalated',
       );
-      await this.prospect.notifyUnanswered(traceId, brand, propertyId, propertyName, {
-        name: msg.senderName ?? '',
-        phone: msg.waId,
-        question,
-      });
-      await this.recordProspect(traceId, brand, msg, propertyId, 'prospect_service_escalated');
-      return { prospect: true, property_id: propertyId, intent, escalated: true };
+      await this.prospect.notifyUnanswered(
+        traceId,
+        brand,
+        propertyId,
+        propertyName,
+        {
+          name: msg.senderName ?? '',
+          phone: msg.waId,
+          question,
+        },
+      );
+      await this.recordProspect(
+        traceId,
+        brand,
+        msg,
+        propertyId,
+        'prospect_service_escalated',
+      );
+      return {
+        prospect: true,
+        property_id: propertyId,
+        intent,
+        escalated: true,
+      };
     }
 
     // intent === 'question' → try the property chatbot first.
     const bot = await this.flowLog.timed(
       { trace_id: traceId, brand, module: 'PROSPECT_CHATBOT', input: question },
       () => this.prospect.askChatbot(propertyId, question),
-      (b) => (b.answered ? 'answered from knowledge base' : 'no confident answer'),
+      (b) =>
+        b.answered ? 'answered from knowledge base' : 'no confident answer',
     );
 
     if (bot.answered && bot.answer) {
-      await this.replyAndLog(traceId, brand, msg.waId, bot.answer, 'prospect_answered');
-      await this.recordProspect(traceId, brand, msg, propertyId, 'prospect_answered');
-      return { prospect: true, property_id: propertyId, intent, answered: true };
+      await this.replyAndLog(
+        traceId,
+        brand,
+        msg.waId,
+        bot.answer,
+        'prospect_answered',
+      );
+      await this.recordProspect(
+        traceId,
+        brand,
+        msg,
+        propertyId,
+        'prospect_answered',
+      );
+      return {
+        prospect: true,
+        property_id: propertyId,
+        intent,
+        answered: true,
+      };
     }
 
     // Not answerable by the bot → reassure the prospect and page the bottom of the ladder.
@@ -2135,13 +2666,31 @@ export class WaServiceService {
       `Thanks for reaching out! 🙏 Our reception team will get back to you shortly regarding your query.`,
       'prospect_reception_ack',
     );
-    await this.prospect.notifyUnanswered(traceId, brand, propertyId, propertyName, {
-      name: msg.senderName ?? '',
-      phone: msg.waId,
-      question,
-    });
-    await this.recordProspect(traceId, brand, msg, propertyId, 'prospect_escalated');
-    return { prospect: true, property_id: propertyId, intent, answered: false, escalated: true };
+    await this.prospect.notifyUnanswered(
+      traceId,
+      brand,
+      propertyId,
+      propertyName,
+      {
+        name: msg.senderName ?? '',
+        phone: msg.waId,
+        question,
+      },
+    );
+    await this.recordProspect(
+      traceId,
+      brand,
+      msg,
+      propertyId,
+      'prospect_escalated',
+    );
+    return {
+      prospect: true,
+      property_id: propertyId,
+      intent,
+      answered: false,
+      escalated: true,
+    };
   }
 
   /**
@@ -2282,7 +2831,9 @@ export class WaServiceService {
    * only COMPLETED differs.
    */
   private statusLabel(status: string): string {
-    return status === 'COMPLETED' ? 'completed' : 'being taken care of by our team';
+    return status === 'COMPLETED'
+      ? 'completed'
+      : 'being taken care of by our team';
   }
 
   /**
@@ -2294,13 +2845,65 @@ export class WaServiceService {
    * when there's nothing meaningful to compare, so it only ever blocks a CLEAR
    * mismatch — a wrongly-blocked item still gets raised as a normal ticket.
    */
-  private productMatchesRequest(productName: string, ...texts: string[]): boolean {
+  private productMatchesRequest(
+    productName: string,
+    ...texts: string[]
+  ): boolean {
     const stop = new Set([
-      'a', 'an', 'the', 'me', 'my', 'mine', 'i', 'we', 'us', 'you', 'your', 'please',
-      'pls', 'send', 'bring', 'need', 'needs', 'want', 'wants', 'get', 'got', 'give',
-      'can', 'could', 'would', 'some', 'any', 'for', 'to', 'of', 'and', 'with', 'in',
-      'on', 'at', 'is', 'are', 'it', 'room', 'have', 'has', 'like', 'kindly', 'do',
-      'now', 'asap', 'here', 'there', 'extra', 'more', 'one', 'two', 'this', 'that',
+      'a',
+      'an',
+      'the',
+      'me',
+      'my',
+      'mine',
+      'i',
+      'we',
+      'us',
+      'you',
+      'your',
+      'please',
+      'pls',
+      'send',
+      'bring',
+      'need',
+      'needs',
+      'want',
+      'wants',
+      'get',
+      'got',
+      'give',
+      'can',
+      'could',
+      'would',
+      'some',
+      'any',
+      'for',
+      'to',
+      'of',
+      'and',
+      'with',
+      'in',
+      'on',
+      'at',
+      'is',
+      'are',
+      'it',
+      'room',
+      'have',
+      'has',
+      'like',
+      'kindly',
+      'do',
+      'now',
+      'asap',
+      'here',
+      'there',
+      'extra',
+      'more',
+      'one',
+      'two',
+      'this',
+      'that',
     ]);
     const toTokens = (s: string) =>
       (s || '')

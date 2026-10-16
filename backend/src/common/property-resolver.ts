@@ -29,16 +29,16 @@ export const BRAND_TO_DEFAULT_PROPERTY: Record<Brand, string> = {
  */
 const HOST_TO_PROPERTY: Record<string, string> = {
   'www.thedailysocial.co.in': '60765',
-  'thedailysocial.co.in':     '60765',
-  'vibe-house.netlify.app':   '60765',
+  'thedailysocial.co.in': '60765',
+  'vibe-house.netlify.app': '60765',
   'vibehouse-frontend.onrender.com': '60765',
-  'www.buteak.in':            '55402',
-  'buteak.in':                '55402',
-  'dev.buteak.in':            '55402',
-  'www.dev.buteak.in':        '55402',
-  'localhost:3000':           '60765', // dev frontend default
-  'localhost:8000':           '60765', // dev backend default
-  'localhost:8080':           '60765', // legacy dev port
+  'www.buteak.in': '55402',
+  'buteak.in': '55402',
+  'dev.buteak.in': '55402',
+  'www.dev.buteak.in': '55402',
+  'localhost:3000': '60765', // dev frontend default
+  'localhost:8000': '60765', // dev backend default
+  'localhost:8080': '60765', // legacy dev port
 };
 
 /**
@@ -49,16 +49,16 @@ const HOST_TO_PROPERTY: Record<string, string> = {
  */
 const HOST_TO_BRAND: Record<string, Brand> = {
   'www.thedailysocial.co.in': 'TDS',
-  'thedailysocial.co.in':     'TDS',
-  'vibe-house.netlify.app':   'TDS',
+  'thedailysocial.co.in': 'TDS',
+  'vibe-house.netlify.app': 'TDS',
   'vibehouse-frontend.onrender.com': 'TDS',
-  'www.buteak.in':            'BUTEAK',
-  'buteak.in':                'BUTEAK',
-  'dev.buteak.in':            'BUTEAK',
-  'www.dev.buteak.in':        'BUTEAK',
-  'localhost:3000':           'TDS', // dev default — override via FRONTEND_URL or signup origin
-  'localhost:8000':           'TDS',
-  'localhost:8080':           'TDS',
+  'www.buteak.in': 'BUTEAK',
+  'buteak.in': 'BUTEAK',
+  'dev.buteak.in': 'BUTEAK',
+  'www.dev.buteak.in': 'BUTEAK',
+  'localhost:3000': 'TDS', // dev default — override via FRONTEND_URL or signup origin
+  'localhost:8000': 'TDS',
+  'localhost:8080': 'TDS',
 };
 
 function normalizeHost(host: string | undefined | null): string {
@@ -72,10 +72,14 @@ function getRequestHost(req: Request): string {
   // value lands in either Host or X-Forwarded-Host — prefer the forwarded
   // header since some intermediaries rewrite Host.
   const xfh = req.headers['x-forwarded-host'];
-  return normalizeHost((Array.isArray(xfh) ? xfh[0] : xfh) ?? req.headers.host ?? '');
+  return normalizeHost(
+    (Array.isArray(xfh) ? xfh[0] : xfh) ?? req.headers.host ?? '',
+  );
 }
 
-export function resolvePropertyFromHost(host: string | undefined | null): string | null {
+export function resolvePropertyFromHost(
+  host: string | undefined | null,
+): string | null {
   const normalized = normalizeHost(host);
   return HOST_TO_PROPERTY[normalized] ?? null;
 }
@@ -133,7 +137,10 @@ const PROPERTY_SELECTOR_KEYS: Record<Brand, Record<string, string>> = {
  * If `text` is a property-selector button payload for this brand, returns the
  * mapped property id; otherwise null (the message is a real query, not a tap).
  */
-export function resolvePropertyFromSelectorKey(brand: Brand, text: string): string | null {
+export function resolvePropertyFromSelectorKey(
+  brand: Brand,
+  text: string,
+): string | null {
   // Normalize internal whitespace to underscore so a button whose title renders with
   // a space ("BTM Layout" → BTM_LAYOUT, "Koramangala" → KORAMANGALA) matches the
   // underscore-delimited keys. WATI delivers the button's display title as the text.
@@ -155,12 +162,16 @@ const BRAND_BOOKING_URL: Record<Brand, string> = {
 };
 
 export function brandDisplayName(brand: string): string {
-  return BRAND_DISPLAY_NAME[(brand?.toUpperCase() as Brand)] ?? 'us';
+  return BRAND_DISPLAY_NAME[brand?.toUpperCase() as Brand] ?? 'us';
 }
 
 export function brandBookingUrl(brand: string): string {
   const b = brand?.toUpperCase() as Brand;
-  return process.env[`BOOKING_URL_${b}`] || BRAND_BOOKING_URL[b] || 'https://thedailysocial.co.in';
+  return (
+    process.env[`BOOKING_URL_${b}`] ||
+    BRAND_BOOKING_URL[b] ||
+    'https://thedailysocial.co.in'
+  );
 }
 
 /**
@@ -177,7 +188,9 @@ const PROPERTY_ZOHO_NAME: Record<string, string> = {
 };
 
 /** The exact Zoho `cf_property_name` picklist value for a property id, or null if unmapped. */
-export function zohoPropertyName(propertyId: string | null | undefined): string | null {
+export function zohoPropertyName(
+  propertyId: string | null | undefined,
+): string | null {
   if (!propertyId) return null;
   return PROPERTY_ZOHO_NAME[propertyId] ?? null;
 }
@@ -193,7 +206,11 @@ const PROPERTY_SHORT_LABEL: Record<string, string> = {
   '61766': 'Buteak Koramangala',
 };
 
-export function propertyShortLabel(propertyId: string | null | undefined, brand?: string): string {
-  if (propertyId && PROPERTY_SHORT_LABEL[propertyId]) return PROPERTY_SHORT_LABEL[propertyId];
+export function propertyShortLabel(
+  propertyId: string | null | undefined,
+  brand?: string,
+): string {
+  if (propertyId && PROPERTY_SHORT_LABEL[propertyId])
+    return PROPERTY_SHORT_LABEL[propertyId];
   return brandDisplayName(brand ?? '');
 }

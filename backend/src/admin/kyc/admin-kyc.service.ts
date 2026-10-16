@@ -105,40 +105,48 @@ export class AdminKycService {
     });
 
     // Group by booker guest_id
-    const guestMap = new Map<string, {
-      guest: { id: string; name: string; email: string | null; phone: string | null };
-      bookings: {
-        eri: string;
-        property: { id: string; name: string } | null;
-        checkin_date: Date | null;
-        checkout_date: Date | null;
-        status: string | null;
-        slots: {
-          slot_id: string;
-          slot_number: number;
-          label: string;
-          kyc_status: string;
-          kyc: {
-            id: string;
-            full_name: string | null;
-            id_type: string | null;
-            id_number: string | null;
-            nationality_type: string | null;
-            date_of_birth: Date | null;
-            permanent_address: string | null;
-            contact_number: string | null;
-            coming_from: string | null;
-            going_to: string | null;
-            purpose: string | null;
-            has_front_image: boolean;
-            has_back_image: boolean;
-            status: string | null;
-            submitted_at: Date | null;
-            consent_given: boolean | null;
-          } | null;
+    const guestMap = new Map<
+      string,
+      {
+        guest: {
+          id: string;
+          name: string;
+          email: string | null;
+          phone: string | null;
+        };
+        bookings: {
+          eri: string;
+          property: { id: string; name: string } | null;
+          checkin_date: Date | null;
+          checkout_date: Date | null;
+          status: string | null;
+          slots: {
+            slot_id: string;
+            slot_number: number;
+            label: string;
+            kyc_status: string;
+            kyc: {
+              id: string;
+              full_name: string | null;
+              id_type: string | null;
+              id_number: string | null;
+              nationality_type: string | null;
+              date_of_birth: Date | null;
+              permanent_address: string | null;
+              contact_number: string | null;
+              coming_from: string | null;
+              going_to: string | null;
+              purpose: string | null;
+              has_front_image: boolean;
+              has_back_image: boolean;
+              status: string | null;
+              submitted_at: Date | null;
+              consent_given: boolean | null;
+            } | null;
+          }[];
         }[];
-      }[];
-    }>();
+      }
+    >();
 
     for (const booking of bookings) {
       if (!booking.guests) continue;
@@ -205,7 +213,10 @@ export class AdminKycService {
 
     if (!slot) throw new NotFoundException('Slot not found');
 
-    if (actorPropertyId && slot.ezee_booking_cache?.property_id !== actorPropertyId) {
+    if (
+      actorPropertyId &&
+      slot.ezee_booking_cache?.property_id !== actorPropertyId
+    ) {
       throw new NotFoundException('Slot not found');
     }
 
@@ -214,14 +225,19 @@ export class AdminKycService {
       orderBy: { created_at: 'desc' },
     });
 
-    if (!kyc) throw new NotFoundException('No KYC submission found for this slot');
+    if (!kyc)
+      throw new NotFoundException('No KYC submission found for this slot');
 
     const frontUrl = kyc.front_image_url
-      ? await this.s3.getPresignedDownloadUrl(this.s3.extractKey(kyc.front_image_url))
+      ? await this.s3.getPresignedDownloadUrl(
+          this.s3.extractKey(kyc.front_image_url),
+        )
       : null;
 
     const backUrl = kyc.back_image_url
-      ? await this.s3.getPresignedDownloadUrl(this.s3.extractKey(kyc.back_image_url))
+      ? await this.s3.getPresignedDownloadUrl(
+          this.s3.extractKey(kyc.back_image_url),
+        )
       : null;
 
     return {
@@ -250,7 +266,10 @@ export class AdminKycService {
 
     if (!slot) throw new NotFoundException('Slot not found');
 
-    if (actorPropertyId && slot.ezee_booking_cache?.property_id !== actorPropertyId) {
+    if (
+      actorPropertyId &&
+      slot.ezee_booking_cache?.property_id !== actorPropertyId
+    ) {
       throw new NotFoundException('Slot not found');
     }
 
@@ -259,13 +278,16 @@ export class AdminKycService {
       orderBy: { created_at: 'desc' },
     });
 
-    if (!kyc) throw new NotFoundException('No KYC submission found for this slot');
+    if (!kyc)
+      throw new NotFoundException('No KYC submission found for this slot');
 
     const field = imageType === 'front' ? 'front_image_url' : 'back_image_url';
     const currentValue = kyc[field];
 
     if (!currentValue) {
-      throw new BadRequestException(`No ${imageType} image exists for this slot`);
+      throw new BadRequestException(
+        `No ${imageType} image exists for this slot`,
+      );
     }
 
     // Delete from S3
@@ -279,7 +301,10 @@ export class AdminKycService {
 
     this.logger.log(`KYC ${imageType} image deleted for slot ${slotId}`);
 
-    return { message: `${imageType} image deleted successfully`, slot_id: slotId };
+    return {
+      message: `${imageType} image deleted successfully`,
+      slot_id: slotId,
+    };
   }
 
   // ═══════════════════════════════════════════════════════════════════════════
@@ -347,17 +372,23 @@ export class AdminKycService {
     }
 
     if (rawLines.length === 0) {
-      this.logger.warn('Textract extracted 0 lines, falling back to mock OCR result');
+      this.logger.warn(
+        'Textract extracted 0 lines, falling back to mock OCR result',
+      );
       return this.generateMockTestOcr(frontImageBase64, backImageBase64);
     }
 
     if (!this.openai) {
-      this.logger.warn('OpenAI API key not configured; falling back to mock OCR result');
+      this.logger.warn(
+        'OpenAI API key not configured; falling back to mock OCR result',
+      );
       return this.generateMockTestOcr(frontImageBase64, backImageBase64);
     }
 
     const rawText = rawLines.join('\n');
-    this.logger.log(`Sending ${rawLines.length} lines to GPT-4o-mini for extraction`);
+    this.logger.log(
+      `Sending ${rawLines.length} lines to GPT-4o-mini for extraction`,
+    );
 
     try {
       const completion = await this.openai.chat.completions.create({
@@ -366,14 +397,19 @@ export class AdminKycService {
         max_tokens: 512,
         messages: [
           { role: 'system', content: EXTRACTION_PROMPT },
-          { role: 'user', content: `Here is the raw OCR text from the ID document:\n\n${rawText}` },
+          {
+            role: 'user',
+            content: `Here is the raw OCR text from the ID document:\n\n${rawText}`,
+          },
         ],
       });
 
       const raw = completion.choices[0]?.message?.content?.trim() ?? '{}';
       this.logger.log(`GPT-4o-mini response: ${raw.substring(0, 200)}`);
 
-      const jsonStr = raw.replace(/^```(?:json)?\n?/, '').replace(/\n?```$/, '');
+      const jsonStr = raw
+        .replace(/^```(?:json)?\n?/, '')
+        .replace(/\n?```$/, '');
       const parsed = JSON.parse(jsonStr);
 
       return {
@@ -395,7 +431,10 @@ export class AdminKycService {
       const msg = (err as Error).message;
       this.logger.error(`GPT-4o-mini extraction failed: ${msg}`);
       return {
-        ocr_name: null, ocr_dob: null, ocr_id_number: null, ocr_address: null,
+        ocr_name: null,
+        ocr_dob: null,
+        ocr_id_number: null,
+        ocr_address: null,
         id_type_detected: null,
         confidence: { name: null, dob: null, id_number: null, address: null },
         raw_text_lines: rawLines,
@@ -406,7 +445,9 @@ export class AdminKycService {
 
   private extractLines(blocks: Block[]): string[] {
     return blocks
-      .filter((b) => b.BlockType === 'LINE' && b.Text && b.Text.trim().length > 0)
+      .filter(
+        (b) => b.BlockType === 'LINE' && b.Text && b.Text.trim().length > 0,
+      )
       .map((b) => b.Text!.trim());
   }
 
@@ -420,7 +461,9 @@ export class AdminKycService {
 
     let sampleText = '';
     try {
-      sampleText = Buffer.from(cleanB64, 'base64').toString('utf8').toLowerCase();
+      sampleText = Buffer.from(cleanB64, 'base64')
+        .toString('utf8')
+        .toLowerCase();
     } catch {
       sampleText = '';
     }
@@ -463,7 +506,8 @@ export class AdminKycService {
       ocr_name: name,
       ocr_dob: '1995-05-15',
       ocr_id_number: idNumber,
-      ocr_address: 'Flat 402, Sunshine Heights, Bandra West, Mumbai, Maharashtra 400050',
+      ocr_address:
+        'Flat 402, Sunshine Heights, Bandra West, Mumbai, Maharashtra 400050',
       id_type_detected: detectedType,
       confidence: {
         name: 0.98,

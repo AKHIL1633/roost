@@ -43,26 +43,40 @@ export class EzeeSyncWorker implements SqsWorker {
     private readonly roomGuests: EzeeRoomGuestsService,
   ) {}
 
-  async process(message: SqsMessageEnvelope, meta?: SqsMessageMeta): Promise<void> {
+  async process(
+    message: SqsMessageEnvelope,
+    meta?: SqsMessageMeta,
+  ): Promise<void> {
     switch (message.type) {
       case EzeeSyncMessageType.INSERT_BOOKING:
-        await this.handleInsertBooking(message.payload as EzeeInsertBookingPayload, meta);
+        await this.handleInsertBooking(
+          message.payload as EzeeInsertBookingPayload,
+          meta,
+        );
         break;
 
       case EzeeSyncMessageType.INSERT_COLIVE_BOOKING:
-        await this.handleInsertColiveBooking(message.payload as EzeeInsertColiveBookingPayload);
+        await this.handleInsertColiveBooking(
+          message.payload as EzeeInsertColiveBookingPayload,
+        );
         break;
 
       case EzeeSyncMessageType.ADD_EXTRA_CHARGE:
-        await this.handleAddExtraCharge(message.payload as EzeeAddExtraChargePayload);
+        await this.handleAddExtraCharge(
+          message.payload as EzeeAddExtraChargePayload,
+        );
         break;
 
       case EzeeSyncMessageType.UPDATE_RESERVATION:
-        await this.handleUpdateReservation(message.payload as EzeeUpdateReservationPayload);
+        await this.handleUpdateReservation(
+          message.payload as EzeeUpdateReservationPayload,
+        );
         break;
 
       case EzeeSyncMessageType.AUTOSYNC_WEBHOOK:
-        await this.handleAutosyncWebhook(message.payload as EzeeAutosyncWebhookPayload);
+        await this.handleAutosyncWebhook(
+          message.payload as EzeeAutosyncWebhookPayload,
+        );
         break;
 
       default:
@@ -76,7 +90,11 @@ export class EzeeSyncWorker implements SqsWorker {
     return new Promise((resolve) => setTimeout(resolve, ms));
   }
 
-  private async createSyncLog(entityType: string, entityId: string, action: string): Promise<string> {
+  private async createSyncLog(
+    entityType: string,
+    entityId: string,
+    action: string,
+  ): Promise<string> {
     const id = uuidv4();
     await this.prisma.ezee_sync_log.create({
       data: {
@@ -92,7 +110,11 @@ export class EzeeSyncWorker implements SqsWorker {
     return id;
   }
 
-  private async updateSyncLog(id: string, status: string, error?: string): Promise<void> {
+  private async updateSyncLog(
+    id: string,
+    status: string,
+    error?: string,
+  ): Promise<void> {
     await this.prisma.ezee_sync_log.update({
       where: { id },
       data: {
@@ -137,11 +159,17 @@ export class EzeeSyncWorker implements SqsWorker {
       where: { id: booking.guest_id! },
     });
     if (!guest) {
-      this.logger.error(`Guest ${booking.guest_id} not found for booking ${eri} — skipping`);
+      this.logger.error(
+        `Guest ${booking.guest_id} not found for booking ${eri} — skipping`,
+      );
       return;
     }
 
-    const syncLogId = await this.createSyncLog('booking', eri, 'INSERT_BOOKING');
+    const syncLogId = await this.createSyncLog(
+      'booking',
+      eri,
+      'INSERT_BOOKING',
+    );
 
     try {
       // Parse room selections from booking_rooms_json (with DB fallback for older bookings)
@@ -160,7 +188,8 @@ export class EzeeSyncWorker implements SqsWorker {
         // Parse guest name
         const nameParts = (guest.name || 'Guest').trim().split(/\s+/);
         const firstName = nameParts[0];
-        const lastName = nameParts.length > 1 ? nameParts.slice(1).join(' ') : firstName;
+        const lastName =
+          nameParts.length > 1 ? nameParts.slice(1).join(' ') : firstName;
 
         // Build per-room SpecialRequest tag so the eZee booking shows where it
         // came from. Format is short + machine-parseable in case ops ever
@@ -170,13 +199,19 @@ export class EzeeSyncWorker implements SqsWorker {
           ? `RP: ${payload.razorpay_payment_id}`
           : `ERI: ${eri}`;
         const labelTag = payload.purpose_label ?? 'Booking';
-        const couponTag = payload.coupon_summary ? ` | Coupon: ${payload.coupon_summary}` : '';
-        const specialRequest = `VHM Online | ${rpTag}${couponTag} | ${labelTag}`.slice(0, 250);
+        const couponTag = payload.coupon_summary
+          ? ` | Coupon: ${payload.coupon_summary}`
+          : '';
+        const specialRequest =
+          `VHM Online | ${rpTag}${couponTag} | ${labelTag}`.slice(0, 250);
 
         // Build rooms for eZee. Any coupon discount is baked into the room
         // base rates so the eZee folio room charge nets to what the guest
         // actually paid (no phantom balance) — see buildEzeeRooms.
-        const numberOfNights = this.calcNights(booking.checkin_date, booking.checkout_date);
+        const numberOfNights = this.calcNights(
+          booking.checkin_date,
+          booking.checkout_date,
+        );
         const ezeeRooms = this.buildEzeeRooms(
           roomSelections,
           numberOfNights,
@@ -196,7 +231,9 @@ export class EzeeSyncWorker implements SqsWorker {
         const checkin = this.formatDate(booking.checkin_date);
         const checkout = this.formatDate(booking.checkout_date);
 
-        this.logger.log(`eZee InsertBooking: ERI=${eri}, ${ezeeRooms.length} room(s), ${checkin} → ${checkout}`);
+        this.logger.log(
+          `eZee InsertBooking: ERI=${eri}, ${ezeeRooms.length} room(s), ${checkin} → ${checkout}`,
+        );
 
         const result = await this.ezee.insertBooking(property_id, {
           checkin,
@@ -221,7 +258,9 @@ export class EzeeSyncWorker implements SqsWorker {
 
         await this.delay();
       } else {
-        this.logger.log(`eZee InsertBooking already done for ${eri}: ReservationNo=${reservationNo}`);
+        this.logger.log(
+          `eZee InsertBooking already done for ${eri}: ReservationNo=${reservationNo}`,
+        );
       }
 
       // ── Step 2: ProcessBooking (Confirm) ──────────────────────────────
@@ -235,7 +274,10 @@ export class EzeeSyncWorker implements SqsWorker {
       // carries before we post a payment to it.
       let reservationData: any = null;
       try {
-        reservationData = await this.ezee.fetchBooking(property_id, reservationNo);
+        reservationData = await this.ezee.fetchBooking(
+          property_id,
+          reservationNo,
+        );
         const tran = reservationData?.BookingTran?.[0];
         if (tran?.RoomName) {
           await this.prisma.ezee_booking_cache.update({
@@ -245,11 +287,15 @@ export class EzeeSyncWorker implements SqsWorker {
               unit_code: tran.RoomID ?? null,
             },
           });
-          this.logger.log(`eZee room auto-assigned: ${tran.RoomName} (${tran.RoomID}) for ${eri}`);
+          this.logger.log(
+            `eZee room auto-assigned: ${tran.RoomName} (${tran.RoomID}) for ${eri}`,
+          );
         }
       } catch (err) {
         // Non-fatal — room info can be looked up in eZee UI
-        this.logger.warn(`eZee FetchSingleBooking failed for ${eri}: ${(err as Error).message}`);
+        this.logger.warn(
+          `eZee FetchSingleBooking failed for ${eri}: ${(err as Error).message}`,
+        );
       }
       await this.delay();
 
@@ -269,14 +315,21 @@ export class EzeeSyncWorker implements SqsWorker {
       // Invalidate room availability cache for this property + date range
       const checkin = this.formatDate(booking.checkin_date);
       const checkout = this.formatDate(booking.checkout_date);
-      const cacheKey = CacheService.roomAvailabilityKey(property_id, checkin, checkout);
+      const cacheKey = CacheService.roomAvailabilityKey(
+        property_id,
+        checkin,
+        checkout,
+      );
       await this.cache.del(cacheKey);
 
-      this.logger.log(`eZee booking sync complete: ERI=${eri}, eZee=${reservationNo}`);
+      this.logger.log(
+        `eZee booking sync complete: ERI=${eri}, eZee=${reservationNo}`,
+      );
     } catch (err) {
-      const message = err instanceof EzeeApiError
-        ? `[${err.code}] ${err.message}`
-        : (err as Error).message;
+      const message =
+        err instanceof EzeeApiError
+          ? `[${err.code}] ${err.message}`
+          : (err as Error).message;
 
       this.logger.error(`eZee InsertBooking failed for ${eri}: ${message}`);
       await this.updateSyncLog(syncLogId, 'FAILED', message);
@@ -322,7 +375,10 @@ export class EzeeSyncWorker implements SqsWorker {
                 toEmail,
                 firstName: guest.name ?? 'there',
                 bookingId: eri,
-                propertyName: payload.property_name ?? booking.room_type_name ?? 'your stay',
+                propertyName:
+                  payload.property_name ??
+                  booking.room_type_name ??
+                  'your stay',
                 propertyId: property_id,
               })
               .catch((mailErr) =>
@@ -331,7 +387,9 @@ export class EzeeSyncWorker implements SqsWorker {
                 ),
               );
           } else {
-            this.logger.warn(`No email on booking ${eri} — sync-failed notice not sent`);
+            this.logger.warn(
+              `No email on booking ${eri} — sync-failed notice not sent`,
+            );
           }
         }
       }
@@ -387,7 +445,8 @@ export class EzeeSyncWorker implements SqsWorker {
     amount: number;
     folio: any | null;
   }): Promise<void> {
-    const { eri, propertyId, reservationNo, subReservationNos, amount, folio } = params;
+    const { eri, propertyId, reservationNo, subReservationNos, amount, folio } =
+      params;
 
     if (process.env.EZEE_FOLIO_ADDPAYMENT_ENABLED === 'false') {
       this.logger.warn(
@@ -397,7 +456,9 @@ export class EzeeSyncWorker implements SqsWorker {
     }
 
     if (!(amount > 0)) {
-      this.logger.log(`eZee AddPayment skipped for ${reservationNo}: nothing captured (₹${amount})`);
+      this.logger.log(
+        `eZee AddPayment skipped for ${reservationNo}: nothing captured (₹${amount})`,
+      );
       return;
     }
 
@@ -406,27 +467,37 @@ export class EzeeSyncWorker implements SqsWorker {
     try {
       // Step 3's fetch is reused when it succeeded; re-read when it didn't, so
       // the "already paid?" check is never made on missing data.
-      const reservation = folio ?? (await this.ezee.fetchBooking(propertyId, reservationNo));
+      const reservation =
+        folio ?? (await this.ezee.fetchBooking(propertyId, reservationNo));
       const trans: any[] = reservation?.BookingTran ?? [];
       if (trans.length === 0) {
-        throw new Error('folio returned no BookingTran — cannot verify existing payments');
+        throw new Error(
+          'folio returned no BookingTran — cannot verify existing payments',
+        );
       }
 
       // What the folio already carries, per sub-reservation.
       const paidBySub = new Map<string, number>();
       for (const tran of trans) {
         const sub = String(tran?.SubBookingId ?? '');
-        paidBySub.set(sub, (paidBySub.get(sub) ?? 0) + Number(tran?.TotalPayment ?? 0));
+        paidBySub.set(
+          sub,
+          (paidBySub.get(sub) ?? 0) + Number(tran?.TotalPayment ?? 0),
+        );
       }
 
-      const targets = subReservationNos.length > 0 ? subReservationNos : [reservationNo];
+      const targets =
+        subReservationNos.length > 0 ? subReservationNos : [reservationNo];
 
       // Belt and braces: if eZee's SubBookingId labels don't line up with the
       // SubReservationNo values InsertBooking handed us, the per-sub check
       // above would silently match nothing. In that case fall back to a
       // whole-folio check — any payment anywhere means hands off.
       const subsRecognised = targets.some((t) => paidBySub.has(String(t)));
-      const folioTotalPaid = [...paidBySub.values()].reduce((sum, v) => sum + v, 0);
+      const folioTotalPaid = [...paidBySub.values()].reduce(
+        (sum, v) => sum + v,
+        0,
+      );
       if (!subsRecognised && folioTotalPaid > 0) {
         this.logger.warn(
           `eZee AddPayment skipped for ${reservationNo}: folio already shows ₹${folioTotalPaid} ` +
@@ -441,8 +512,13 @@ export class EzeeSyncWorker implements SqsWorker {
       // real captured amount — under-posting would hide a pricing mismatch
       // rather than fix it — but it must not be silent, which is precisely how
       // the coupon rounding bug reached production on 2026-08-05.
-      const folioTotal = trans.reduce((sum, t) => sum + Number(t?.TotalAmountAfterTax ?? 0), 0);
-      const outstanding = EzeeSyncWorker.roundPaise(folioTotal - folioTotalPaid);
+      const folioTotal = trans.reduce(
+        (sum, t) => sum + Number(t?.TotalAmountAfterTax ?? 0),
+        0,
+      );
+      const outstanding = EzeeSyncWorker.roundPaise(
+        folioTotal - folioTotalPaid,
+      );
       if (amount > outstanding) {
         this.logger.warn(
           `eZee folio mismatch for ${reservationNo} (ERI=${eri}): capture ₹${amount} exceeds ` +
@@ -486,7 +562,9 @@ export class EzeeSyncWorker implements SqsWorker {
       await this.updateSyncLog(syncLogId, 'SUCCESS');
     } catch (err) {
       const message =
-        err instanceof EzeeApiError ? `[${err.code}] ${err.message}` : (err as Error).message;
+        err instanceof EzeeApiError
+          ? `[${err.code}] ${err.message}`
+          : (err as Error).message;
       // Deliberately swallowed — see the doc comment. The booking stands; the
       // folio needs a manual payment entry.
       this.logger.error(
@@ -498,7 +576,9 @@ export class EzeeSyncWorker implements SqsWorker {
 
   // ── ADD EXTRA CHARGE ─────────────────────────────────────────────────────
 
-  private async handleAddExtraCharge(payload: EzeeAddExtraChargePayload): Promise<void> {
+  private async handleAddExtraCharge(
+    payload: EzeeAddExtraChargePayload,
+  ): Promise<void> {
     const { eri, property_id, items } = payload;
 
     const booking = await this.prisma.ezee_booking_cache.findUnique({
@@ -506,7 +586,9 @@ export class EzeeSyncWorker implements SqsWorker {
     });
 
     if (!booking) {
-      this.logger.error(`Booking ${eri} not found for AddExtraCharge — skipping`);
+      this.logger.error(
+        `Booking ${eri} not found for AddExtraCharge — skipping`,
+      );
       return;
     }
 
@@ -520,19 +602,29 @@ export class EzeeSyncWorker implements SqsWorker {
     const subNos = booking.ezee_sub_reservation_nos?.split(',') ?? [];
     const bookingId = subNos[0] ?? reservationNo;
 
-    const totalAmount = items.reduce((sum, item) => sum + item.amount * item.quantity, 0);
+    const totalAmount = items.reduce(
+      (sum, item) => sum + item.amount * item.quantity,
+      0,
+    );
 
-    const syncLogId = await this.createSyncLog('addon', eri, 'ADD_EXTRA_CHARGE');
+    const syncLogId = await this.createSyncLog(
+      'addon',
+      eri,
+      'ADD_EXTRA_CHARGE',
+    );
 
     try {
-      this.logger.log(`eZee AddPayment (addon): Booking ${bookingId}, ₹${totalAmount}, ${items.length} items`);
+      this.logger.log(
+        `eZee AddPayment (addon): Booking ${bookingId}, ₹${totalAmount}, ${items.length} items`,
+      );
       await this.ezee.addPayment(property_id, bookingId, totalAmount);
       await this.updateSyncLog(syncLogId, 'SUCCESS');
       this.logger.log(`eZee addon charge synced for ${eri}`);
     } catch (err) {
-      const message = err instanceof EzeeApiError
-        ? `[${err.code}] ${err.message}`
-        : (err as Error).message;
+      const message =
+        err instanceof EzeeApiError
+          ? `[${err.code}] ${err.message}`
+          : (err as Error).message;
 
       this.logger.error(`eZee AddExtraCharge failed for ${eri}: ${message}`);
       await this.updateSyncLog(syncLogId, 'FAILED', message);
@@ -542,7 +634,9 @@ export class EzeeSyncWorker implements SqsWorker {
 
   // ── UPDATE RESERVATION ───────────────────────────────────────────────────
 
-  private async handleUpdateReservation(payload: EzeeUpdateReservationPayload): Promise<void> {
+  private async handleUpdateReservation(
+    payload: EzeeUpdateReservationPayload,
+  ): Promise<void> {
     this.logger.log(`[STUB] eZee UpdateReservation: ERI ${payload.eri}`);
     // Phase 2: stay extensions, cancellations, date changes
   }
@@ -556,65 +650,93 @@ export class EzeeSyncWorker implements SqsWorker {
    *
    * On success: updates colive_draft_bookings.ezee_reservation_no + ezee_sync_status
    */
-  private async handleInsertColiveBooking(payload: EzeeInsertColiveBookingPayload): Promise<void> {
+  private async handleInsertColiveBooking(
+    payload: EzeeInsertColiveBookingPayload,
+  ): Promise<void> {
     const {
-      draft_booking_id, property_id, room_type_id,
-      guest_first_name, guest_last_name, guest_email, guest_phone,
-      move_in_date, move_out_date, rate_per_night, total_nights, amount,
+      draft_booking_id,
+      property_id,
+      room_type_id,
+      guest_first_name,
+      guest_last_name,
+      guest_email,
+      guest_phone,
+      move_in_date,
+      move_out_date,
+      rate_per_night,
+      total_nights,
+      amount,
     } = payload;
 
     const draft = await this.prisma.colive_draft_bookings.findUnique({
       where: { id: draft_booking_id },
     });
     if (!draft) {
-      this.logger.error(`Colive draft booking ${draft_booking_id} not found — skipping`);
+      this.logger.error(
+        `Colive draft booking ${draft_booking_id} not found — skipping`,
+      );
       return;
     }
 
     // Idempotency check — skip if already synced
     if (draft.ezee_reservation_no) {
-      this.logger.log(`Colive booking ${draft_booking_id} already synced (${draft.ezee_reservation_no})`);
+      this.logger.log(
+        `Colive booking ${draft_booking_id} already synced (${draft.ezee_reservation_no})`,
+      );
       return;
     }
 
     // Fetch room type for eZee IDs
-    const roomType = await this.prisma.room_types.findUnique({ where: { id: room_type_id } });
+    const roomType = await this.prisma.room_types.findUnique({
+      where: { id: room_type_id },
+    });
     if (!roomType?.ezee_room_type_id) {
       // Throw so SQS retries — do NOT silently return or the booking is lost
       throw new Error(
         `Room type ${room_type_id} has no ezee_room_type_id configured. ` +
-        `Run scripts/detect-ezee-room-types.ts and set the ID, then the retry will succeed.`,
+          `Run scripts/detect-ezee-room-types.ts and set the ID, then the retry will succeed.`,
       );
     }
 
-    const syncLogId = await this.createSyncLog('colive_draft_booking', draft_booking_id, 'INSERT_COLIVE_BOOKING');
+    const syncLogId = await this.createSyncLog(
+      'colive_draft_booking',
+      draft_booking_id,
+      'INSERT_COLIVE_BOOKING',
+    );
 
     try {
       // ── Step 1: InsertBooking ─────────────────────────────────────────────
       const title = 'Mr';
-      const rateStr = Array(total_nights).fill(String(Math.round(rate_per_night))).join(',');
+      const rateStr = Array(total_nights)
+        .fill(String(Math.round(rate_per_night)))
+        .join(',');
       const zeroStr = Array(total_nights).fill('0').join(',');
 
-      this.logger.log(`eZee InsertBooking (colive): ${draft_booking_id}, ${total_nights} nights, ${move_in_date} → ${move_out_date}`);
+      this.logger.log(
+        `eZee InsertBooking (colive): ${draft_booking_id}, ${total_nights} nights, ${move_in_date} → ${move_out_date}`,
+      );
 
       const result = await this.ezee.insertBooking(property_id, {
         checkin: move_in_date,
         checkout: move_out_date,
         email: guest_email,
         phone: guest_phone,
-        rooms: [{
-          ezeeRoomTypeId: roomType.ezee_room_type_id,
-          ezeeRatePlanId: roomType.ezee_rate_plan_id ?? '',
-          ezeeRateTypeId: roomType.ezee_rate_type_id ?? roomType.ezee_rate_plan_id ?? '',
-          adults: 1,
-          children: 0,
-          ratePerNight: rate_per_night,
-          numberOfNights: total_nights,
-          guestTitle: title,
-          guestFirstName: guest_first_name,
-          guestLastName: guest_last_name,
-          guestGender: 'Male',
-        }],
+        rooms: [
+          {
+            ezeeRoomTypeId: roomType.ezee_room_type_id,
+            ezeeRatePlanId: roomType.ezee_rate_plan_id ?? '',
+            ezeeRateTypeId:
+              roomType.ezee_rate_type_id ?? roomType.ezee_rate_plan_id ?? '',
+            adults: 1,
+            children: 0,
+            ratePerNight: rate_per_night,
+            numberOfNights: total_nights,
+            guestTitle: title,
+            guestFirstName: guest_first_name,
+            guestLastName: guest_last_name,
+            guestGender: 'Male',
+          },
+        ],
       });
 
       const reservationNo = result.reservationNo;
@@ -632,25 +754,33 @@ export class EzeeSyncWorker implements SqsWorker {
       await this.delay();
 
       // ── Step 2: ProcessBooking ────────────────────────────────────────────
-      this.logger.log(`eZee ProcessBooking (colive): confirming ${reservationNo}`);
+      this.logger.log(
+        `eZee ProcessBooking (colive): confirming ${reservationNo}`,
+      );
       await this.ezee.processBooking(property_id, reservationNo);
       await this.delay();
 
       // ── Step 3: AddPayment ────────────────────────────────────────────────
-      const paymentTargets = subReservationNos.length > 0 ? subReservationNos : [reservationNo];
+      const paymentTargets =
+        subReservationNos.length > 0 ? subReservationNos : [reservationNo];
       const amountPerBed = Math.floor(amount / paymentTargets.length);
 
       for (let i = 0; i < paymentTargets.length; i++) {
-        const bedAmount = i === paymentTargets.length - 1
-          ? amount - amountPerBed * i
-          : amountPerBed;
+        const bedAmount =
+          i === paymentTargets.length - 1
+            ? amount - amountPerBed * i
+            : amountPerBed;
 
-        this.logger.log(`eZee AddPayment (colive): ${paymentTargets[i]}, ₹${bedAmount}`);
+        this.logger.log(
+          `eZee AddPayment (colive): ${paymentTargets[i]}, ₹${bedAmount}`,
+        );
         try {
           await this.ezee.addPayment(property_id, paymentTargets[i], bedAmount);
           if (i < paymentTargets.length - 1) await this.delay(1000);
         } catch (err) {
-          this.logger.warn(`eZee AddPayment (colive) failed for ${paymentTargets[i]}: ${(err as Error).message}`);
+          this.logger.warn(
+            `eZee AddPayment (colive) failed for ${paymentTargets[i]}: ${(err as Error).message}`,
+          );
         }
       }
 
@@ -661,10 +791,14 @@ export class EzeeSyncWorker implements SqsWorker {
       });
 
       await this.updateSyncLog(syncLogId, 'SUCCESS');
-      this.logger.log(`eZee colive sync complete: draftId=${draft_booking_id}, eZee=${reservationNo}`);
+      this.logger.log(
+        `eZee colive sync complete: draftId=${draft_booking_id}, eZee=${reservationNo}`,
+      );
     } catch (err) {
       const message = err instanceof Error ? err.message : String(err);
-      this.logger.error(`eZee colive sync failed for ${draft_booking_id}: ${message}`);
+      this.logger.error(
+        `eZee colive sync failed for ${draft_booking_id}: ${message}`,
+      );
       await this.updateSyncLog(syncLogId, 'FAILED', message);
       await this.prisma.colive_draft_bookings.update({
         where: { id: draft_booking_id },
@@ -676,20 +810,27 @@ export class EzeeSyncWorker implements SqsWorker {
 
   // ── Room picking helpers ─────────────────────────────────────────────────
 
-  private async parseBookingRooms(booking: any): Promise<Array<{
-    ezeeRoomTypeId: string;
-    ezeeRatePlanId: string;
-    ezeeRateTypeId: string;
-    quantity: number;
-    pricePerNight: number;
-    maxAdults?: number | null;
-    maxChildren?: number | null;
-    guests?: Array<{ first_name: string; last_name: string; gender?: string }>;
-  }>> {
+  private async parseBookingRooms(booking: any): Promise<
+    Array<{
+      ezeeRoomTypeId: string;
+      ezeeRatePlanId: string;
+      ezeeRateTypeId: string;
+      quantity: number;
+      pricePerNight: number;
+      maxAdults?: number | null;
+      maxChildren?: number | null;
+      guests?: Array<{
+        first_name: string;
+        last_name: string;
+        gender?: string;
+      }>;
+    }>
+  > {
     if (booking.booking_rooms_json) {
-      const rooms = typeof booking.booking_rooms_json === 'string'
-        ? JSON.parse(booking.booking_rooms_json)
-        : booking.booking_rooms_json;
+      const rooms =
+        typeof booking.booking_rooms_json === 'string'
+          ? JSON.parse(booking.booking_rooms_json)
+          : booking.booking_rooms_json;
       return rooms.map((r: any) => ({
         ezeeRoomTypeId: r.ezee_room_type_id,
         ezeeRatePlanId: r.ezee_rate_plan_id,
@@ -707,7 +848,9 @@ export class EzeeSyncWorker implements SqsWorker {
     // Fallback for older bookings without booking_rooms_json:
     // parse room_type_name string ("6 Bed Mixed Dormitory x1, Queen Size Room x1")
     // and look up eZee IDs from the room_types table.
-    this.logger.warn(`No booking_rooms_json for ${booking.ezee_reservation_id} — falling back to room_type_name parsing`);
+    this.logger.warn(
+      `No booking_rooms_json for ${booking.ezee_reservation_id} — falling back to room_type_name parsing`,
+    );
 
     if (!booking.room_type_name) return [];
 
@@ -731,7 +874,9 @@ export class EzeeSyncWorker implements SqsWorker {
         (r) => r.name.toLowerCase() === name.toLowerCase().trim(),
       );
       if (!rt) {
-        this.logger.warn(`Room type "${name}" not found in DB for fallback parsing`);
+        this.logger.warn(
+          `Room type "${name}" not found in DB for fallback parsing`,
+        );
         continue;
       }
       selections.push({
@@ -755,7 +900,11 @@ export class EzeeSyncWorker implements SqsWorker {
       pricePerNight: number;
       maxAdults?: number | null;
       maxChildren?: number | null;
-      guests?: Array<{ first_name: string; last_name: string; gender?: string }>;
+      guests?: Array<{
+        first_name: string;
+        last_name: string;
+        gender?: string;
+      }>;
     }>,
     numberOfNights: number,
     defaultFirstName: string,
@@ -841,7 +990,10 @@ export class EzeeSyncWorker implements SqsWorker {
     // (addons aren't pushed to the eZee folio today). Buteak — the only
     // coupon-enabled property — is room-only, so this is exact there.
     if (discountTotal > 0 && rooms.length > 0) {
-      const roomSubtotal = rooms.reduce((sum, r) => sum + r.ratePerNight * nights, 0);
+      const roomSubtotal = rooms.reduce(
+        (sum, r) => sum + r.ratePerNight * nights,
+        0,
+      );
       if (roomSubtotal > 0) {
         // Rates are carried to PAISE, not whole rupees. Rounding the target to
         // ₹1 here is what put coupon bookings into a negative balance once we
@@ -850,7 +1002,10 @@ export class EzeeSyncWorker implements SqsWorker {
         // 187). eZee accepts fractional base rates — verified live, 60765 res
         // 127. The error was bounded (one rounding for the whole booking, so
         // ≤ ₹0.50 pre-tax) but it is a real mismatch and it is avoidable.
-        const target = Math.max(0, EzeeSyncWorker.roundPaise(roomSubtotal - discountTotal));
+        const target = Math.max(
+          0,
+          EzeeSyncWorker.roundPaise(roomSubtotal - discountTotal),
+        );
         const ratio = target / roomSubtotal;
 
         // Discounted rate for each (room, night), tracking a running total so
@@ -887,7 +1042,10 @@ export class EzeeSyncWorker implements SqsWorker {
     return Math.round(value * 100) / 100;
   }
 
-  private calcNights(checkin: Date | null | undefined, checkout: Date | null | undefined): number {
+  private calcNights(
+    checkin: Date | null | undefined,
+    checkout: Date | null | undefined,
+  ): number {
     if (!checkin || !checkout) return 1;
     const ms = new Date(checkout).getTime() - new Date(checkin).getTime();
     return Math.max(1, Math.ceil(ms / (1000 * 60 * 60 * 24)));
@@ -982,7 +1140,9 @@ export class EzeeSyncWorker implements SqsWorker {
   // docs/setup/ezee_autosync_webhook.md for the contract.
   // ═══════════════════════════════════════════════════════════════════════════
 
-  private async handleAutosyncWebhook(payload: EzeeAutosyncWebhookPayload): Promise<void> {
+  private async handleAutosyncWebhook(
+    payload: EzeeAutosyncWebhookPayload,
+  ): Promise<void> {
     const { property_id, operation } = payload;
     const reservation = payload.reservation as EzeeAutosyncReservation;
     const uniqueId = reservation?.UniqueID;
@@ -1015,8 +1175,13 @@ export class EzeeSyncWorker implements SqsWorker {
     // Other rows at this property that represent the SAME booking under a
     // different key, and must be kept in lockstep with the primary. See below.
     let mirrorEris: string[] = [];
-    const firstTran: EzeeAutosyncBookingTran | undefined = reservation.BookingTran?.[0];
-    const syncLogId = await this.createSyncLog('booking', canonicalEri, `autosync:${operation}`);
+    const firstTran: EzeeAutosyncBookingTran | undefined =
+      reservation.BookingTran?.[0];
+    const syncLogId = await this.createSyncLog(
+      'booking',
+      canonicalEri,
+      `autosync:${operation}`,
+    );
 
     try {
       // ── Resolve every row at THIS property that already represents this
@@ -1069,7 +1234,13 @@ export class EzeeSyncWorker implements SqsWorker {
       //                   tokens, lock PINs.
       //   3. canonical  — reconciliation-created, typically childless.
       const rank = (key: string) =>
-        key.includes('-LCL-') ? 0 : key === legacyEri ? 1 : key === canonicalEri ? 2 : 3;
+        key.includes('-LCL-')
+          ? 0
+          : key === legacyEri
+            ? 1
+            : key === canonicalEri
+              ? 2
+              : 3;
       const ordered = [...candidates.keys()].sort(
         (a, b) => rank(a) - rank(b) || a.localeCompare(b),
       );
@@ -1082,17 +1253,24 @@ export class EzeeSyncWorker implements SqsWorker {
       mirrorEris = ordered.slice(1);
 
       // Map eZee operation → our status + is_active.
-      const { status, isActive } = this.mapAutosyncOperationToStatus(operation, firstTran);
+      const { status, isActive } = this.mapAutosyncOperationToStatus(
+        operation,
+        firstTran,
+      );
 
       // Build the booker contact set — first BookingTran wins, top-level
       // Reservation fields are the fallback for ops where eZee omits them
       // on the tran (e.g. some VOID / UPDATEGUEST shapes).
       const bookerEmail = firstTran?.Email ?? reservation.Email ?? null;
-      const bookerPhone = firstTran?.Mobile ?? reservation.Mobile ?? reservation.Phone ?? null;
-      const bookerFirstName = firstTran?.FirstName ?? reservation.FirstName ?? null;
-      const bookerLastName = firstTran?.LastName ?? reservation.LastName ?? null;
+      const bookerPhone =
+        firstTran?.Mobile ?? reservation.Mobile ?? reservation.Phone ?? null;
+      const bookerFirstName =
+        firstTran?.FirstName ?? reservation.FirstName ?? null;
+      const bookerLastName =
+        firstTran?.LastName ?? reservation.LastName ?? null;
       const bookerName =
-        [bookerFirstName, bookerLastName].filter(Boolean).join(' ').trim() || null;
+        [bookerFirstName, bookerLastName].filter(Boolean).join(' ').trim() ||
+        null;
 
       // Resolve guest_id per the email-priority policy in
       // docs/setup/guest-matching-policy.md. Preserve existing link if set;
@@ -1102,7 +1280,11 @@ export class EzeeSyncWorker implements SqsWorker {
       // up + verify their phone).
       const resolvedGuestId = existing?.guest_id
         ? existing.guest_id
-        : await this.findOrCreateGuestByEmail(bookerEmail, bookerPhone, bookerName);
+        : await this.findOrCreateGuestByEmail(
+            bookerEmail,
+            bookerPhone,
+            bookerName,
+          );
 
       // Always-overwrite fields (eZee is canonical for these).
       const subReservationNos = (reservation.BookingTran ?? [])
@@ -1123,8 +1305,14 @@ export class EzeeSyncWorker implements SqsWorker {
       // the admin dashboard's "total revenue incl. OTA" tile. Returns null
       // when the payload carries no usable amounts so we don't overwrite a
       // previously-good value with 0 on an op that omits them.
-      const folioAfterTax = this.sumTranAmounts(reservation.BookingTran, 'TotalAmountAfterTax');
-      const folioBeforeTax = this.sumTranAmounts(reservation.BookingTran, 'TotalAmountBeforeTax');
+      const folioAfterTax = this.sumTranAmounts(
+        reservation.BookingTran,
+        'TotalAmountAfterTax',
+      );
+      const folioBeforeTax = this.sumTranAmounts(
+        reservation.BookingTran,
+        'TotalAmountBeforeTax',
+      );
 
       // UNASSIGN_ROOM / RELEASE_ROOM explicitly clear the room. Without
       // this carve-out, an empty `RoomName` from the payload falls through
@@ -1132,19 +1320,30 @@ export class EzeeSyncWorker implements SqsWorker {
       // place. For those two ops we want the cache to reflect "no room
       // assigned" so admin views show the booking back in the unassigned
       // queue.
-      const clearsRoom = ['UNASSIGN_ROOM', 'RELEASE_ROOM'].includes((operation ?? '').toUpperCase());
+      const clearsRoom = ['UNASSIGN_ROOM', 'RELEASE_ROOM'].includes(
+        (operation ?? '').toUpperCase(),
+      );
       const incomingRoomName = clearsRoom
         ? null
         : firstTran?.RoomName && firstTran.RoomName.length > 0
           ? firstTran.RoomName
-          : existing?.room_number ?? null;
+          : (existing?.room_number ?? null);
 
       const update: Prisma.ezee_booking_cacheUncheckedUpdateInput = {
-        room_type_name: firstTran?.RoomTypeName ?? existing?.room_type_name ?? null,
+        room_type_name:
+          firstTran?.RoomTypeName ?? existing?.room_type_name ?? null,
         room_number: incomingRoomName,
-        checkin_date: firstTran?.Start ? new Date(firstTran.Start) : existing?.checkin_date ?? null,
-        checkout_date: firstTran?.End ? new Date(firstTran.End) : existing?.checkout_date ?? null,
-        no_of_guests: this.computeOccupancy(firstTran, reservation, existing?.no_of_guests ?? 1),
+        checkin_date: firstTran?.Start
+          ? new Date(firstTran.Start)
+          : (existing?.checkin_date ?? null),
+        checkout_date: firstTran?.End
+          ? new Date(firstTran.End)
+          : (existing?.checkout_date ?? null),
+        no_of_guests: this.computeOccupancy(
+          firstTran,
+          reservation,
+          existing?.no_of_guests ?? 1,
+        ),
         source: reservation.BookedBy ?? existing?.source ?? null,
         // Backfill on every path, not just create. reconcileUnsyncedBookings()
         // reads a NULL here as "created locally, never pushed to eZee" and
@@ -1152,12 +1351,17 @@ export class EzeeSyncWorker implements SqsWorker {
         // keep being queued for a reservation that already exists in eZee.
         // Idempotent: canonical and `-LCL-` rows already hold this exact value.
         ezee_reservation_no: legacyEri,
-        ezee_sub_reservation_nos: subReservationNos || existing?.ezee_sub_reservation_nos || null,
+        ezee_sub_reservation_nos:
+          subReservationNos || existing?.ezee_sub_reservation_nos || null,
         booker_email: bookerEmail ?? existing?.booker_email ?? null,
         booker_phone: bookerPhone ?? existing?.booker_phone ?? null,
         fetched_at: new Date(),
-        ...(folioAfterTax !== null ? { folio_total_after_tax: folioAfterTax } : {}),
-        ...(folioBeforeTax !== null ? { folio_total_before_tax: folioBeforeTax } : {}),
+        ...(folioAfterTax !== null
+          ? { folio_total_after_tax: folioAfterTax }
+          : {}),
+        ...(folioBeforeTax !== null
+          ? { folio_total_before_tax: folioBeforeTax }
+          : {}),
         ...(status !== undefined ? { status } : {}),
         ...(isActive !== undefined ? { is_active: isActive } : {}),
       };
@@ -1222,12 +1426,14 @@ export class EzeeSyncWorker implements SqsWorker {
             checkout_date: update.checkout_date as Date | null,
             no_of_guests: update.no_of_guests as number,
             source: update.source as string | null,
-            ezee_sub_reservation_nos: update.ezee_sub_reservation_nos as string | null,
+            ezee_sub_reservation_nos: update.ezee_sub_reservation_nos as
+              | string
+              | null,
             booker_email: update.booker_email as string | null,
             booker_phone: update.booker_phone as string | null,
             folio_total_after_tax: folioAfterTax,
             folio_total_before_tax: folioBeforeTax,
-              },
+          },
         });
         if (resolvedGuestId) {
           await this.ensurePrimaryAccess(eri, resolvedGuestId);
@@ -1238,9 +1444,13 @@ export class EzeeSyncWorker implements SqsWorker {
       // the room-206 guest is recognised on WhatsApp under their own name — not the booker's.
       // 'merge': eZee pushes a multi-room booking as one message PER ROOM, so this payload may
       // carry only one of the booking's rooms — never let it erase the others.
-      await this.roomGuests.applyRoomGuests(eri, roomGuests, resolvedGuestId, 'merge').catch((err) =>
-        this.logger.warn(`autosync: sub-guest linking failed for ${eri}: ${(err as Error).message}`),
-      );
+      await this.roomGuests
+        .applyRoomGuests(eri, roomGuests, resolvedGuestId, 'merge')
+        .catch((err) =>
+          this.logger.warn(
+            `autosync: sub-guest linking failed for ${eri}: ${(err as Error).message}`,
+          ),
+        );
 
       // Log the provider's identity AND the row we actually wrote — they differ
       // whenever a pre-namespacing or `-LCL-` row was adopted, and the sync log
@@ -1259,11 +1469,15 @@ export class EzeeSyncWorker implements SqsWorker {
       // CAPTURED row already exists for this booking (because the PWA flow
       // recorded it), we skip. Cancellations are intentionally NOT
       // reflected here yet (no refund policy wired in).
-      await this.mirrorEzeePayments(eri, property_id, reservation, resolvedGuestId).catch(
-        (err) =>
-          this.logger.warn(
-            `autosync payment-mirror failed for ERI=${eri}: ${(err as Error).message}`,
-          ),
+      await this.mirrorEzeePayments(
+        eri,
+        property_id,
+        reservation,
+        resolvedGuestId,
+      ).catch((err) =>
+        this.logger.warn(
+          `autosync payment-mirror failed for ERI=${eri}: ${(err as Error).message}`,
+        ),
       );
 
       // ── Post-upsert side-effects (best-effort; never throws) ────────────
@@ -1295,7 +1509,9 @@ export class EzeeSyncWorker implements SqsWorker {
         );
     } catch (err) {
       const message = (err as Error).message;
-      this.logger.error(`autosync ${operation} failed for ERI=${eri}: ${message}`);
+      this.logger.error(
+        `autosync ${operation} failed for ERI=${eri}: ${message}`,
+      );
       await this.updateSyncLog(syncLogId, 'FAILED', message);
       throw err; // let SQS retry
     }
@@ -1319,7 +1535,10 @@ export class EzeeSyncWorker implements SqsWorker {
       case 'RESERVATION':
       case 'RESERVATION_GOT_CONFIRMED':
       case 'RESERVATIONTOCHECKIN':
-        return { status: isConfirmed ? 'CONFIRMED' : 'PENDING_PAYMENT', isActive: true };
+        return {
+          status: isConfirmed ? 'CONFIRMED' : 'PENDING_PAYMENT',
+          isActive: true,
+        };
       case 'RESERVATION_GOT_UNCONFIRMED':
       case 'UNCONFIRMED_BOOKING':
         return { status: 'PENDING_PAYMENT', isActive: true };
@@ -1344,8 +1563,10 @@ export class EzeeSyncWorker implements SqsWorker {
         // eZee bundles these three into one event type; differentiate from
         // CurrentStatus (e.g. "Void", "Cancelled", "No Show") so the cache
         // reflects what staff actually selected in eZee admin.
-        if (currentStatus.includes('void')) return { status: 'CANCELLED', isActive: false };
-        if (currentStatus.includes('no show')) return { status: 'NO_SHOW', isActive: false };
+        if (currentStatus.includes('void'))
+          return { status: 'CANCELLED', isActive: false };
+        if (currentStatus.includes('no show'))
+          return { status: 'NO_SHOW', isActive: false };
         return { status: 'CANCELLED', isActive: false };
       // Field-refresh-only ops: status stays as-is.
       case 'UPDATEGUEST':
@@ -1363,7 +1584,9 @@ export class EzeeSyncWorker implements SqsWorker {
       case 'UNBLOCK_ROOM':
         return {};
       default:
-        this.logger.warn(`autosync: unmapped operation '${operation}' — treating as field-refresh-only`);
+        this.logger.warn(
+          `autosync: unmapped operation '${operation}' — treating as field-refresh-only`,
+        );
         return {};
     }
   }
@@ -1571,7 +1794,10 @@ export class EzeeSyncWorker implements SqsWorker {
    * (eri, guest_id) pair already exists (the table has @@unique on that
    * pair, but we don't want a P2002 in the worker).
    */
-  private async ensurePrimaryAccess(eri: string, guestId: string): Promise<void> {
+  private async ensurePrimaryAccess(
+    eri: string,
+    guestId: string,
+  ): Promise<void> {
     await this.roomGuests.ensureAccess(eri, guestId, 'PRIMARY');
   }
 }

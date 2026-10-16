@@ -48,7 +48,10 @@ export class AdminConversationsController {
         created_at: true,
       },
     });
-    return rows.map((r) => ({ ...r, created_at_ist: toIstString(r.created_at) }));
+    return rows.map((r) => ({
+      ...r,
+      created_at_ist: toIstString(r.created_at),
+    }));
   }
 
   /**
@@ -71,6 +74,9 @@ export class AdminConversationsController {
         created_at: true,
       },
     });
-    return rows.map((r) => ({ ...r, created_at_ist: toIstString(r.created_at) }));
+    return rows.map((r) => ({
+      ...r,
+      created_at_ist: toIstString(r.created_at),
+    }));
   }
 }

@@ -69,7 +69,10 @@ export class AdminEscalationLevelsController {
 
   @Get(':propertyId')
   @RequirePermission('sla.config')
-  list(@Param('propertyId') propertyId: string, @CurrentAdmin() actor: AdminJwtPayload) {
+  list(
+    @Param('propertyId') propertyId: string,
+    @CurrentAdmin() actor: AdminJwtPayload,
+  ) {
     return this.service.listEscalationLevels(propertyId, actor);
   }
 

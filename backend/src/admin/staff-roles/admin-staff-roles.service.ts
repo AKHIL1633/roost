@@ -48,7 +48,9 @@ export class AdminStaffRolesService {
 
   async create(dto: CreateStaffRoleDto) {
     const name = AdminStaffRolesService.normalizeName(dto.name);
-    const existing = await this.prisma.staff_roles.findUnique({ where: { name } });
+    const existing = await this.prisma.staff_roles.findUnique({
+      where: { name },
+    });
     if (existing) {
       throw new ConflictException(`Role "${name}" already exists.`);
     }

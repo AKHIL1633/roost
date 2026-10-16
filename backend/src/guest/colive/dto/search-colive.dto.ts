@@ -1,4 +1,11 @@
-import { IsString, IsNumber, IsOptional, IsIn, Min, Max } from 'class-validator';
+import {
+  IsString,
+  IsNumber,
+  IsOptional,
+  IsIn,
+  Min,
+  Max,
+} from 'class-validator';
 
 export class SearchColiveDto {
   @IsOptional()

@@ -28,8 +28,13 @@ export class NotifyWorker implements SqsWorker {
     private readonly wati: WatiService,
   ) {}
 
-  private toParams(variables: Record<string, string>): { name: string; value: string }[] {
-    return Object.entries(variables).map(([name, value]) => ({ name, value: String(value) }));
+  private toParams(
+    variables: Record<string, string>,
+  ): { name: string; value: string }[] {
+    return Object.entries(variables).map(([name, value]) => ({
+      name,
+      value: String(value),
+    }));
   }
 
   async process(message: SqsMessageEnvelope): Promise<void> {
@@ -69,7 +74,9 @@ export class NotifyWorker implements SqsWorker {
 
     if (!payload.guest_phone) {
       await this.markStatus(logId, 'SKIPPED');
-      this.logger.warn(`Notify guest ${payload.guest_id}: no phone on payload — skipped`);
+      this.logger.warn(
+        `Notify guest ${payload.guest_id}: no phone on payload — skipped`,
+      );
       return;
     }
     const res = await this.wati.sendTemplateMessage(
@@ -78,7 +85,10 @@ export class NotifyWorker implements SqsWorker {
       payload.template,
       this.toParams(payload.variables),
     );
-    await this.markStatus(logId, res.ok ? 'SENT' : res.skipped ? 'SKIPPED' : 'FAILED');
+    await this.markStatus(
+      logId,
+      res.ok ? 'SENT' : res.skipped ? 'SKIPPED' : 'FAILED',
+    );
   }
 
   private async handleNotifyStaff(payload: NotifyStaffPayload): Promise<void> {
@@ -101,7 +111,10 @@ export class NotifyWorker implements SqsWorker {
       payload.template,
       this.toParams(payload.variables),
     );
-    await this.markStatus(logId, res.ok ? 'SENT' : res.skipped ? 'SKIPPED' : 'FAILED');
+    await this.markStatus(
+      logId,
+      res.ok ? 'SENT' : res.skipped ? 'SKIPPED' : 'FAILED',
+    );
   }
 
   private async markStatus(id: string, status: string): Promise<void> {
@@ -110,7 +123,9 @@ export class NotifyWorker implements SqsWorker {
       .catch(() => undefined);
   }
 
-  private async handleLowStockAlert(payload: LowStockAlertPayload): Promise<void> {
+  private async handleLowStockAlert(
+    payload: LowStockAlertPayload,
+  ): Promise<void> {
     this.logger.warn(
       `⚠️ LOW STOCK: "${payload.product_name}" (${payload.available_stock} remaining, threshold: ${payload.threshold}) — property: ${payload.property_id}`,
     );

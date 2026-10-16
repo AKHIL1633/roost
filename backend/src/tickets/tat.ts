@@ -15,9 +15,15 @@
  */
 
 /** The promised turn-around in whole minutes, or null if the class had no SLA row. */
-export function tatMinutes(createdAt: Date, slaBreachAt: Date | null): number | null {
+export function tatMinutes(
+  createdAt: Date,
+  slaBreachAt: Date | null,
+): number | null {
   if (!slaBreachAt) return null;
-  return Math.max(0, Math.round((slaBreachAt.getTime() - createdAt.getTime()) / 60_000));
+  return Math.max(
+    0,
+    Math.round((slaBreachAt.getTime() - createdAt.getTime()) / 60_000),
+  );
 }
 
 /**

@@ -38,7 +38,11 @@ export class FeedbackController {
     if (result.ok) return result;
     // Reflect the outcome in the HTTP status; the body still carries the state.
     const code =
-      result.state === 'not_found' ? 404 : result.state === 'expired' ? 410 : 409;
+      result.state === 'not_found'
+        ? 404
+        : result.state === 'expired'
+          ? 410
+          : 409;
     throw new HttpException(result as unknown as Record<string, unknown>, code);
   }
 }

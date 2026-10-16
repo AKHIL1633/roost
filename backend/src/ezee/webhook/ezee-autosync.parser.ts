@@ -28,7 +28,9 @@ export const EZEE_AUTOSYNC_ALLOWED_IPS: ReadonlyArray<string> = [
  * would have accepted, defeating the allowlist. Taking the last hop makes the
  * allowlist spoof-resistant because an attacker cannot append after the ALB.
  */
-export function extractClientIp(headers: Record<string, unknown>): string | null {
+export function extractClientIp(
+  headers: Record<string, unknown>,
+): string | null {
   const raw = headers['x-forwarded-for'];
   if (typeof raw !== 'string' || raw.length === 0) return null;
   const parts = raw
@@ -75,7 +77,9 @@ export function parseAutosyncMessage(rawBody: string): EzeeAutosyncMessage {
  * Normalises the optional `data.Reservations.Reservation` field into a flat
  * array, regardless of whether eZee sent zero, one, or many.
  */
-export function reservationsOf(msg: EzeeAutosyncMessage): EzeeAutosyncReservation[] {
+export function reservationsOf(
+  msg: EzeeAutosyncMessage,
+): EzeeAutosyncReservation[] {
   const raw = msg.data?.Reservations?.Reservation;
   if (Array.isArray(raw)) return raw;
   if (raw && typeof raw === 'object') return [raw as EzeeAutosyncReservation];

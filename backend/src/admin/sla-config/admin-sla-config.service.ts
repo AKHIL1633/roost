@@ -38,7 +38,9 @@ export class AdminSlaConfigService {
 
   /** List the SLA timing for every task class (T-1 … T4). */
   listSlaConfig() {
-    return this.prisma.sla_config.findMany({ orderBy: { task_category: 'asc' } });
+    return this.prisma.sla_config.findMany({
+      orderBy: { task_category: 'asc' },
+    });
   }
 
   async createSlaConfig(dto: CreateSlaConfigDto) {
@@ -69,15 +71,22 @@ export class AdminSlaConfigService {
     const current = await this.prisma.sla_config.findUnique({
       where: { task_category: taskCategory },
     });
-    if (!current) throw new NotFoundException(`No SLA config for ${taskCategory}.`);
+    if (!current)
+      throw new NotFoundException(`No SLA config for ${taskCategory}.`);
 
     return this.prisma.sla_config.update({
       where: { task_category: taskCategory },
       data: {
-        ...(dto.completion_timeout_min !== undefined && { completion_timeout_min: dto.completion_timeout_min }),
+        ...(dto.completion_timeout_min !== undefined && {
+          completion_timeout_min: dto.completion_timeout_min,
+        }),
         ...(dto.ack_percent !== undefined && { ack_percent: dto.ack_percent }),
-        ...(dto.escalation_gap_min !== undefined && { escalation_gap_min: dto.escalation_gap_min }),
-        ...(dto.snooze_percent !== undefined && { snooze_percent: dto.snooze_percent }),
+        ...(dto.escalation_gap_min !== undefined && {
+          escalation_gap_min: dto.escalation_gap_min,
+        }),
+        ...(dto.snooze_percent !== undefined && {
+          snooze_percent: dto.snooze_percent,
+        }),
         ...(dto.is_active !== undefined && { is_active: dto.is_active }),
         updated_at: new Date(),
       },
@@ -85,8 +94,11 @@ export class AdminSlaConfigService {
   }
 
   async deleteSlaConfig(taskCategory: string) {
-    const res = await this.prisma.sla_config.deleteMany({ where: { task_category: taskCategory } });
-    if (res.count === 0) throw new NotFoundException(`No SLA config for ${taskCategory}.`);
+    const res = await this.prisma.sla_config.deleteMany({
+      where: { task_category: taskCategory },
+    });
+    if (res.count === 0)
+      throw new NotFoundException(`No SLA config for ${taskCategory}.`);
     return { deleted: true };
   }
 
@@ -109,7 +121,9 @@ export class AdminSlaConfigService {
   ) {
     this.assertPropertyAccess(actor, propertyId);
     if (!Number.isInteger(level) || level < 1 || level > 9) {
-      throw new BadRequestException('level must be an integer between 1 and 9.');
+      throw new BadRequestException(
+        'level must be an integer between 1 and 9.',
+      );
     }
     const role = await this.assertRoleResolvable(dto.role, dto.lookup_source);
 
@@ -133,13 +147,19 @@ export class AdminSlaConfigService {
     });
   }
 
-  async deleteEscalationLevel(propertyId: string, level: number, actor: AdminJwtPayload) {
+  async deleteEscalationLevel(
+    propertyId: string,
+    level: number,
+    actor: AdminJwtPayload,
+  ) {
     this.assertPropertyAccess(actor, propertyId);
     const res = await this.prisma.escalation_levels.deleteMany({
       where: { property_id: propertyId, level },
     });
     if (res.count === 0) {
-      throw new NotFoundException(`No escalation level ${level} for property ${propertyId}.`);
+      throw new NotFoundException(
+        `No escalation level ${level} for property ${propertyId}.`,
+      );
     }
     return { deleted: true };
   }
@@ -149,7 +169,9 @@ export class AdminSlaConfigService {
   /** The admin must be authorised on the target hotel (property). */
   private assertPropertyAccess(actor: AdminJwtPayload, propertyId: string) {
     if (!actor.property_ids?.includes(propertyId)) {
-      throw new ForbiddenException(`You are not authorised on property ${propertyId}.`);
+      throw new ForbiddenException(
+        `You are not authorised on property ${propertyId}.`,
+      );
     }
   }
 
@@ -160,7 +182,10 @@ export class AdminSlaConfigService {
    *   - staff       → the role must exist (and be active) in the staff_roles catalog
    *   - admin_users → the role must be an existing admin_roles.name
    */
-  private async assertRoleResolvable(role: string, lookupSource: string): Promise<string> {
+  private async assertRoleResolvable(
+    role: string,
+    lookupSource: string,
+  ): Promise<string> {
     if (lookupSource === 'staff') {
       return this.staffRoles.assertActiveRole(role);
     }

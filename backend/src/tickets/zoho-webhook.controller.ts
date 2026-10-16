@@ -99,12 +99,19 @@ export class ZohoWebhookController {
   private async handle(
     token: string | undefined,
     body: unknown,
-  ): Promise<{ ok: boolean; action?: string; reason?: string; count?: number }> {
+  ): Promise<{
+    ok: boolean;
+    action?: string;
+    reason?: string;
+    count?: number;
+  }> {
     const secret = process.env.ZOHO_WEBHOOK_SECRET;
     // Fail closed: without a configured secret the endpoint stays inert (rejects),
     // so it can be deployed before the Zoho webhook + secret are set up.
     if (!secret) {
-      this.logger.warn('Zoho webhook hit but ZOHO_WEBHOOK_SECRET is not set — ignoring');
+      this.logger.warn(
+        'Zoho webhook hit but ZOHO_WEBHOOK_SECRET is not set — ignoring',
+      );
       return { ok: false, reason: 'not_configured' };
     }
     // Token arrives via path, query param, or header (see the two routes above).
@@ -122,30 +129,42 @@ export class ZohoWebhookController {
       if (!zohoId && !ticketNumber) continue;
 
       const ticket = await this.prisma.zoho_ticket_ref.findFirst({
-        where: zohoId ? { zoho_ticket_id: zohoId } : { zoho_ticket_id: ticketNumber },
+        where: zohoId
+          ? { zoho_ticket_id: zohoId }
+          : { zoho_ticket_id: ticketNumber },
         select: { id: true, status: true },
       });
       if (!ticket) {
-        this.logger.warn(`Zoho webhook: no local ticket for zohoId=${zohoId ?? ticketNumber}`);
+        this.logger.warn(
+          `Zoho webhook: no local ticket for zohoId=${zohoId ?? ticketNumber}`,
+        );
         continue;
       }
 
       try {
         if (status === 'in progress') {
           await this.tickets.acknowledge(ticket.id);
-          this.logger.log(`Zoho→sync: ${ticket.id} acknowledged (Zoho "In Progress")`);
+          this.logger.log(
+            `Zoho→sync: ${ticket.id} acknowledged (Zoho "In Progress")`,
+          );
           handled++;
           lastAction = 'acknowledge';
         } else if (status === 'closed' || status === 'resolved') {
           await this.tickets.complete(ticket.id);
-          this.logger.log(`Zoho→sync: ${ticket.id} completed (Zoho "${ev.status}")`);
+          this.logger.log(
+            `Zoho→sync: ${ticket.id} completed (Zoho "${ev.status}")`,
+          );
           handled++;
           lastAction = 'complete';
         } else {
-          this.logger.debug(`Zoho→sync: ${ticket.id} unmapped_status:${status} — ignored`);
+          this.logger.debug(
+            `Zoho→sync: ${ticket.id} unmapped_status:${status} — ignored`,
+          );
         }
       } catch (err) {
-        this.logger.error(`Zoho webhook action failed for ${ticket.id}: ${(err as Error).message}`);
+        this.logger.error(
+          `Zoho webhook action failed for ${ticket.id}: ${(err as Error).message}`,
+        );
         return { ok: false, reason: 'action_error' };
       }
     }
@@ -168,9 +187,17 @@ export class ZohoWebhookController {
       const rec = raw as Record<string, unknown>;
       const p = (rec.payload as Record<string, unknown> | undefined) ?? rec;
       const ticketId = (p.id ?? rec.ticketId) as string | number | undefined;
-      const ticketNumber = (p.ticketNumber ?? rec.ticketNumber) as string | number | undefined;
+      const ticketNumber = (p.ticketNumber ?? rec.ticketNumber) as
+        | string
+        | number
+        | undefined;
       const status = (p.status ?? rec.status) as string | undefined;
-      if (ticketId === undefined && ticketNumber === undefined && status === undefined) continue;
+      if (
+        ticketId === undefined &&
+        ticketNumber === undefined &&
+        status === undefined
+      )
+        continue;
       out.push({ ticketId, ticketNumber, status });
     }
     return out;

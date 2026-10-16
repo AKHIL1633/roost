@@ -53,5 +53,8 @@ export function addDaysToDateStr(dateStr: string, days: number): string {
  * e.g. istWallclockToUtc('2026-07-11', 1080) → 2026-07-11T12:30:00Z (18:00 IST).
  */
 export function istWallclockToUtc(dateStr: string, minutes: number): Date {
-  return new Date(Date.parse(`${dateStr}T00:00:00.000Z`) + (minutes - IST_OFFSET_MIN) * 60_000);
+  return new Date(
+    Date.parse(`${dateStr}T00:00:00.000Z`) +
+      (minutes - IST_OFFSET_MIN) * 60_000,
+  );
 }

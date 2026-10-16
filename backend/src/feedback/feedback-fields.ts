@@ -22,7 +22,9 @@ function asSentiment(v: string | null | undefined): Sentiment | null {
 }
 
 /** Good → 5, Bad → 1 — the ends of the same 1-5 scale the link channel uses. */
-export function ratingForSentiment(sentiment: string | null | undefined): number | null {
+export function ratingForSentiment(
+  sentiment: string | null | undefined,
+): number | null {
   const s = asSentiment(sentiment);
   return s === 'Good' ? 5 : s === 'Bad' ? 1 : null;
 }
@@ -32,7 +34,9 @@ export function ratingForSentiment(sentiment: string | null | undefined): number
  * Good and Bad, and forcing a neutral score into either would misreport it. Those rows
  * keep their cf_feedback_rating and simply have no sentiment.
  */
-export function sentimentForRating(rating: number | null | undefined): Sentiment | null {
+export function sentimentForRating(
+  rating: number | null | undefined,
+): Sentiment | null {
   if (rating == null) return null;
   if (rating >= 4) return 'Good';
   if (rating <= 2) return 'Bad';
@@ -49,7 +53,8 @@ export function feedbackCustomFields(input: {
   sentiment?: string | null;
   comment?: string | null;
 }): Record<string, string | number> {
-  const sentiment = asSentiment(input.sentiment) ?? sentimentForRating(input.rating);
+  const sentiment =
+    asSentiment(input.sentiment) ?? sentimentForRating(input.rating);
   const rating = input.rating ?? ratingForSentiment(input.sentiment);
   return {
     ...(rating != null ? { cf_feedback_rating: rating } : {}),

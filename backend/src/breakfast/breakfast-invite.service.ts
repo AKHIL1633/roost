@@ -95,7 +95,11 @@ export class BreakfastInviteService implements OnApplicationBootstrap {
       },
     });
     for (const c of configs) {
-      const { lastDue } = BreakfastService.scheduleInstants(now, c.invite_anchor_min, c.invite_interval_hours);
+      const { lastDue } = BreakfastService.scheduleInstants(
+        now,
+        c.invite_anchor_min,
+        c.invite_interval_hours,
+      );
 
       // First-ever tick for this property (cursor never set): seed the cursor to the
       // current due instant WITHOUT sending. This prevents a "catch-up" fire for a stale
@@ -118,13 +122,18 @@ export class BreakfastInviteService implements OnApplicationBootstrap {
       // the guard idempotent across the anchor boundary, so a tick just before and just
       // after the anchor can't both fire (the earlier bug: two invites ~5 min apart).
       const claim = await this.prisma.breakfast_config.updateMany({
-        where: { property_id: c.property_id, last_invite_run_at: c.last_invite_run_at },
+        where: {
+          property_id: c.property_id,
+          last_invite_run_at: c.last_invite_run_at,
+        },
         data: { last_invite_run_at: lastDue },
       });
       if (claim.count !== 1) continue; // lost the race to another tick/task
 
       const r = await this.sendForProperty(c.property_id).catch((e) => {
-        this.logger.warn(`scheduled invites failed for ${c.property_id}: ${(e as Error).message}`);
+        this.logger.warn(
+          `scheduled invites failed for ${c.property_id}: ${(e as Error).message}`,
+        );
         return { sent: 0 };
       });
       this.logger.log(
@@ -215,7 +224,9 @@ export class BreakfastInviteService implements OnApplicationBootstrap {
     let sent = 0;
     for (const t of targets) {
       const ok = await this.issueForBooking(t).catch((e) => {
-        this.logger.warn(`invite failed for ${t.ezee_reservation_id}: ${(e as Error).message}`);
+        this.logger.warn(
+          `invite failed for ${t.ezee_reservation_id}: ${(e as Error).message}`,
+        );
         return false;
       });
       if (ok) sent += 1;
@@ -224,9 +235,11 @@ export class BreakfastInviteService implements OnApplicationBootstrap {
   }
 
   /** The per-BookingTran occupants eZee gave us for a reservation (empty for single-room rows). */
-  private roomOccupants(
-    json: unknown,
-  ): { room_number: string | null; phone: string | null; guest_id: string | null }[] {
+  private roomOccupants(json: unknown): {
+    room_number: string | null;
+    phone: string | null;
+    guest_id: string | null;
+  }[] {
     if (!Array.isArray(json)) return [];
     return (json as Record<string, unknown>[])
       .filter((r) => r && typeof r === 'object')
@@ -267,7 +280,9 @@ export class BreakfastInviteService implements OnApplicationBootstrap {
       phone = phone ?? g?.phone ?? null;
     }
     if (!phone) {
-      this.logger.warn(`no phone for booking ${booking.ezee_reservation_id} — invite skipped`);
+      this.logger.warn(
+        `no phone for booking ${booking.ezee_reservation_id} — invite skipped`,
+      );
       return false;
     }
 

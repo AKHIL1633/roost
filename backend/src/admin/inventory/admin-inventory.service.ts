@@ -74,7 +74,9 @@ export class AdminInventoryService {
     });
 
     // Auto-create inventory row for COMMODITY / BORROWABLE
-    let inventoryRow: Awaited<ReturnType<typeof this.prisma.inventory.create>> | null = null;
+    let inventoryRow: Awaited<
+      ReturnType<typeof this.prisma.inventory.create>
+    > | null = null;
     if (dto.category !== 'SERVICE') {
       const stock = dto.initial_stock ?? 0;
       inventoryRow = await this.prisma.inventory.create({
@@ -126,7 +128,8 @@ export class AdminInventoryService {
 
     const result = products.map((p) => ({
       ...this.formatProduct(p),
-      inventory: p.inventory.length > 0 ? this.formatStock(p.inventory[0]) : null,
+      inventory:
+        p.inventory.length > 0 ? this.formatStock(p.inventory[0]) : null,
     }));
 
     await this.cacheService.set(cacheKey, result, CacheService.TTL_CATALOG);
@@ -142,11 +145,18 @@ export class AdminInventoryService {
 
     return {
       ...this.formatProduct(product),
-      inventory: product.inventory.length > 0 ? this.formatStock(product.inventory[0]) : null,
+      inventory:
+        product.inventory.length > 0
+          ? this.formatStock(product.inventory[0])
+          : null,
     };
   }
 
-  async updateProduct(id: string, dto: UpdateProductDto, actor: AdminJwtPayload) {
+  async updateProduct(
+    id: string,
+    dto: UpdateProductDto,
+    actor: AdminJwtPayload,
+  ) {
     const existing = await this.prisma.product_catalog.findUnique({
       where: { id },
     });
@@ -180,7 +190,10 @@ export class AdminInventoryService {
 
     return {
       ...this.formatProduct(updated),
-      inventory: updated.inventory.length > 0 ? this.formatStock(updated.inventory[0]) : null,
+      inventory:
+        updated.inventory.length > 0
+          ? this.formatStock(updated.inventory[0])
+          : null,
     };
   }
 
@@ -251,7 +264,8 @@ export class AdminInventoryService {
     };
 
     const inv = await this.prisma.inventory.findFirst({ where });
-    if (!inv) throw new NotFoundException('Inventory not found for this product');
+    if (!inv)
+      throw new NotFoundException('Inventory not found for this product');
 
     const updated = await this.prisma.inventory.update({
       where: { id: inv.id },
@@ -269,7 +283,10 @@ export class AdminInventoryService {
       action: 'INVENTORY_RESTOCK',
       entity_type: 'inventory',
       entity_id: inv.id,
-      new_value: { quantity_added: dto.quantity, new_total: updated.total_stock },
+      new_value: {
+        quantity_added: dto.quantity,
+        new_total: updated.total_stock,
+      },
     });
 
     // Check low stock after restock
@@ -300,7 +317,8 @@ export class AdminInventoryService {
     };
 
     const inv = await this.prisma.inventory.findFirst({ where });
-    if (!inv) throw new NotFoundException('Inventory not found for this product');
+    if (!inv)
+      throw new NotFoundException('Inventory not found for this product');
 
     if (inv.available_stock < dto.quantity) {
       throw new BadRequestException(
@@ -353,12 +371,19 @@ export class AdminInventoryService {
     };
   }
 
-  async updateStock(inventoryId: string, dto: UpdateStockDto, actor: AdminJwtPayload) {
-    const inv = await this.prisma.inventory.findUnique({ where: { id: inventoryId } });
+  async updateStock(
+    inventoryId: string,
+    dto: UpdateStockDto,
+    actor: AdminJwtPayload,
+  ) {
+    const inv = await this.prisma.inventory.findUnique({
+      where: { id: inventoryId },
+    });
     if (!inv) throw new NotFoundException('Inventory row not found');
 
     const data: Record<string, unknown> = { updated_at: new Date() };
-    if (dto.low_stock_threshold !== undefined) data.low_stock_threshold = dto.low_stock_threshold;
+    if (dto.low_stock_threshold !== undefined)
+      data.low_stock_threshold = dto.low_stock_threshold;
 
     const updated = await this.prisma.inventory.update({
       where: { id: inventoryId },
@@ -403,7 +428,9 @@ export class AdminInventoryService {
         borrowable_checkouts: {
           where: { status: { in: ['CHECKED_OUT', 'OVERDUE'] } },
           include: {
-            guests: { select: { id: true, name: true, email: true, phone: true } },
+            guests: {
+              select: { id: true, name: true, email: true, phone: true },
+            },
             ezee_booking_cache: {
               select: { ezee_reservation_id: true, room_number: true },
             },
@@ -446,7 +473,8 @@ export class AdminInventoryService {
       where,
       include: { product_catalog: true },
     });
-    if (!inv) throw new NotFoundException('Inventory not found for this product');
+    if (!inv)
+      throw new NotFoundException('Inventory not found for this product');
     if (inv.product_catalog.category !== 'BORROWABLE') {
       throw new BadRequestException('Only BORROWABLE items can be checked out');
     }
@@ -455,7 +483,9 @@ export class AdminInventoryService {
     }
 
     // Verify guest exists
-    const guest = await this.prisma.guests.findUnique({ where: { id: dto.guest_id } });
+    const guest = await this.prisma.guests.findUnique({
+      where: { id: dto.guest_id },
+    });
     if (!guest) throw new NotFoundException('Guest not found');
 
     // Verify booking exists
@@ -473,7 +503,9 @@ export class AdminInventoryService {
           inventory_id: inv.id,
           ezee_reservation_id: dto.ezee_reservation_id,
           guest_id: dto.guest_id,
-          unit_code: inv.product_catalog.name.toUpperCase().replace(/\s+/g, '-'),
+          unit_code: inv.product_catalog.name
+            .toUpperCase()
+            .replace(/\s+/g, '-'),
           status: 'CHECKED_OUT',
           issued_by_admin_id: actor.admin_id,
         },
@@ -506,7 +538,10 @@ export class AdminInventoryService {
     await this.cacheService.invalidatePropertyCache(inv.property_id);
     await this.cacheService.invalidatePropertyCache('all');
 
-    return { message: 'Item checked out successfully', checkout_id: checkoutId };
+    return {
+      message: 'Item checked out successfully',
+      checkout_id: checkoutId,
+    };
   }
 
   // Search active guests (those with active bookings) — for the checkout form
@@ -528,13 +563,16 @@ export class AdminInventoryService {
     });
 
     // Flatten to unique guests with their booking info
-    const guestMap = new Map<string, {
-      id: string;
-      name: string;
-      email: string | null;
-      phone: string | null;
-      bookings: { ezee_reservation_id: string; room_number: string | null }[];
-    }>();
+    const guestMap = new Map<
+      string,
+      {
+        id: string;
+        name: string;
+        email: string | null;
+        phone: string | null;
+        bookings: { ezee_reservation_id: string; room_number: string | null }[];
+      }
+    >();
 
     for (const b of bookings) {
       for (const access of b.booking_guest_access) {
@@ -604,7 +642,11 @@ export class AdminInventoryService {
     }));
   }
 
-  async verifyReturn(checkoutId: string, staffId: string, actor: AdminJwtPayload) {
+  async verifyReturn(
+    checkoutId: string,
+    staffId: string,
+    actor: AdminJwtPayload,
+  ) {
     const checkout = await this.prisma.borrowable_checkouts.findUnique({
       where: { id: checkoutId },
     });
@@ -728,8 +770,16 @@ export class AdminInventoryService {
         returnable_checkouts: {
           where: { status: 'ISSUED' },
           include: {
-            guests: { select: { id: true, name: true, email: true, phone: true } },
-            ezee_booking_cache: { select: { ezee_reservation_id: true, room_number: true, room_type_name: true } },
+            guests: {
+              select: { id: true, name: true, email: true, phone: true },
+            },
+            ezee_booking_cache: {
+              select: {
+                ezee_reservation_id: true,
+                room_number: true,
+                room_type_name: true,
+              },
+            },
           },
           orderBy: { issued_at: 'desc' },
         },
@@ -764,7 +814,11 @@ export class AdminInventoryService {
    * Shows per-day: new demand (check-ins with this item), expected returns (check-outs),
    * currently issued, and projected availability.
    */
-  async getReturnableForecast(productId: string, days: number, actor: AdminJwtPayload) {
+  async getReturnableForecast(
+    productId: string,
+    days: number,
+    actor: AdminJwtPayload,
+  ) {
     const propertyId = this.requireActorProperty(actor);
 
     // Get inventory for this product
@@ -813,16 +867,20 @@ export class AdminInventoryService {
       const newDemand = newDemandItems.reduce((sum, i) => sum + i.quantity, 0);
 
       // Expected returns: bookings checking out on this date that have ISSUED returnable_checkouts for this product
-      const returningCheckouts = await this.prisma.returnable_checkouts.findMany({
-        where: {
-          inventory_id: inv.id,
-          status: 'ISSUED',
-          ezee_booking_cache: {
-            checkout_date: { gte: date, lt: nextDate },
+      const returningCheckouts =
+        await this.prisma.returnable_checkouts.findMany({
+          where: {
+            inventory_id: inv.id,
+            status: 'ISSUED',
+            ezee_booking_cache: {
+              checkout_date: { gte: date, lt: nextDate },
+            },
           },
-        },
-      });
-      const expectedReturns = returningCheckouts.reduce((sum, c) => sum + c.quantity, 0);
+        });
+      const expectedReturns = returningCheckouts.reduce(
+        (sum, c) => sum + c.quantity,
+        0,
+      );
 
       // Projected: start with current state, accumulate changes day by day
       // For day 0: projected = available_stock - new_demand + expected_returns
@@ -833,7 +891,8 @@ export class AdminInventoryService {
 
       let status: 'ok' | 'warning' | 'shortage' = 'ok';
       if (projectedAvailable <= 0) status = 'shortage';
-      else if (projectedAvailable <= inv.low_stock_threshold) status = 'warning';
+      else if (projectedAvailable <= inv.low_stock_threshold)
+        status = 'warning';
 
       forecast.push({
         date: date.toISOString().split('T')[0],
@@ -870,7 +929,9 @@ export class AdminInventoryService {
     });
 
     const returnableItems = orders.flatMap((o) =>
-      o.addon_order_items.filter((i) => i.product_catalog.category === 'RETURNABLE'),
+      o.addon_order_items.filter(
+        (i) => i.product_catalog.category === 'RETURNABLE',
+      ),
     );
 
     if (returnableItems.length === 0) return [];

@@ -89,7 +89,7 @@ export class EzeeWebhookController {
     // reservation per UniqueID, carrying ALL its rooms.
     const byUniqueId = new Map<string, EzeeAutosyncReservation>();
     for (const reservation of reservations) {
-      const uniqueId = (reservation as EzeeAutosyncReservation).UniqueID;
+      const uniqueId = reservation.UniqueID;
       if (!uniqueId) {
         this.logger.warn(
           `eZee autosync: skipping reservation with no UniqueID (op=${msg.operation})`,
@@ -98,9 +98,15 @@ export class EzeeWebhookController {
       }
       const merged = byUniqueId.get(uniqueId);
       if (merged) {
-        merged.BookingTran = [...(merged.BookingTran ?? []), ...(reservation.BookingTran ?? [])];
+        merged.BookingTran = [
+          ...(merged.BookingTran ?? []),
+          ...(reservation.BookingTran ?? []),
+        ];
       } else {
-        byUniqueId.set(uniqueId, { ...reservation, BookingTran: [...(reservation.BookingTran ?? [])] });
+        byUniqueId.set(uniqueId, {
+          ...reservation,
+          BookingTran: [...(reservation.BookingTran ?? [])],
+        });
       }
     }
 

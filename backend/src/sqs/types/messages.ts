@@ -166,8 +166,8 @@ export interface EzeeInsertColiveBookingPayload {
   guest_last_name: string;
   guest_email: string;
   guest_phone: string;
-  move_in_date: string;     // YYYY-MM-DD
-  move_out_date: string;    // YYYY-MM-DD
+  move_in_date: string; // YYYY-MM-DD
+  move_out_date: string; // YYYY-MM-DD
   rate_per_night: number;
   total_nights: number;
   amount: number;

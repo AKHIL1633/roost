@@ -1,4 +1,9 @@
-import { Injectable, Logger, OnApplicationBootstrap, OnModuleDestroy } from '@nestjs/common';
+import {
+  Injectable,
+  Logger,
+  OnApplicationBootstrap,
+  OnModuleDestroy,
+} from '@nestjs/common';
 import {
   SQSClient,
   ReceiveMessageCommand,
@@ -36,7 +41,9 @@ interface QueueConsumerConfig {
 }
 
 @Injectable()
-export class SqsConsumerService implements OnApplicationBootstrap, OnModuleDestroy {
+export class SqsConsumerService
+  implements OnApplicationBootstrap, OnModuleDestroy
+{
   private readonly logger = new Logger(SqsConsumerService.name);
   private readonly sqs: SQSClient;
   private running = false;
@@ -68,11 +75,15 @@ export class SqsConsumerService implements OnApplicationBootstrap, OnModuleDestr
     for (const config of this.consumers) {
       const queueUrl = process.env[config.queueUrlEnvKey];
       if (!queueUrl) {
-        this.logger.warn(`SQS consumer [${config.name}] skipped — ${config.queueUrlEnvKey} not set`);
+        this.logger.warn(
+          `SQS consumer [${config.name}] skipped — ${config.queueUrlEnvKey} not set`,
+        );
         continue;
       }
 
-      this.logger.log(`SQS consumer [${config.name}] starting → ${config.queueUrlEnvKey}`);
+      this.logger.log(
+        `SQS consumer [${config.name}] starting → ${config.queueUrlEnvKey}`,
+      );
       const promise = this.pollLoop(queueUrl, config);
       this.pollingPromises.push(promise);
     }
@@ -88,7 +99,10 @@ export class SqsConsumerService implements OnApplicationBootstrap, OnModuleDestr
 
   // ── Polling loop ──────────────────────────────────────────────────────────
 
-  private async pollLoop(queueUrl: string, config: QueueConsumerConfig): Promise<void> {
+  private async pollLoop(
+    queueUrl: string,
+    config: QueueConsumerConfig,
+  ): Promise<void> {
     const maxMessages = config.maxMessages ?? 10;
     const waitTime = config.waitTimeSeconds ?? 20;
     const visTimeout = config.visibilityTimeout ?? 60;
@@ -123,7 +137,9 @@ export class SqsConsumerService implements OnApplicationBootstrap, OnModuleDestr
             );
 
             await config.worker.process(envelope, {
-              receiveCount: Number(msg.Attributes?.ApproximateReceiveCount ?? 1),
+              receiveCount: Number(
+                msg.Attributes?.ApproximateReceiveCount ?? 1,
+              ),
             });
 
             // Success — delete from queue
@@ -155,7 +171,9 @@ export class SqsConsumerService implements OnApplicationBootstrap, OnModuleDestr
         }
       } catch (err) {
         // SQS connection error — wait before retrying
-        this.logger.error(`[${config.name}] Poll error: ${(err as Error).message}`);
+        this.logger.error(
+          `[${config.name}] Poll error: ${(err as Error).message}`,
+        );
         await this.sleep(5000);
       }
     }
@@ -173,7 +191,9 @@ export class SqsConsumerService implements OnApplicationBootstrap, OnModuleDestr
     if (!err || typeof err !== 'object') return false;
     const e = err as Record<string, unknown>;
     // Prisma wraps PG error code in e.meta.code or exposes it on e.code directly
-    const code = (e['code'] as string) ?? ((e['meta'] as Record<string, unknown>)?.['code'] as string);
+    const code =
+      (e['code'] as string) ??
+      ((e['meta'] as Record<string, unknown>)?.['code'] as string);
     if (code === '40P01') return true;
     // Fallback: check the raw error message
     const msg = (e['message'] as string) ?? '';
@@ -185,7 +205,11 @@ export class SqsConsumerService implements OnApplicationBootstrap, OnModuleDestr
    * after `delaySeconds` instead of waiting the original visibilityTimeout.
    * Used for deadlock retries to avoid unnecessary delay.
    */
-  private async resetVisibility(queueUrl: string, receiptHandle: string, delaySeconds: number): Promise<void> {
+  private async resetVisibility(
+    queueUrl: string,
+    receiptHandle: string,
+    delaySeconds: number,
+  ): Promise<void> {
     try {
       await this.sqs.send(
         new ChangeMessageVisibilityCommand({
@@ -196,7 +220,9 @@ export class SqsConsumerService implements OnApplicationBootstrap, OnModuleDestr
       );
     } catch (err) {
       // Non-fatal — message will become visible after original timeout anyway
-      this.logger.warn(`Failed to reset visibility timeout: ${(err as Error).message}`);
+      this.logger.warn(
+        `Failed to reset visibility timeout: ${(err as Error).message}`,
+      );
     }
   }
 }

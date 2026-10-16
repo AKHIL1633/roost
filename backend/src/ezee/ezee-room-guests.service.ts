@@ -61,7 +61,8 @@ export class EzeeRoomGuestsService {
         sub_id: t?.SubBookingId ?? `${reservation?.UniqueID ?? ''}-${i + 1}`,
         room_number: t?.RoomName && t.RoomName.length > 0 ? t.RoomName : null,
         room_type: t?.RoomTypeName ?? null,
-        name: [t?.FirstName, t?.LastName].filter(Boolean).join(' ').trim() || null,
+        name:
+          [t?.FirstName, t?.LastName].filter(Boolean).join(' ').trim() || null,
         email: t?.Email ?? null,
         phone: t?.Mobile ?? t?.Phone ?? null,
         adults: this.adultsOf(t),
@@ -97,8 +98,13 @@ export class EzeeRoomGuestsService {
   ): Promise<{ rooms: number; linked: string[] }> {
     if (roomGuests.length === 0) return { rooms: 0, linked: [] };
 
-    const linked = await this.linkSubBookingGuests(eri, roomGuests, bookingGuestId);
-    const next = mode === 'merge' ? await this.mergeSnapshot(eri, roomGuests) : roomGuests;
+    const linked = await this.linkSubBookingGuests(
+      eri,
+      roomGuests,
+      bookingGuestId,
+    );
+    const next =
+      mode === 'merge' ? await this.mergeSnapshot(eri, roomGuests) : roomGuests;
 
     await this.prisma.ezee_booking_cache.update({
       where: { ezee_reservation_id: eri },
@@ -109,13 +115,16 @@ export class EzeeRoomGuestsService {
   }
 
   /** Existing snapshot ∪ incoming rooms, keyed on sub_id (incoming wins). */
-  private async mergeSnapshot(eri: string, incoming: EzeeRoomGuest[]): Promise<EzeeRoomGuest[]> {
+  private async mergeSnapshot(
+    eri: string,
+    incoming: EzeeRoomGuest[],
+  ): Promise<EzeeRoomGuest[]> {
     const row = await this.prisma.ezee_booking_cache.findUnique({
       where: { ezee_reservation_id: eri },
       select: { ezee_room_guests_json: true },
     });
     const existing = Array.isArray(row?.ezee_room_guests_json)
-      ? (row!.ezee_room_guests_json as unknown as EzeeRoomGuest[])
+      ? (row.ezee_room_guests_json as unknown as EzeeRoomGuest[])
       : [];
 
     const bySub = new Map<string, EzeeRoomGuest>();
@@ -169,17 +178,24 @@ export class EzeeRoomGuestsService {
     });
     if (!booking) throw new NotFoundException(`No cached booking ${eri}`);
 
-    const bookingId = booking.ezee_reservation_no ?? booking.ezee_reservation_id;
+    const bookingId =
+      booking.ezee_reservation_no ?? booking.ezee_reservation_id;
     const reservation = (await this.ezee.fetchBooking(
       booking.property_id,
       bookingId,
     )) as EzeeAutosyncReservation | null;
     if (!reservation) {
-      throw new NotFoundException(`eZee returned no reservation for BookingId=${bookingId}`);
+      throw new NotFoundException(
+        `eZee returned no reservation for BookingId=${bookingId}`,
+      );
     }
 
     const roomGuests = this.buildRoomGuests(reservation);
-    const applied = await this.applyRoomGuests(eri, roomGuests, booking.guest_id);
+    const applied = await this.applyRoomGuests(
+      eri,
+      roomGuests,
+      booking.guest_id,
+    );
     this.logger.log(
       `resync ${eri}: ${applied.rooms} room(s), ${applied.linked.length} sub-guest(s) linked`,
     );
@@ -229,7 +245,8 @@ export class EzeeRoomGuestsService {
     let ezeeRooms: EzeeRoomGuest[] | null = null;
     let ezeeError: string | null = null;
     try {
-      const bookingId = booking.ezee_reservation_no ?? booking.ezee_reservation_id;
+      const bookingId =
+        booking.ezee_reservation_no ?? booking.ezee_reservation_id;
       const reservation = (await this.ezee.fetchBooking(
         booking.property_id,
         bookingId,
@@ -309,7 +326,9 @@ export class EzeeRoomGuestsService {
         select: { id: true },
       });
       if (fallback) return fallback.id;
-      this.logger.warn(`shell guest create failed for email: ${(err as Error).message}`);
+      this.logger.warn(
+        `shell guest create failed for email: ${(err as Error).message}`,
+      );
       return null;
     }
   }
@@ -332,7 +351,9 @@ export class EzeeRoomGuestsService {
     } catch (err) {
       const fallback = await this.guestIdByPhone(phone!);
       if (fallback) return fallback;
-      this.logger.warn(`shell guest create failed for phone: ${(err as Error).message}`);
+      this.logger.warn(
+        `shell guest create failed for phone: ${(err as Error).message}`,
+      );
       return null;
     }
   }
@@ -350,7 +371,11 @@ export class EzeeRoomGuestsService {
     return rows[0]?.id ?? null;
   }
 
-  async ensureAccess(eri: string, guestId: string, role: 'PRIMARY' | 'SECONDARY'): Promise<void> {
+  async ensureAccess(
+    eri: string,
+    guestId: string,
+    role: 'PRIMARY' | 'SECONDARY',
+  ): Promise<void> {
     const existing = await this.prisma.booking_guest_access.findFirst({
       where: { ezee_reservation_id: eri, guest_id: guestId },
       select: { id: true },

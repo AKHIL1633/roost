@@ -18,7 +18,14 @@ import type { Request, Response } from 'express';
 import { GuestAuthService } from './guest-auth.service';
 import { GuestSignupDto } from './dto/signup.dto';
 import { GuestLoginDto } from './dto/login.dto';
-import { SendOtpDto, VerifyOtpDto, ForgotPasswordDto, ResetPasswordDto, VerifyTwoFaDto, ToggleTwoFaDto } from './dto/otp.dto';
+import {
+  SendOtpDto,
+  VerifyOtpDto,
+  ForgotPasswordDto,
+  ResetPasswordDto,
+  VerifyTwoFaDto,
+  ToggleTwoFaDto,
+} from './dto/otp.dto';
 import { UpdateGuestProfileDto } from './dto/update-profile.dto';
 import { GuestJwtGuard } from '../../common/guards/guest-jwt.guard';
 import { CurrentGuest } from '../../common/decorators/current-guest.decorator';
@@ -26,7 +33,10 @@ import type { GuestJwtPayload } from '../../common/guards/guest-jwt.strategy';
 import type { GoogleOAuthUser } from './google.strategy';
 import { PrismaService } from '../../prisma/prisma.service';
 import type { Brand } from '../../common/property-resolver';
-import { ALL_BRANDS, resolveBrandFromRequest } from '../../common/property-resolver';
+import {
+  ALL_BRANDS,
+  resolveBrandFromRequest,
+} from '../../common/property-resolver';
 
 /**
  * Custom guard for Google OAuth callback.
@@ -55,8 +65,8 @@ class GoogleOAuthGuard extends AuthGuard('google') {
  * Kept short (Google's `state` param has a ~500-char practical limit).
  */
 interface OAuthState {
-  b: Brand;       // brand
-  h?: string;     // originating host (must be in OAUTH_REDIRECT_HOST_ALLOWLIST)
+  b: Brand; // brand
+  h?: string; // originating host (must be in OAUTH_REDIRECT_HOST_ALLOWLIST)
 }
 
 /**
@@ -85,7 +95,11 @@ function isAllowedOAuthHost(host: string | undefined | null): boolean {
   if (!host) return false;
   const lower = host.toLowerCase();
   if (OAUTH_REDIRECT_HOST_ALLOWLIST.has(lower)) return true;
-  if (lower === 'vibe-house.netlify.app' || lower.endsWith('.netlify.app') || lower.endsWith('.onrender.com')) {
+  if (
+    lower === 'vibe-house.netlify.app' ||
+    lower.endsWith('.netlify.app') ||
+    lower.endsWith('.onrender.com')
+  ) {
     return true;
   }
   return /^(localhost|127\.0\.0\.1)(:\d+)?$/i.test(lower);
@@ -108,7 +122,10 @@ function isAllowedOAuthHost(host: string | undefined | null): boolean {
  *
  * Returns `null` if nothing usable found.
  */
-function getOriginatingHost(req: Request, explicitReturnTo?: string): string | null {
+function getOriginatingHost(
+  req: Request,
+  explicitReturnTo?: string,
+): string | null {
   if (explicitReturnTo) {
     try {
       return new URL(explicitReturnTo).host;
@@ -126,8 +143,8 @@ function getOriginatingHost(req: Request, explicitReturnTo?: string): string | n
     }
   }
 
-  const xfh = (req.get('X-Forwarded-Host') as string | undefined)?.split(',')[0].trim();
-  return xfh || (req.get('Host') as string | undefined) || null;
+  const xfh = req.get('X-Forwarded-Host')?.split(',')[0].trim();
+  return xfh || req.get('Host') || null;
 }
 
 /**
@@ -136,7 +153,10 @@ function getOriginatingHost(req: Request, explicitReturnTo?: string): string | n
  * ("BUTEAK"). Anything we can't validate returns nulls so the caller falls
  * back to the per-brand DB override.
  */
-function parseOAuthState(raw: unknown): { brand: Brand | null; host: string | null } {
+function parseOAuthState(raw: unknown): {
+  brand: Brand | null;
+  host: string | null;
+} {
   if (typeof raw !== 'string' || raw.length === 0) {
     return { brand: null, host: null };
   }
@@ -148,8 +168,7 @@ function parseOAuthState(raw: unknown): { brand: Brand | null; host: string | nu
       const brand =
         parsed.b === 'BUTEAK' || parsed.b === 'TDS' ? parsed.b : null;
       const host =
-        typeof parsed.h === 'string' &&
-        isAllowedOAuthHost(parsed.h)
+        typeof parsed.h === 'string' && isAllowedOAuthHost(parsed.h)
           ? parsed.h
           : null;
       return { brand, host };
@@ -173,7 +192,10 @@ function parseOAuthState(raw: unknown): { brand: Brand | null; host: string | nu
  */
 function buildOriginUrl(host: string): string {
   const lower = host.toLowerCase();
-  const proto = lower.startsWith('localhost') || lower.startsWith('127.') ? 'http' : 'https';
+  const proto =
+    lower.startsWith('localhost') || lower.startsWith('127.')
+      ? 'http'
+      : 'https';
   return `${proto}://${host}`.replace(/\/+$/, '');
 }
 
@@ -222,14 +244,21 @@ export class GuestAuthController {
   @HttpCode(HttpStatus.OK)
   @Throttle({ default: { limit: 5, ttl: 60_000 } })
   sendOtp(@Body() dto: SendOtpDto, @Req() req: Request) {
-    return this.guestAuthService.sendOtp(dto.email, resolveBrandFromRequest(req));
+    return this.guestAuthService.sendOtp(
+      dto.email,
+      resolveBrandFromRequest(req),
+    );
   }
 
   @Post('verify-otp')
   @HttpCode(HttpStatus.OK)
   @Throttle({ default: { limit: 10, ttl: 60_000 } })
   verifyOtp(@Body() dto: VerifyOtpDto, @Req() req: Request) {
-    return this.guestAuthService.verifyOtp(dto.email, dto.otp, resolveBrandFromRequest(req));
+    return this.guestAuthService.verifyOtp(
+      dto.email,
+      dto.otp,
+      resolveBrandFromRequest(req),
+    );
   }
 
   // ─── PASSWORD RESET ────────────────────────────────────────────────────────
@@ -238,14 +267,22 @@ export class GuestAuthController {
   @HttpCode(HttpStatus.OK)
   @Throttle({ default: { limit: 5, ttl: 60_000 } })
   forgotPassword(@Body() dto: ForgotPasswordDto, @Req() req: Request) {
-    return this.guestAuthService.forgotPassword(dto.email, resolveBrandFromRequest(req));
+    return this.guestAuthService.forgotPassword(
+      dto.email,
+      resolveBrandFromRequest(req),
+    );
   }
 
   @Post('reset-password')
   @HttpCode(HttpStatus.OK)
   @Throttle({ default: { limit: 10, ttl: 60_000 } })
   resetPassword(@Body() dto: ResetPasswordDto, @Req() req: Request) {
-    return this.guestAuthService.resetPassword(dto.email, dto.otp, dto.newPassword, resolveBrandFromRequest(req));
+    return this.guestAuthService.resetPassword(
+      dto.email,
+      dto.otp,
+      dto.newPassword,
+      resolveBrandFromRequest(req),
+    );
   }
 
   // ─── TWO-FACTOR AUTH ───────────────────────────────────────────────────────
@@ -254,12 +291,19 @@ export class GuestAuthController {
   @HttpCode(HttpStatus.OK)
   @Throttle({ default: { limit: 10, ttl: 60_000 } })
   verifyTwoFa(@Body() dto: VerifyTwoFaDto, @Req() req: Request) {
-    return this.guestAuthService.verifyTwoFa(dto.email, dto.otp, resolveBrandFromRequest(req));
+    return this.guestAuthService.verifyTwoFa(
+      dto.email,
+      dto.otp,
+      resolveBrandFromRequest(req),
+    );
   }
 
   @Patch('2fa')
   @UseGuards(GuestJwtGuard)
-  toggleTwoFa(@CurrentGuest() guest: GuestJwtPayload, @Body() dto: ToggleTwoFaDto) {
+  toggleTwoFa(
+    @CurrentGuest() guest: GuestJwtPayload,
+    @Body() dto: ToggleTwoFaDto,
+  ) {
     return this.guestAuthService.toggleTwoFa(guest.guest_id, dto.enabled);
   }
 
@@ -307,7 +351,7 @@ export class GuestAuthController {
 
     this.logger.log(
       `[GoogleOAuth] Init: brand=${validBrand} returnTo=${returnTo ?? '<none>'} ` +
-      `referer=${req.get('Referer') ?? '<none>'} stateHost=${stateHost ?? '<dropped>'}`,
+        `referer=${req.get('Referer') ?? '<none>'} stateHost=${stateHost ?? '<dropped>'}`,
     );
 
     // Build Passport's authenticate URL ourselves with state. We can't use
@@ -335,7 +379,9 @@ export class GuestAuthController {
     // (pre-host-roundtrip deploys) is a bare brand string ("BUTEAK"|"TDS").
     // Anything we can't validate falls back to host-derived brand and the
     // per-brand DB override.
-    const { brand: stateBrand, host: stateHost } = parseOAuthState(req.query.state);
+    const { brand: stateBrand, host: stateHost } = parseOAuthState(
+      req.query.state,
+    );
     const brand: Brand = stateBrand ?? resolveBrandFromRequest(req);
 
     // Prefer the host the user actually came from (already allowlisted in
@@ -353,14 +399,20 @@ export class GuestAuthController {
 
     // Check if the guard returned our failure sentinel
     if (!user || user.failed) {
-      this.logger.error(`[GoogleOAuth] Passport auth failed: ${user?.error || 'unknown'}`);
-      return res.redirect(`${frontendUrl}/auth/google/error?reason=auth_failed`);
+      this.logger.error(
+        `[GoogleOAuth] Passport auth failed: ${user?.error || 'unknown'}`,
+      );
+      return res.redirect(
+        `${frontendUrl}/auth/google/error?reason=auth_failed`,
+      );
     }
 
     const googleUser = user as GoogleOAuthUser;
 
     try {
-      this.logger.log(`[GoogleOAuth] Processing login for: ${googleUser.email}`);
+      this.logger.log(
+        `[GoogleOAuth] Processing login for: ${googleUser.email}`,
+      );
       const result = await this.guestAuthService.googleLogin(googleUser, brand);
 
       const redirect =
@@ -375,7 +427,9 @@ export class GuestAuthController {
         '[GoogleOAuth] Login processing failed:',
         err instanceof Error ? err.stack : err,
       );
-      return res.redirect(`${frontendUrl}/auth/google/error?reason=login_failed`);
+      return res.redirect(
+        `${frontendUrl}/auth/google/error?reason=login_failed`,
+      );
     }
   }
 
@@ -402,12 +456,18 @@ export class GuestAuthController {
         where: { brand },
         select: { branding_config: true },
       });
-      const config = (prop?.branding_config as Record<string, unknown> | null) ?? {};
+      const config =
+        (prop?.branding_config as Record<string, unknown> | null) ?? {};
       const override = config.oauth_redirect_url as string | undefined;
       if (override) return override.replace(/\/+$/, '');
     } catch (err) {
-      this.logger.warn(`[GoogleOAuth] Failed to resolve redirect for brand ${brand}: ${(err as Error).message}`);
+      this.logger.warn(
+        `[GoogleOAuth] Failed to resolve redirect for brand ${brand}: ${(err as Error).message}`,
+      );
     }
-    return (process.env.FRONTEND_URL ?? 'http://localhost:3000').replace(/\/+$/, '');
+    return (process.env.FRONTEND_URL ?? 'http://localhost:3000').replace(
+      /\/+$/,
+      '',
+    );
   }
 }

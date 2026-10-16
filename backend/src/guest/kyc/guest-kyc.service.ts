@@ -39,9 +39,7 @@ export class GuestKycService {
     });
 
     if (!access) {
-      throw new ForbiddenException(
-        'You do not have access to this booking',
-      );
+      throw new ForbiddenException('You do not have access to this booking');
     }
   }
 
@@ -159,14 +157,19 @@ export class GuestKycService {
       orderBy: { created_at: 'desc' },
     });
 
-    if (!kyc) throw new NotFoundException('No KYC submission found for this slot');
+    if (!kyc)
+      throw new NotFoundException('No KYC submission found for this slot');
 
     const frontUrl = kyc.front_image_url
-      ? await this.s3.getPresignedDownloadUrl(this.s3.extractKey(kyc.front_image_url))
+      ? await this.s3.getPresignedDownloadUrl(
+          this.s3.extractKey(kyc.front_image_url),
+        )
       : null;
 
     const backUrl = kyc.back_image_url
-      ? await this.s3.getPresignedDownloadUrl(this.s3.extractKey(kyc.back_image_url))
+      ? await this.s3.getPresignedDownloadUrl(
+          this.s3.extractKey(kyc.back_image_url),
+        )
       : null;
 
     return {
@@ -210,7 +213,9 @@ export class GuestKycService {
     }
 
     if (!this.canEditSlot(slot)) {
-      throw new ForbiddenException('You cannot edit this slot — it has been verified by ops.');
+      throw new ForbiddenException(
+        'You cannot edit this slot — it has been verified by ops.',
+      );
     }
 
     const ocrResult = await this.textract.analyzeId(
@@ -360,7 +365,9 @@ export class GuestKycService {
       },
     });
 
-    this.logger.log(`Slot ${nextNumber} added to booking ${eri} by guest ${guestId}`);
+    this.logger.log(
+      `Slot ${nextNumber} added to booking ${eri} by guest ${guestId}`,
+    );
 
     return {
       slot_id: newSlot.id,
@@ -391,10 +398,14 @@ export class GuestKycService {
     }
 
     // Delete KYC submission first (FK), then the slot
-    await this.prisma.kyc_submissions.deleteMany({ where: { slot_id: slotId } });
+    await this.prisma.kyc_submissions.deleteMany({
+      where: { slot_id: slotId },
+    });
     await this.prisma.booking_slots.delete({ where: { id: slotId } });
 
-    this.logger.log(`Slot ${slotId} ("${slot.label}") deleted from booking ${eri} by guest ${guestId}`);
+    this.logger.log(
+      `Slot ${slotId} ("${slot.label}") deleted from booking ${eri} by guest ${guestId}`,
+    );
 
     return { message: `Slot "${slot.label}" deleted successfully` };
   }

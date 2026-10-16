@@ -120,15 +120,27 @@ describe('GuestBookingService.findOrCreateAnonymousGuest', () => {
 
   it('rejects when any of name/email/phone is missing', async () => {
     await expect(
-      service.findOrCreateAnonymousGuest({ name: '', email: 'a@b.com', phone: '+91...' }),
+      service.findOrCreateAnonymousGuest({
+        name: '',
+        email: 'a@b.com',
+        phone: '+91...',
+      }),
     ).rejects.toBeInstanceOf(BadRequestException);
 
     await expect(
-      service.findOrCreateAnonymousGuest({ name: 'Foo', email: '', phone: '+91...' }),
+      service.findOrCreateAnonymousGuest({
+        name: 'Foo',
+        email: '',
+        phone: '+91...',
+      }),
     ).rejects.toBeInstanceOf(BadRequestException);
 
     await expect(
-      service.findOrCreateAnonymousGuest({ name: 'Foo', email: 'a@b.com', phone: '' }),
+      service.findOrCreateAnonymousGuest({
+        name: 'Foo',
+        email: 'a@b.com',
+        phone: '',
+      }),
     ).rejects.toBeInstanceOf(BadRequestException);
   });
 
@@ -144,7 +156,9 @@ describe('GuestBookingService.findOrCreateAnonymousGuest', () => {
 
     expect(prisma.guests.findFirst).toHaveBeenCalledWith(
       expect.objectContaining({
-        where: { OR: [{ email: 'mixed.case@example.com' }, { phone: '+919000000000' }] },
+        where: {
+          OR: [{ email: 'mixed.case@example.com' }, { phone: '+919000000000' }],
+        },
       }),
     );
     expect(prisma.guests.create).toHaveBeenCalledWith({
@@ -206,7 +220,13 @@ describe('GuestBookingService.distributeOccupancy', () => {
   });
 
   it('every booked room ends up with at least 1 adult (eZee requirement)', () => {
-    for (const [a, n] of [[3, 3], [4, 3], [5, 3], [6, 3], [3, 2]]) {
+    for (const [a, n] of [
+      [3, 3],
+      [4, 3],
+      [5, 3],
+      [6, 3],
+      [3, 2],
+    ]) {
       const result = distribute(a, 0, n);
       result.forEach((r) => expect(r.adults).toBeGreaterThanOrEqual(1));
     }
@@ -254,12 +274,18 @@ describe('CouponsService.findBestAutoCoupon — NEW_GUEST anonymous gate', () =>
   };
 
   it('returns false (allow NEW_GUEST) for an authenticated guest', async () => {
-    const blocked = await lookup({ 'g-auth': { is_anonymous: false } }, 'g-auth');
+    const blocked = await lookup(
+      { 'g-auth': { is_anonymous: false } },
+      'g-auth',
+    );
     expect(blocked).toBe(false);
   });
 
   it('returns true (block NEW_GUEST) for an anonymous guest', async () => {
-    const blocked = await lookup({ 'g-anon': { is_anonymous: true } }, 'g-anon');
+    const blocked = await lookup(
+      { 'g-anon': { is_anonymous: true } },
+      'g-anon',
+    );
     expect(blocked).toBe(true);
   });
 

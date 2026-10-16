@@ -222,11 +222,17 @@ export class AutosyncSideEffectsService {
    * tick over on their normal TTL. The cache TTL on availability is short
    * (30 min) so a slightly stale entry is bounded.
    */
-  private async bustAvailabilityCache(ctx: AutosyncSideEffectContext): Promise<void> {
+  private async bustAvailabilityCache(
+    ctx: AutosyncSideEffectContext,
+  ): Promise<void> {
     if (!ctx.checkinDate || !ctx.checkoutDate) return;
     const checkin = this.formatDate(ctx.checkinDate);
     const checkout = this.formatDate(ctx.checkoutDate);
-    const key = CacheService.roomAvailabilityKey(ctx.propertyId, checkin, checkout);
+    const key = CacheService.roomAvailabilityKey(
+      ctx.propertyId,
+      checkin,
+      checkout,
+    );
     await this.cache.del(key);
     this.logger.log(
       `autosync side-effects: availability cache busted for ${ctx.propertyId} ${checkin}→${checkout}`,
@@ -249,7 +255,9 @@ export class AutosyncSideEffectsService {
    * Scoped to the sub-bookings that actually ended, so on a multi-room reservation the roommate
    * still in-house keeps their breakfast.
    */
-  private async cancelUpcomingBreakfast(ctx: AutosyncSideEffectContext): Promise<void> {
+  private async cancelUpcomingBreakfast(
+    ctx: AutosyncSideEffectContext,
+  ): Promise<void> {
     const today = new Date(`${istDateStr()}T00:00:00.000Z`);
     const subIds = ctx.subBookingIds ?? [];
 

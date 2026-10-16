@@ -21,10 +21,13 @@ import {
 export class EzeeService {
   private readonly logger = new Logger(EzeeService.name);
 
-  private static readonly KIOSK_PATH = '/index.php/page/service.kioskconnectivity';
-  private static readonly RESERVATION_PATH = '/booking/reservation_api/listing.php';
+  private static readonly KIOSK_PATH =
+    '/index.php/page/service.kioskconnectivity';
+  private static readonly RESERVATION_PATH =
+    '/booking/reservation_api/listing.php';
   private static readonly PMS_PATH = '/pmsinterface/pms_connectivity.php';
-  private static readonly VACATION_RENTAL_PATH = '/channelbookings/vacation_rental.php';
+  private static readonly VACATION_RENTAL_PATH =
+    '/channelbookings/vacation_rental.php';
 
   // eZee's payment-method + currency IDs are namespaced per hotel (the ID
   // prefix is the hotel code), so they CANNOT be hardcoded — TDS's IDs are
@@ -49,7 +52,8 @@ export class EzeeService {
     const cached = this.paymentContextCache.get(propertyId);
     if (cached) return cached;
 
-    const { hotelCode, authCode, baseUrl } = await this.getConnection(propertyId);
+    const { hotelCode, authCode, baseUrl } =
+      await this.getConnection(propertyId);
     const url = `${baseUrl}${EzeeService.KIOSK_PATH}`;
     const auth = { HotelCode: hotelCode, AuthCode: authCode };
 
@@ -57,7 +61,12 @@ export class EzeeService {
     const payResp = await fetch(url, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ RES_Request: { Request_Type: 'RetrievePayMethods', Authentication: auth } }),
+      body: JSON.stringify({
+        RES_Request: {
+          Request_Type: 'RetrievePayMethods',
+          Authentication: auth,
+        },
+      }),
     });
     const payData = await payResp.json();
     this.checkKioskError(payData, 'RetrievePayMethods');
@@ -67,24 +76,36 @@ export class EzeeService {
       methods.find((m) => (m.Name ?? '').toLowerCase() === 'cash');
     const paymentId = cash?.PaymentID;
     if (!paymentId) {
-      throw new EzeeApiError('NO_PAYMETHOD', `No Cash pay method for property ${propertyId}`, 'RetrievePayMethods');
+      throw new EzeeApiError(
+        'NO_PAYMETHOD',
+        `No Cash pay method for property ${propertyId}`,
+        'RetrievePayMethods',
+      );
     }
 
     // ── Base currency (INR) ──
     const curResp = await fetch(url, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ RES_Request: { Request_Type: 'RetrieveCurrency', Authentication: auth } }),
+      body: JSON.stringify({
+        RES_Request: { Request_Type: 'RetrieveCurrency', Authentication: auth },
+      }),
     });
     const curData = await curResp.json();
     this.checkKioskError(curData, 'RetrieveCurrency');
     const currencies: any[] = curData.Success?.CurrencyList ?? [];
     const base =
-      currencies.find((c) => c.IsBaseCurrency === '1' || c.IsBaseCurrency === 1) ??
+      currencies.find(
+        (c) => c.IsBaseCurrency === '1' || c.IsBaseCurrency === 1,
+      ) ??
       currencies.find((c) => (c.CurrencyCode ?? '').toUpperCase() === 'INR');
     const currencyId = base?.CurrencyID;
     if (!currencyId) {
-      throw new EzeeApiError('NO_CURRENCY', `No base/INR currency for property ${propertyId}`, 'RetrieveCurrency');
+      throw new EzeeApiError(
+        'NO_CURRENCY',
+        `No base/INR currency for property ${propertyId}`,
+        'RetrieveCurrency',
+      );
     }
 
     const ctx = { paymentId, currencyId };
@@ -102,7 +123,11 @@ export class EzeeService {
       where: { property_id: propertyId, is_active: true },
     });
     if (!conn) {
-      throw new EzeeApiError('NO_CONNECTION', `No active eZee connection for property ${propertyId}`, 'getConnection');
+      throw new EzeeApiError(
+        'NO_CONNECTION',
+        `No active eZee connection for property ${propertyId}`,
+        'getConnection',
+      );
     }
     return {
       hotelCode: conn.hotel_code,
@@ -121,8 +146,11 @@ export class EzeeService {
    * Use this to power the catalog layer; overlay getRoomInventory() for
    * live rates + availability counts on specific dates.
    */
-  async getPhysicalRooms(propertyId: string): Promise<EzeePhysicalRoomCatalogResult> {
-    const { hotelCode, authCode, baseUrl } = await this.getConnection(propertyId);
+  async getPhysicalRooms(
+    propertyId: string,
+  ): Promise<EzeePhysicalRoomCatalogResult> {
+    const { hotelCode, authCode, baseUrl } =
+      await this.getConnection(propertyId);
 
     const resp = await fetch(`${baseUrl}${EzeeService.VACATION_RENTAL_PATH}`, {
       method: 'POST',
@@ -130,7 +158,7 @@ export class EzeeService {
         // AUTH_CODE goes as a separate header — the combined Content-Type format
         // returns error 104. Two headers is the correct working format.
         'Content-Type': 'application/json',
-        'AUTH_CODE': authCode,
+        AUTH_CODE: authCode,
       },
       body: JSON.stringify({
         request_type: 'get_rooms',
@@ -153,12 +181,22 @@ export class EzeeService {
       roomId: String(r.room_id),
       roomName: String(r.room_name),
       // "rooms" field is a CSV of physical room numbers: "106,107,108"
-      physicalRoomNos: r.rooms ? String(r.rooms).split(',').map((s: string) => s.trim()) : [],
+      physicalRoomNos: r.rooms
+        ? String(r.rooms)
+            .split(',')
+            .map((s: string) => s.trim())
+        : [],
       // "room_code" field is CSV of "number : status" pairs
-      physicalRoomCodes: r.room_code ? String(r.room_code).split(',').map((s: string) => s.trim()) : [],
+      physicalRoomCodes: r.room_code
+        ? String(r.room_code)
+            .split(',')
+            .map((s: string) => s.trim())
+        : [],
     }));
 
-    this.logger.debug(`eZee get_rooms: ${rooms.map((r) => `${r.roomName}(${r.roomId})`).join(', ')}`);
+    this.logger.debug(
+      `eZee get_rooms: ${rooms.map((r) => `${r.roomName}(${r.roomId})`).join(', ')}`,
+    );
     return { rooms };
   }
 
@@ -169,7 +207,8 @@ export class EzeeService {
     checkin: string,
     checkout: string,
   ): Promise<EzeeRoomAvailabilityResult> {
-    const { hotelCode, authCode, baseUrl } = await this.getConnection(propertyId);
+    const { hotelCode, authCode, baseUrl } =
+      await this.getConnection(propertyId);
 
     const body = {
       RES_Request: {
@@ -215,7 +254,8 @@ export class EzeeService {
     checkin: string,
     checkout: string,
   ): Promise<EzeeRoomInventoryResult> {
-    const { hotelCode, authCode, baseUrl } = await this.getConnection(propertyId);
+    const { hotelCode, authCode, baseUrl } =
+      await this.getConnection(propertyId);
 
     const url = `${baseUrl}${EzeeService.RESERVATION_PATH}?request_type=RoomList&HotelCode=${hotelCode}&APIKey=${authCode}&check_in_date=${checkin}&check_out_date=${checkout}&RoomType=all`;
 
@@ -232,13 +272,21 @@ export class EzeeService {
           'RoomList',
         );
       }
-      throw new EzeeApiError('UNEXPECTED', `Unexpected RoomList response: ${JSON.stringify(data).slice(0, 200)}`, 'RoomList');
+      throw new EzeeApiError(
+        'UNEXPECTED',
+        `Unexpected RoomList response: ${JSON.stringify(data).slice(0, 200)}`,
+        'RoomList',
+      );
     }
 
     // Check if it's an error array
     if (data.length > 0 && data[0]?.['Error Details']) {
       const err = data[0]['Error Details'];
-      throw new EzeeApiError(err.Error_Code ?? 'UNKNOWN', err.Error_Message ?? 'Unknown error', 'RoomList');
+      throw new EzeeApiError(
+        err.Error_Code ?? 'UNKNOWN',
+        err.Error_Message ?? 'Unknown error',
+        'RoomList',
+      );
     }
 
     const rooms: EzeeRoomInventoryResult['rooms'] = [];
@@ -248,13 +296,17 @@ export class EzeeService {
         roomTypeId: rt.roomtypeunkid,
         roomTypeName: rt.Roomtype_Name,
         availability: Number(rt.min_ava_rooms ?? 0),
-        ratePerNight: Number(rt.room_rates_info?.avg_per_night_without_tax ?? 0),
+        ratePerNight: Number(
+          rt.room_rates_info?.avg_per_night_without_tax ?? 0,
+        ),
         ratePlanId: rt.roomrateunkid ?? '',
         rateTypeId: rt.ratetypeunkid ?? '',
       });
     }
 
-    this.logger.debug(`eZee RoomList: ${rooms.map(r => `${r.roomTypeName}=${r.availability}@₹${r.ratePerNight}`).join(', ')}`);
+    this.logger.debug(
+      `eZee RoomList: ${rooms.map((r) => `${r.roomTypeName}=${r.availability}@₹${r.ratePerNight}`).join(', ')}`,
+    );
     return { rooms };
   }
 
@@ -283,7 +335,8 @@ export class EzeeService {
     propertyId: string,
     input: EzeeBookingInput,
   ): Promise<EzeeInsertBookingResult> {
-    const { hotelCode, authCode, baseUrl } = await this.getConnection(propertyId);
+    const { hotelCode, authCode, baseUrl } =
+      await this.getConnection(propertyId);
 
     // Build Room_Details
     const roomDetails: Record<string, any> = {};
@@ -355,13 +408,21 @@ export class EzeeService {
     const data = await resp.json();
 
     if (data.Error_Details || data.error) {
-      const errCode = data.Error_Details?.Error_Code ?? data.error?.code ?? 'UNKNOWN';
-      const errMsg = data.Error_Details?.Error_Message ?? data.error?.message ?? JSON.stringify(data);
+      const errCode =
+        data.Error_Details?.Error_Code ?? data.error?.code ?? 'UNKNOWN';
+      const errMsg =
+        data.Error_Details?.Error_Message ??
+        data.error?.message ??
+        JSON.stringify(data);
       throw new EzeeApiError(errCode, errMsg, 'InsertBooking');
     }
 
     if (!data.ReservationNo) {
-      throw new EzeeApiError('NO_RESERVATION', `InsertBooking returned no ReservationNo: ${JSON.stringify(data)}`, 'InsertBooking');
+      throw new EzeeApiError(
+        'NO_RESERVATION',
+        `InsertBooking returned no ReservationNo: ${JSON.stringify(data)}`,
+        'InsertBooking',
+      );
     }
 
     this.logger.log(`eZee InsertBooking: ReservationNo=${data.ReservationNo}`);
@@ -376,8 +437,12 @@ export class EzeeService {
 
   // ── 3. Process Booking (Confirm) ─────────────────────────────────────────
 
-  async processBooking(propertyId: string, reservationNo: string): Promise<void> {
-    const { hotelCode, authCode, baseUrl } = await this.getConnection(propertyId);
+  async processBooking(
+    propertyId: string,
+    reservationNo: string,
+  ): Promise<void> {
+    const { hotelCode, authCode, baseUrl } =
+      await this.getConnection(propertyId);
 
     const processData = JSON.stringify({
       Action: 'ConfirmBooking',
@@ -399,13 +464,19 @@ export class EzeeService {
       );
     }
 
-    this.logger.log(`eZee ProcessBooking: confirmed reservation ${reservationNo}`);
+    this.logger.log(
+      `eZee ProcessBooking: confirmed reservation ${reservationNo}`,
+    );
   }
 
   // ── 4. Assign Room ───────────────────────────────────────────────────────
 
-  async assignRoom(propertyId: string, assignments: EzeeRoomAssignment[]): Promise<void> {
-    const { hotelCode, authCode, baseUrl } = await this.getConnection(propertyId);
+  async assignRoom(
+    propertyId: string,
+    assignments: EzeeRoomAssignment[],
+  ): Promise<void> {
+    const { hotelCode, authCode, baseUrl } =
+      await this.getConnection(propertyId);
 
     const body = {
       RES_Request: {
@@ -428,15 +499,23 @@ export class EzeeService {
     const data = await resp.json();
     this.checkKioskError(data, 'AssignRoom');
 
-    this.logger.log(`eZee AssignRoom: ${assignments.map((a) => `Booking ${a.bookingId} → Room ${a.roomId}`).join(', ')}`);
+    this.logger.log(
+      `eZee AssignRoom: ${assignments.map((a) => `Booking ${a.bookingId} → Room ${a.roomId}`).join(', ')}`,
+    );
   }
 
   // ── 5. Add Payment ───────────────────────────────────────────────────────
 
-  async addPayment(propertyId: string, bookingId: string, amount: number): Promise<string> {
-    const { hotelCode, authCode, baseUrl } = await this.getConnection(propertyId);
+  async addPayment(
+    propertyId: string,
+    bookingId: string,
+    amount: number,
+  ): Promise<string> {
+    const { hotelCode, authCode, baseUrl } =
+      await this.getConnection(propertyId);
     // Per-property Cash payment-method + base currency IDs (resolved + cached).
-    const { paymentId, currencyId } = await this.resolvePaymentContext(propertyId);
+    const { paymentId, currencyId } =
+      await this.resolvePaymentContext(propertyId);
 
     const body = {
       RES_Request: {
@@ -463,14 +542,17 @@ export class EzeeService {
     this.checkKioskError(data, 'AddPayment');
 
     const receiptNo = data.Success?.Receipt?.[0]?.ReceiptNo ?? '';
-    this.logger.log(`eZee AddPayment: Booking ${bookingId}, ₹${amount}, Receipt=${receiptNo}`);
+    this.logger.log(
+      `eZee AddPayment: Booking ${bookingId}, ₹${amount}, Receipt=${receiptNo}`,
+    );
     return receiptNo;
   }
 
   // ── 6. Fetch Single Booking ──────────────────────────────────────────────
 
   async fetchBooking(propertyId: string, bookingId: string): Promise<any> {
-    const { hotelCode, authCode, baseUrl } = await this.getConnection(propertyId);
+    const { hotelCode, authCode, baseUrl } =
+      await this.getConnection(propertyId);
 
     const body = {
       RES_Request: {
@@ -489,7 +571,11 @@ export class EzeeService {
     const data = await resp.json();
 
     if (data.error) {
-      throw new EzeeApiError(data.error.code, data.error.message, 'FetchSingleBooking');
+      throw new EzeeApiError(
+        data.error.code,
+        data.error.message,
+        'FetchSingleBooking',
+      );
     }
 
     // eZee returns ONE Reservation ENTRY PER ROOM for a multi-room booking — same UniqueID on
@@ -529,7 +615,8 @@ export class EzeeService {
     fromDate: string,
     toDate: string,
   ): Promise<EzeeReservationSummary[]> {
-    const { hotelCode, authCode, baseUrl } = await this.getConnection(propertyId);
+    const { hotelCode, authCode, baseUrl } =
+      await this.getConnection(propertyId);
 
     // eZee PMS uses "ArrivalList" request type with max 30-day window.
     const body = {
@@ -549,7 +636,11 @@ export class EzeeService {
     const data = await resp.json();
 
     if (data.Errors?.ErrorCode && String(data.Errors.ErrorCode) !== '0') {
-      throw new EzeeApiError(data.Errors.ErrorCode, data.Errors.ErrorMessage, 'ArrivalList');
+      throw new EzeeApiError(
+        data.Errors.ErrorCode,
+        data.Errors.ErrorMessage,
+        'ArrivalList',
+      );
     }
 
     const reservations = data.Reservations?.Reservation ?? [];
@@ -568,7 +659,8 @@ export class EzeeService {
 
       // Sum adults/children across all trans (multi-room bookings)
       const totalGuests = (res.BookingTran ?? []).reduce(
-        (sum: number, t: any) => sum + Number(t.Adult ?? 1) + Number(t.Child ?? 0),
+        (sum: number, t: any) =>
+          sum + Number(t.Adult ?? 1) + Number(t.Child ?? 0),
         0,
       );
 
@@ -604,7 +696,11 @@ export class EzeeService {
     for (const err of errorList) {
       const code = err.ErrorCode ?? err.errorCode;
       if (code && code !== '0' && code !== 0) {
-        throw new EzeeApiError(String(code), err.ErrorMessage ?? 'Unknown error', endpoint);
+        throw new EzeeApiError(
+          String(code),
+          err.ErrorMessage ?? 'Unknown error',
+          endpoint,
+        );
       }
     }
   }

@@ -22,18 +22,22 @@ export class ZohoDeskService {
   private tokenExpiresAt = 0;
 
   private get accountsBase(): string {
-    return (process.env.ZOHO_DESK_ACCOUNTS_BASE ?? 'https://accounts.zoho.in').replace(/\/$/, '');
+    return (
+      process.env.ZOHO_DESK_ACCOUNTS_BASE ?? 'https://accounts.zoho.in'
+    ).replace(/\/$/, '');
   }
   private get apiBase(): string {
-    return (process.env.ZOHO_DESK_API_BASE ?? 'https://desk.zoho.in/api/v1').replace(/\/$/, '');
+    return (
+      process.env.ZOHO_DESK_API_BASE ?? 'https://desk.zoho.in/api/v1'
+    ).replace(/\/$/, '');
   }
 
   private credsPresent(): boolean {
     return Boolean(
       process.env.ZOHO_DESK_CLIENT_ID &&
-        process.env.ZOHO_DESK_CLIENT_SECRET &&
-        process.env.ZOHO_DESK_REFRESH_TOKEN &&
-        process.env.ZOHO_DESK_ORG_ID,
+      process.env.ZOHO_DESK_CLIENT_SECRET &&
+      process.env.ZOHO_DESK_REFRESH_TOKEN &&
+      process.env.ZOHO_DESK_ORG_ID,
     );
   }
 
@@ -46,12 +50,16 @@ export class ZohoDeskService {
   async getTicketStatus(zohoTicketId: string): Promise<string | null> {
     if (!this.credsPresent() || !this.isRealId(zohoTicketId)) return null;
     try {
-      const res = await this.authedFetch(`/tickets/${zohoTicketId}`, { method: 'GET' });
+      const res = await this.authedFetch(`/tickets/${zohoTicketId}`, {
+        method: 'GET',
+      });
       if (!res || !res.ok) return null;
       const data = (await res.json()) as { status?: string };
       return data.status ?? null;
     } catch (err) {
-      this.logger.error(`Zoho Desk getTicketStatus error id=${zohoTicketId}: ${(err as Error).message}`);
+      this.logger.error(
+        `Zoho Desk getTicketStatus error id=${zohoTicketId}: ${(err as Error).message}`,
+      );
       return null;
     }
   }
@@ -68,24 +76,37 @@ export class ZohoDeskService {
       grant_type: 'refresh_token',
     });
     try {
-      const res = await fetch(`${this.accountsBase}/oauth/v2/token?${params.toString()}`, {
-        method: 'POST',
-      });
-      const data = (await res.json()) as { access_token?: string; expires_in?: number };
+      const res = await fetch(
+        `${this.accountsBase}/oauth/v2/token?${params.toString()}`,
+        {
+          method: 'POST',
+        },
+      );
+      const data = (await res.json()) as {
+        access_token?: string;
+        expires_in?: number;
+      };
       if (!data.access_token) {
-        this.logger.error(`Zoho Desk token refresh returned no access_token: ${JSON.stringify(data).slice(0, 200)}`);
+        this.logger.error(
+          `Zoho Desk token refresh returned no access_token: ${JSON.stringify(data).slice(0, 200)}`,
+        );
         return null;
       }
       this.accessToken = data.access_token;
       this.tokenExpiresAt = Date.now() + (data.expires_in ?? 3600) * 1000;
       return this.accessToken;
     } catch (err) {
-      this.logger.error(`Zoho Desk token refresh failed: ${(err as Error).message}`);
+      this.logger.error(
+        `Zoho Desk token refresh failed: ${(err as Error).message}`,
+      );
       return null;
     }
   }
 
-  private async authedFetch(path: string, init: RequestInit): Promise<Response | null> {
+  private async authedFetch(
+    path: string,
+    init: RequestInit,
+  ): Promise<Response | null> {
     const token = await this.getToken();
     if (!token) return null;
     return fetch(`${this.apiBase}${path}`, {
@@ -113,7 +134,8 @@ export class ZohoDeskService {
     status?: string;
     customFields?: Record<string, string | number | boolean>;
   }): Promise<string | null> {
-    const departmentId = input.departmentId ?? process.env.ZOHO_DESK_DEPARTMENT_ID;
+    const departmentId =
+      input.departmentId ?? process.env.ZOHO_DESK_DEPARTMENT_ID;
     if (!this.credsPresent() || !departmentId) {
       this.logger.warn(
         `[SKIP] Zoho Desk not fully configured; would create ticket "${input.subject}"`,
@@ -137,13 +159,17 @@ export class ZohoDeskService {
         }),
       });
       if (!res || !res.ok) {
-        this.logger.error(`Zoho Desk createTicket failed (${res?.status ?? 'no-creds'})`);
+        this.logger.error(
+          `Zoho Desk createTicket failed (${res?.status ?? 'no-creds'})`,
+        );
         return null;
       }
       const data = (await res.json()) as { id?: string };
       return data.id ?? null;
     } catch (err) {
-      this.logger.error(`Zoho Desk createTicket error: ${(err as Error).message}`);
+      this.logger.error(
+        `Zoho Desk createTicket error: ${(err as Error).message}`,
+      );
       return null;
     }
   }
@@ -151,7 +177,11 @@ export class ZohoDeskService {
   /** Patch a Desk ticket (status, resolution, custom fields). Best-effort. */
   async updateTicket(
     zohoTicketId: string,
-    fields: { status?: string; resolution?: string; customFields?: Record<string, string | number | boolean> },
+    fields: {
+      status?: string;
+      resolution?: string;
+      customFields?: Record<string, string | number | boolean>;
+    },
   ): Promise<boolean> {
     if (!this.credsPresent() || !this.isRealId(zohoTicketId)) return false;
     try {
@@ -164,12 +194,16 @@ export class ZohoDeskService {
         }),
       });
       if (!res || !res.ok) {
-        this.logger.error(`Zoho Desk updateTicket failed (${res?.status ?? 'no-creds'}) id=${zohoTicketId}`);
+        this.logger.error(
+          `Zoho Desk updateTicket failed (${res?.status ?? 'no-creds'}) id=${zohoTicketId}`,
+        );
         return false;
       }
       return true;
     } catch (err) {
-      this.logger.error(`Zoho Desk updateTicket error: ${(err as Error).message}`);
+      this.logger.error(
+        `Zoho Desk updateTicket error: ${(err as Error).message}`,
+      );
       return false;
     }
   }
@@ -179,7 +213,11 @@ export class ZohoDeskService {
    * We use PRIVATE comments (isPublic=false) so the internal escalation trail isn't
    * exposed to the contact. Best-effort.
    */
-  async addComment(zohoTicketId: string, content: string, isPublic = false): Promise<boolean> {
+  async addComment(
+    zohoTicketId: string,
+    content: string,
+    isPublic = false,
+  ): Promise<boolean> {
     if (!this.credsPresent() || !this.isRealId(zohoTicketId)) return false;
     try {
       const res = await this.authedFetch(`/tickets/${zohoTicketId}/comments`, {
@@ -187,12 +225,16 @@ export class ZohoDeskService {
         body: JSON.stringify({ isPublic, content: content.slice(0, 3000) }),
       });
       if (!res || !res.ok) {
-        this.logger.error(`Zoho Desk addComment failed (${res?.status ?? 'no-creds'}) id=${zohoTicketId}`);
+        this.logger.error(
+          `Zoho Desk addComment failed (${res?.status ?? 'no-creds'}) id=${zohoTicketId}`,
+        );
         return false;
       }
       return true;
     } catch (err) {
-      this.logger.error(`Zoho Desk addComment error: ${(err as Error).message}`);
+      this.logger.error(
+        `Zoho Desk addComment error: ${(err as Error).message}`,
+      );
       return false;
     }
   }
@@ -222,12 +264,16 @@ export class ZohoDeskService {
         }),
       });
       if (!res || !res.ok) {
-        this.logger.error(`Zoho Desk addTimeEntry failed (${res?.status ?? 'no-creds'}) id=${zohoTicketId}`);
+        this.logger.error(
+          `Zoho Desk addTimeEntry failed (${res?.status ?? 'no-creds'}) id=${zohoTicketId}`,
+        );
         return false;
       }
       return true;
     } catch (err) {
-      this.logger.error(`Zoho Desk addTimeEntry error: ${(err as Error).message}`);
+      this.logger.error(
+        `Zoho Desk addTimeEntry error: ${(err as Error).message}`,
+      );
       return false;
     }
   }

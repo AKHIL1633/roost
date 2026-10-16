@@ -3,7 +3,11 @@ import { v4 as uuidv4 } from 'uuid';
 import { PrismaService } from '../../prisma/prisma.service';
 import { EmailService } from '../../email/email.service';
 import { ZohoDeskService } from '../../zoho-desk/zoho-desk.service';
-import { WatiService, GUEST_RECEPTION_ACK, GUEST_UNFULFILLED_ACK } from '../../wati/wati.service';
+import {
+  WatiService,
+  GUEST_RECEPTION_ACK,
+  GUEST_UNFULFILLED_ACK,
+} from '../../wati/wati.service';
 import { UNFULFILLED_CLASS } from '../../tickets/task-classes';
 import { completedWithinTat, tatMinutes } from '../../tickets/tat';
 import { feedbackCustomFields } from '../../feedback/feedback-fields';
@@ -50,11 +54,15 @@ export class OpsTaskWorker implements SqsWorker {
         break;
 
       case OpsMessageType.PAYMENT_SUCCESS:
-        await this.handlePaymentSuccess(message.payload as PaymentSuccessPayload);
+        await this.handlePaymentSuccess(
+          message.payload as PaymentSuccessPayload,
+        );
         break;
 
       case OpsMessageType.BOOKING_CONFIRMED:
-        await this.handleBookingConfirmed(message.payload as BookingConfirmedPayload);
+        await this.handleBookingConfirmed(
+          message.payload as BookingConfirmedPayload,
+        );
         break;
 
       case OpsMessageType.TICKET_CREATED:
@@ -101,10 +109,14 @@ export class OpsTaskWorker implements SqsWorker {
         ip_address: payload.ip_address ?? null,
       },
     });
-    this.logger.debug(`Audit log: ${payload.action} on ${payload.entity_type}/${payload.entity_id}`);
+    this.logger.debug(
+      `Audit log: ${payload.action} on ${payload.entity_type}/${payload.entity_id}`,
+    );
   }
 
-  private async handlePaymentSuccess(payload: PaymentSuccessPayload): Promise<void> {
+  private async handlePaymentSuccess(
+    payload: PaymentSuccessPayload,
+  ): Promise<void> {
     this.logger.log(
       `Payment success: ${payload.payment_id} | ₹${payload.amount} | ERI: ${payload.eri}`,
     );
@@ -116,7 +128,9 @@ export class OpsTaskWorker implements SqsWorker {
     // await this.sqsProducer.sendNotifyGuest({ ... });
   }
 
-  private async handleBookingConfirmed(payload: BookingConfirmedPayload): Promise<void> {
+  private async handleBookingConfirmed(
+    payload: BookingConfirmedPayload,
+  ): Promise<void> {
     this.logger.log(
       `Booking confirmed: ERI ${payload.eri} | Room: ${payload.room_type} | ${payload.checkin} → ${payload.checkout}`,
     );
@@ -176,7 +190,9 @@ export class OpsTaskWorker implements SqsWorker {
     }
   }
 
-  private async handleTicketCreated(payload: TicketCreatedPayload): Promise<void> {
+  private async handleTicketCreated(
+    payload: TicketCreatedPayload,
+  ): Promise<void> {
     this.logger.log(
       `Ticket created: ${payload.service_name} | ${payload.request_type} | Room: ${payload.room_number}`,
     );
@@ -191,18 +207,27 @@ export class OpsTaskWorker implements SqsWorker {
       include: {
         staff: true,
         guests: { select: { name: true, phone: true } },
-        ezee_booking_cache: { select: { property_id: true, properties: { select: { brand: true } } } },
+        ezee_booking_cache: {
+          select: {
+            property_id: true,
+            properties: { select: { brand: true } },
+          },
+        },
       },
     });
     if (!ticket) {
-      this.logger.warn(`handleTicketCreated: ticket ${payload.ticket_id} not found`);
+      this.logger.warn(
+        `handleTicketCreated: ticket ${payload.ticket_id} not found`,
+      );
       return;
     }
 
     const brand = ticket.ezee_booking_cache?.properties?.brand ?? 'TDS';
     // Exact Zoho picklist value for cf_property_name (null if the property id isn't
     // one we've mapped — then we omit the field rather than send an invalid option).
-    const propertyName = zohoPropertyName(ticket.ezee_booking_cache?.property_id);
+    const propertyName = zohoPropertyName(
+      ticket.ezee_booking_cache?.property_id,
+    );
     const tat = tatMinutes(ticket.created_at, ticket.sla_breach_at);
 
     // 1. Mirror to Zoho Desk (best-effort; local row stays authoritative).
@@ -266,7 +291,14 @@ export class OpsTaskWorker implements SqsWorker {
         ticket.staff
           ? `Auto-assigned to ${ticket.staff.name} (${ticket.staff.role}). Turn-around target: ${
               ticket.sla_breach_at
-                ? Math.max(1, Math.round((ticket.sla_breach_at.getTime() - ticket.created_at.getTime()) / 60_000)) + ' min'
+                ? Math.max(
+                    1,
+                    Math.round(
+                      (ticket.sla_breach_at.getTime() -
+                        ticket.created_at.getTime()) /
+                        60_000,
+                    ),
+                  ) + ' min'
                 : 'n/a'
             }.`
           : `No available ${brand} staff — routing straight to Reception (L1 escalation).`,
@@ -282,7 +314,9 @@ export class OpsTaskWorker implements SqsWorker {
       ticket_id: ticket.id,
       brand,
       module: 'ZOHO_CREATE',
-      output: zohoId ? `Zoho ticket ${zohoId}` : 'skipped/failed (Zoho not configured or error)',
+      output: zohoId
+        ? `Zoho ticket ${zohoId}`
+        : 'skipped/failed (Zoho not configured or error)',
       status: zohoId ? 'OK' : 'SKIP',
       latency_ms: Date.now() - zohoStart,
     });
@@ -302,7 +336,8 @@ export class OpsTaskWorker implements SqsWorker {
     // the WhatsApp front door sends a synchronous, assignee-named session reply at
     // creation, so a worker message here would just duplicate it.
     if (ticket.guest_id && payload.notify_guest !== false) {
-      const guestPhone = ticket.guest_phone ?? ticket.guests?.phone ?? undefined;
+      const guestPhone =
+        ticket.guest_phone ?? ticket.guests?.phone ?? undefined;
       // Name the handler to the guest whenever the ticket actually HAS one. This used to
       // additionally require `staff.role === ticket.department`, on the theory that a
       // role mismatch meant a fallback to Reception — but reception-bound tickets are now
@@ -313,7 +348,9 @@ export class OpsTaskWorker implements SqsWorker {
       // thing, so "assigned to Pankaj, on it" is a promise nobody can keep.
       const unfulfilled = ticket.task_category === UNFULFILLED_CLASS;
       const namedAssignment =
-        !unfulfilled && Boolean(ticket.assigned_staff_id) && ticket.staff != null;
+        !unfulfilled &&
+        Boolean(ticket.assigned_staff_id) &&
+        ticket.staff != null;
       if (namedAssignment) {
         await this.producer.sendNotifyGuest({
           guest_id: ticket.guest_id,
@@ -364,7 +401,10 @@ export class OpsTaskWorker implements SqsWorker {
    * re-read the CURRENT state (it may have advanced during createTicket) and push it.
    * Best-effort throughout — never throws.
    */
-  private async reconcileLateZohoState(ticketId: string, zohoId: string): Promise<void> {
+  private async reconcileLateZohoState(
+    ticketId: string,
+    zohoId: string,
+  ): Promise<void> {
     const t = await this.prisma.zoho_ticket_ref.findUnique({
       where: { id: ticketId },
       include: { staff: { select: { name: true } } },
@@ -372,11 +412,18 @@ export class OpsTaskWorker implements SqsWorker {
     if (!t) return;
 
     if (t.status === 'IN_PROGRESS') {
-      await this.zohoDesk.updateTicket(zohoId, { status: 'In Progress' }).catch(() => undefined);
       await this.zohoDesk
-        .addComment(zohoId, 'Acknowledged — work in progress. (synced after Zoho ticket creation)')
+        .updateTicket(zohoId, { status: 'In Progress' })
         .catch(() => undefined);
-      this.logger.log(`Reconciled late Zoho state for ${ticketId} → In Progress (${zohoId})`);
+      await this.zohoDesk
+        .addComment(
+          zohoId,
+          'Acknowledged — work in progress. (synced after Zoho ticket creation)',
+        )
+        .catch(() => undefined);
+      this.logger.log(
+        `Reconciled late Zoho state for ${ticketId} → In Progress (${zohoId})`,
+      );
     } else if (t.status === 'COMPLETED') {
       const staffName = t.staff?.name ?? 'our team';
       const completedAt = t.completed_at ?? new Date();
@@ -388,12 +435,18 @@ export class OpsTaskWorker implements SqsWorker {
       // placeholder id, so its PATCH no-op'd behind isRealId and the checkbox would stay
       // unticked forever — reading as a breach on exactly the FASTEST tickets, the ones
       // closed before the Zoho mirror even existed.
-      const withinTat = completedWithinTat(t.created_at, t.sla_breach_at, completedAt);
+      const withinTat = completedWithinTat(
+        t.created_at,
+        t.sla_breach_at,
+        completedAt,
+      );
       await this.zohoDesk
         .updateTicket(zohoId, {
           status: 'Closed',
           resolution: `Completed by ${staffName} at ${completedAt.toISOString()} (${elapsedMin} min from request).`,
-          ...(withinTat !== null ? { customFields: { cf_completed_within_tat: withinTat } } : {}),
+          ...(withinTat !== null
+            ? { customFields: { cf_completed_within_tat: withinTat } }
+            : {}),
         })
         .catch(() => undefined);
       await this.zohoDesk
@@ -409,7 +462,9 @@ export class OpsTaskWorker implements SqsWorker {
         )
         .catch(() => undefined);
       await this.pushPendingFeedback(ticketId, zohoId);
-      this.logger.log(`Reconciled late Zoho state for ${ticketId} → Closed (${zohoId})`);
+      this.logger.log(
+        `Reconciled late Zoho state for ${ticketId} → Closed (${zohoId})`,
+      );
     }
   }
 
@@ -423,7 +478,10 @@ export class OpsTaskWorker implements SqsWorker {
    * follow-up remark can still append — so the old `rating + submitted_at` filter matched
    * no Good/Bad tap ever and this replay was dead for the default channel.
    */
-  private async pushPendingFeedback(ticketId: string, zohoId: string): Promise<void> {
+  private async pushPendingFeedback(
+    ticketId: string,
+    zohoId: string,
+  ): Promise<void> {
     const fb = await this.prisma.ticket_feedback.findFirst({
       where: {
         ticket_id: ticketId,

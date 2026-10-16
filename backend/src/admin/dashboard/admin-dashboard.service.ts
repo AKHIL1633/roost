@@ -1,10 +1,20 @@
-import { ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
+import {
+  ForbiddenException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
 import type { AdminJwtPayload } from '../../common/guards/admin-jwt.strategy';
-import { DashboardQueryDto, ensureSingleScopeAxis } from './dto/dashboard-query.dto';
+import {
+  DashboardQueryDto,
+  ensureSingleScopeAxis,
+} from './dto/dashboard-query.dto';
 import { BreakdownQueryDto, RevenueQueryDto } from './dto/revenue-query.dto';
-import { CouponsWidgetQueryDto, ListPaymentsQueryDto } from './dto/payments-query.dto';
+import {
+  CouponsWidgetQueryDto,
+  ListPaymentsQueryDto,
+} from './dto/payments-query.dto';
 import { classifyBookingSource, type BookingChannel } from './booking-sources';
 
 const DEFAULT_TOP_COUPONS = 10;
@@ -83,7 +93,9 @@ export class AdminDashboardService {
         },
         _sum: { discount_amount: true },
       }),
-      this.prisma.payments.count({ where: { ...baseWhere, status: 'CAPTURED' } }),
+      this.prisma.payments.count({
+        where: { ...baseWhere, status: 'CAPTURED' },
+      }),
       this.prisma.payments.aggregate({
         where: { ...baseWhere, status: 'FAILED' },
         _sum: { amount: true },
@@ -95,7 +107,9 @@ export class AdminDashboardService {
         where: {
           property_id: { in: propertyIds },
           status: 'PENDING',
-          created_at: { lt: new Date(Date.now() - STALE_PENDING_MINUTES * 60_000) },
+          created_at: {
+            lt: new Date(Date.now() - STALE_PENDING_MINUTES * 60_000),
+          },
         },
       }),
       // Layer B + C: bookings counted from ezee_booking_cache (every channel —
@@ -107,7 +121,9 @@ export class AdminDashboardService {
     const revenueByPurpose = this.mapPurposeRevenue(capturedByPurpose);
     const bookingsCount = bookingCountAgg.length;
     const aov =
-      bookingsCount > 0 ? Number((revenueByPurpose.booking / bookingsCount).toFixed(2)) : 0;
+      bookingsCount > 0
+        ? Number((revenueByPurpose.booking / bookingsCount).toFixed(2))
+        : 0;
     const discountValue = Number(discountAgg._sum.discount_amount ?? 0);
     // Gross = every captured purpose, so it matches the breakdown + trend
     // (which never filtered by purpose). Previously this summed only the three
@@ -115,7 +131,9 @@ export class AdminDashboardService {
     const grossRevenue = revenueByPurpose.total;
     const denominator = revenueByPurpose.booking + discountValue;
     const discountRate =
-      denominator > 0 ? Number(((discountValue / denominator) * 100).toFixed(2)) : 0;
+      denominator > 0
+        ? Number(((discountValue / denominator) * 100).toFixed(2))
+        : 0;
     const captureRate =
       capturedCount + failedAgg._count._all + stalePendingCount > 0
         ? Number(
@@ -203,7 +221,11 @@ export class AdminDashboardService {
     };
     /** Test bookings in the window — excluded from every figure above; reported so ops can see them. */
     test_bookings: number;
-    bookings_by_source: Array<{ source: string; channel: BookingChannel; count: number }>;
+    bookings_by_source: Array<{
+      source: string;
+      channel: BookingChannel;
+      count: number;
+    }>;
     total_revenue: {
       razorpay: number;
       ota_folio: number;
@@ -262,7 +284,10 @@ export class AdminDashboardService {
       cancelled: 0,
       razorpay_paid: 0,
     };
-    const bySource = new Map<string, { channel: BookingChannel; count: number }>();
+    const bySource = new Map<
+      string,
+      { channel: BookingChannel; count: number }
+    >();
     let razorpayRevenue = 0;
     let otaFolio = 0;
     let directFolio = 0;
@@ -291,7 +316,8 @@ export class AdminDashboardService {
 
       // by-source histogram (raw source string preserved so ops can spot
       // un-classified channels; null → "Walk-In / Direct" bucket label).
-      const label = r.source && r.source.trim() ? r.source.trim() : 'Walk-In / Direct';
+      const label =
+        r.source && r.source.trim() ? r.source.trim() : 'Walk-In / Direct';
       const entry = bySource.get(label) ?? { channel, count: 0 };
       entry.count += 1;
       bySource.set(label, entry);
@@ -303,7 +329,10 @@ export class AdminDashboardService {
         razorpayRevenue += captured;
         bookings_all.razorpay_paid += 1;
       } else {
-        const folio = r.folio_total_after_tax !== null ? Number(r.folio_total_after_tax) : 0;
+        const folio =
+          r.folio_total_after_tax !== null
+            ? Number(r.folio_total_after_tax)
+            : 0;
         if (channel === 'ota') otaFolio += folio;
         else directFolio += folio;
       }
@@ -367,9 +396,10 @@ export class AdminDashboardService {
       ORDER BY bucket ASC
     `);
 
-    const series = query.groupBy === 'purpose'
-      ? this.pivotByPurpose(rows)
-      : this.collapsePurpose(rows);
+    const series =
+      query.groupBy === 'purpose'
+        ? this.pivotByPurpose(rows)
+        : this.collapsePurpose(rows);
 
     return {
       window: this.serialiseWindow(window),
@@ -406,7 +436,12 @@ export class AdminDashboardService {
       created_at: { gte: window.fromInclusive, lt: window.toExclusive },
     };
 
-    let items: Array<{ key: string; label: string; revenue: number; count: number }>;
+    let items: Array<{
+      key: string;
+      label: string;
+      revenue: number;
+      count: number;
+    }>;
 
     if (query.by === 'purpose') {
       const rows = await this.prisma.payments.groupBy({
@@ -450,7 +485,8 @@ export class AdminDashboardService {
         // by === 'brand'
         const byBrand = new Map<string, { revenue: number; count: number }>();
         for (const r of rows) {
-          const brand = (r.property_id && propMap.get(r.property_id)?.brand) ?? 'UNKNOWN';
+          const brand =
+            (r.property_id && propMap.get(r.property_id)?.brand) ?? 'UNKNOWN';
           const bucket = byBrand.get(brand) ?? { revenue: 0, count: 0 };
           bucket.revenue += Number(r._sum.amount ?? 0);
           bucket.count += r._count._all;
@@ -511,13 +547,23 @@ export class AdminDashboardService {
 
     // Sort + slice in-memory: dashboard volumes (a few hundred coupons at
     // most) make this cheaper than orderBy + take at the DB layer.
-    grouped.sort((a, b) => Number(b._sum.discount_amount ?? 0) - Number(a._sum.discount_amount ?? 0));
+    grouped.sort(
+      (a, b) =>
+        Number(b._sum.discount_amount ?? 0) -
+        Number(a._sum.discount_amount ?? 0),
+    );
     const topGrouped = grouped.slice(0, topN);
 
     const coupons = topGrouped.length
       ? await this.prisma.coupons.findMany({
           where: { id: { in: topGrouped.map((g) => g.coupon_id) } },
-          select: { id: true, code: true, name: true, type: true, discount_type: true },
+          select: {
+            id: true,
+            code: true,
+            name: true,
+            type: true,
+            discount_type: true,
+          },
         })
       : [];
     const couponById = new Map(coupons.map((c) => [c.id, c]));
@@ -541,10 +587,16 @@ export class AdminDashboardService {
       where: redemptionWhere,
       select: { discount_amount: true, coupons: { select: { type: true } } },
     });
-    const byType = new Map<string, { discount_value: number; redemption_count: number }>();
+    const byType = new Map<
+      string,
+      { discount_value: number; redemption_count: number }
+    >();
     for (const r of allRedemptions) {
       const type = r.coupons.type;
-      const bucket = byType.get(type) ?? { discount_value: 0, redemption_count: 0 };
+      const bucket = byType.get(type) ?? {
+        discount_value: 0,
+        redemption_count: 0,
+      };
       bucket.discount_value += Number(r.discount_amount);
       bucket.redemption_count += 1;
       byType.set(type, bucket);
@@ -573,7 +625,10 @@ export class AdminDashboardService {
     const limit = query.limit ?? DEFAULT_LIMIT;
 
     if (propertyIds.length === 0) {
-      return { items: [], pagination: { page, limit, total: 0, total_pages: 0 } };
+      return {
+        items: [],
+        pagination: { page, limit, total: 0, total_pages: 0 },
+      };
     }
 
     const where: Prisma.paymentsWhereInput = {
@@ -584,9 +639,25 @@ export class AdminDashboardService {
       ...(query.search
         ? {
             OR: [
-              { razorpay_order_id: { contains: query.search, mode: 'insensitive' } },
-              { razorpay_payment_id: { contains: query.search, mode: 'insensitive' } },
-              { guests: { is: { email: { contains: query.search, mode: 'insensitive' } } } },
+              {
+                razorpay_order_id: {
+                  contains: query.search,
+                  mode: 'insensitive',
+                },
+              },
+              {
+                razorpay_payment_id: {
+                  contains: query.search,
+                  mode: 'insensitive',
+                },
+              },
+              {
+                guests: {
+                  is: {
+                    email: { contains: query.search, mode: 'insensitive' },
+                  },
+                },
+              },
             ],
           }
         : {}),
@@ -685,7 +756,9 @@ export class AdminDashboardService {
         },
         coupon_redemptions: {
           include: {
-            coupons: { select: { id: true, code: true, name: true, type: true } },
+            coupons: {
+              select: { id: true, code: true, name: true, type: true },
+            },
           },
         },
       },
@@ -697,8 +770,13 @@ export class AdminDashboardService {
 
     // Scope check after fetch so we don't leak the existence of payments
     // belonging to properties outside the actor's scope.
-    if (payment.property_id && !actor.property_ids.includes(payment.property_id)) {
-      throw new ForbiddenException('Payment belongs to a property outside your scope');
+    if (
+      payment.property_id &&
+      !actor.property_ids.includes(payment.property_id)
+    ) {
+      throw new ForbiddenException(
+        'Payment belongs to a property outside your scope',
+      );
     }
 
     return {
@@ -761,7 +839,9 @@ export class AdminDashboardService {
   ): Promise<string[]> {
     if (query.property_id) {
       if (!actor.property_ids.includes(query.property_id)) {
-        throw new ForbiddenException(`Not authorised for property ${query.property_id}`);
+        throw new ForbiddenException(
+          `Not authorised for property ${query.property_id}`,
+        );
       }
       return [query.property_id];
     }
@@ -884,12 +964,21 @@ export class AdminDashboardService {
   ) {
     const byBucket = new Map<
       string,
-      { date: string; BOOKING: number; ADDON_UPSELL: number; STAY_EXTENSION: number }
+      {
+        date: string;
+        BOOKING: number;
+        ADDON_UPSELL: number;
+        STAY_EXTENSION: number;
+      }
     >();
     for (const r of rows) {
       const date = this.formatDate(r.bucket);
-      const entry =
-        byBucket.get(date) ?? { date, BOOKING: 0, ADDON_UPSELL: 0, STAY_EXTENSION: 0 };
+      const entry = byBucket.get(date) ?? {
+        date,
+        BOOKING: 0,
+        ADDON_UPSELL: 0,
+        STAY_EXTENSION: 0,
+      };
       const amount = Number(r.total);
       // Input purpose is lowercase; output column keys stay uppercase for FE
       // chart compatibility.
@@ -906,7 +995,9 @@ export class AdminDashboardService {
       }
       byBucket.set(date, entry);
     }
-    return Array.from(byBucket.values()).sort((a, b) => a.date.localeCompare(b.date));
+    return Array.from(byBucket.values()).sort((a, b) =>
+      a.date.localeCompare(b.date),
+    );
   }
 
   private emptySummary(window: DateWindow, propertyIds: string[]) {
@@ -916,7 +1007,13 @@ export class AdminDashboardService {
         to: this.formatDate(this.toInclusiveDate(window.toExclusive)),
       },
       scope: { property_ids: propertyIds, brand: null },
-      revenue: { gross: 0, booking: 0, addon: 0, extension: 0, currency: 'INR' },
+      revenue: {
+        gross: 0,
+        booking: 0,
+        addon: 0,
+        extension: 0,
+        currency: 'INR',
+      },
       bookings: { count: 0, avg_value: 0 },
       coupons: { discount_value: 0, discount_rate_pct: 0 },
       payments: {
@@ -935,7 +1032,11 @@ export class AdminDashboardService {
         cancelled: 0,
         razorpay_paid: 0,
       },
-      bookings_by_source: [] as Array<{ source: string; channel: BookingChannel; count: number }>,
+      bookings_by_source: [] as Array<{
+        source: string;
+        channel: BookingChannel;
+        count: number;
+      }>,
       total_revenue: {
         razorpay: 0,
         ota_folio: 0,

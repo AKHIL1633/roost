@@ -21,10 +21,7 @@ export class PublicEventsController {
   ) {}
 
   @Get('poster')
-  async getPoster(
-    @Query('key') key: string,
-    @Res() res: Response,
-  ) {
+  async getPoster(@Query('key') key: string, @Res() res: Response) {
     if (!key || !key.startsWith('events/')) {
       throw new BadRequestException('Invalid or missing key');
     }
@@ -52,7 +49,9 @@ export class PublicEventsController {
   ) {
     const resolved = propertyId || resolvePropertyFromRequest(req);
     if (!resolved) {
-      throw new BadRequestException('property_id is required (or call from a known host)');
+      throw new BadRequestException(
+        'property_id is required (or call from a known host)',
+      );
     }
     return this.eventsService.listPublicEvents(resolved, filter);
   }

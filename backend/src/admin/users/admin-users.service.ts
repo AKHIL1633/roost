@@ -44,7 +44,9 @@ export class AdminUsersService {
     const found = new Set(rows.map((r) => r.id));
     const missing = propertyIds.filter((p) => !found.has(p));
     if (missing.length > 0) {
-      throw new BadRequestException(`Unknown property_ids: ${missing.join(', ')}`);
+      throw new BadRequestException(
+        `Unknown property_ids: ${missing.join(', ')}`,
+      );
     }
   }
 
@@ -136,13 +138,14 @@ export class AdminUsersService {
   async findAll(actor: AdminJwtPayload) {
     // Property-scoped admins only see users that share at least one property with them.
     // Owners see everyone.
-    const where = actor.role === 'OWNER'
-      ? {}
-      : {
-          admin_user_properties: {
-            some: { property_id: { in: actor.property_ids } },
-          },
-        };
+    const where =
+      actor.role === 'OWNER'
+        ? {}
+        : {
+            admin_user_properties: {
+              some: { property_id: { in: actor.property_ids } },
+            },
+          };
 
     const admins = await this.prisma.admin_users.findMany({
       where,
@@ -188,7 +191,9 @@ export class AdminUsersService {
     await this.assertPropertiesExist(uniquePropertyIds);
 
     await this.prisma.$transaction([
-      this.prisma.admin_user_properties.deleteMany({ where: { admin_user_id: id } }),
+      this.prisma.admin_user_properties.deleteMany({
+        where: { admin_user_id: id },
+      }),
       this.prisma.admin_user_properties.createMany({
         data: uniquePropertyIds.map((property_id) => ({
           admin_user_id: id,

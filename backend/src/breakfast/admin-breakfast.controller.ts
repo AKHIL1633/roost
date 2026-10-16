@@ -48,7 +48,10 @@ export class AdminBreakfastController {
 
   @Put('config')
   @RequirePermission('breakfast.edit')
-  setConfig(@Body() dto: UpdateBreakfastConfigDto, @CurrentAdmin() actor: AdminJwtPayload) {
+  setConfig(
+    @Body() dto: UpdateBreakfastConfigDto,
+    @CurrentAdmin() actor: AdminJwtPayload,
+  ) {
     return this.breakfast.setConfig(actor, dto);
   }
 
@@ -56,7 +59,10 @@ export class AdminBreakfastController {
 
   @Post('menu')
   @RequirePermission('breakfast.edit')
-  createMenu(@Body() dto: CreateMenuItemDto, @CurrentAdmin() actor: AdminJwtPayload) {
+  createMenu(
+    @Body() dto: CreateMenuItemDto,
+    @CurrentAdmin() actor: AdminJwtPayload,
+  ) {
     return this.breakfast.createMenuItem(dto, actor);
   }
 
@@ -98,13 +104,19 @@ export class AdminBreakfastController {
 
   @Get('slots/summary')
   @RequirePermission('breakfast.view')
-  slotSummary(@Query('date') date: string, @CurrentAdmin() actor: AdminJwtPayload) {
+  slotSummary(
+    @Query('date') date: string,
+    @CurrentAdmin() actor: AdminJwtPayload,
+  ) {
     return this.breakfast.slotSummary(actor, date);
   }
 
   @Post('slots')
   @RequirePermission('breakfast.edit')
-  createSlot(@Body() dto: CreateSlotDto, @CurrentAdmin() actor: AdminJwtPayload) {
+  createSlot(
+    @Body() dto: CreateSlotDto,
+    @CurrentAdmin() actor: AdminJwtPayload,
+  ) {
     return this.breakfast.createSlot(dto, actor);
   }
 
@@ -133,25 +145,37 @@ export class AdminBreakfastController {
    */
   @Get('bookings')
   @RequirePermission('breakfast.view')
-  listBookings(@Query('date') date: string, @CurrentAdmin() actor: AdminJwtPayload) {
+  listBookings(
+    @Query('date') date: string,
+    @CurrentAdmin() actor: AdminJwtPayload,
+  ) {
     return this.breakfast.listCheckedInBookings(actor, date);
   }
 
   @Get('orders')
   @RequirePermission('breakfast.view')
-  listOrders(@Query('date') date: string, @CurrentAdmin() actor: AdminJwtPayload) {
+  listOrders(
+    @Query('date') date: string,
+    @CurrentAdmin() actor: AdminJwtPayload,
+  ) {
     return this.breakfast.listOrders(actor, date);
   }
 
   @Get('forecast')
   @RequirePermission('breakfast.view')
-  forecast(@Query('date') date: string, @CurrentAdmin() actor: AdminJwtPayload) {
+  forecast(
+    @Query('date') date: string,
+    @CurrentAdmin() actor: AdminJwtPayload,
+  ) {
     return this.breakfast.forecast(actor, date);
   }
 
   @Get('dashboard')
   @RequirePermission('breakfast.view')
-  dashboard(@Query('date') date: string, @CurrentAdmin() actor: AdminJwtPayload) {
+  dashboard(
+    @Query('date') date: string,
+    @CurrentAdmin() actor: AdminJwtPayload,
+  ) {
     return this.breakfast.dashboard(actor, date);
   }
 

@@ -89,7 +89,9 @@ export class LlmService {
   ): Promise<GuestMessageClassification> {
     const key = process.env.OPENAI_API_KEY_SF;
     if (!key) {
-      this.logger.warn('[SKIP] OPENAI_API_KEY_SF not set — returning ambiguous classification');
+      this.logger.warn(
+        '[SKIP] OPENAI_API_KEY_SF not set — returning ambiguous classification',
+      );
       return this.fallback(text);
     }
 
@@ -160,7 +162,7 @@ export class LlmService {
       '- Only set product_id when the guest clearly names THAT item or an obvious synonym',
       '  (e.g. "fresh towel" -> a Towel row). If the requested item is NOT in the catalog,',
       '  product_id MUST be null. NEVER substitute a different/unrelated catalog item just',
-      "  to return a match (e.g. do not answer a \"towel\" request with a \"Water Bottle\").",
+      '  to return a match (e.g. do not answer a "towel" request with a "Water Bottle").',
       '- product_id, department and task_category matter only for request_new; otherwise product_id=null.',
       '',
       'Department rules (WHO does the work):',
@@ -193,7 +195,7 @@ export class LlmService {
       '- T4 Emergency (immediate broadcast — use rarely): fire, smoke, gas leak, a medical emergency,',
       '    flooding, a guest locked out, a door that will not open or will not lock.',
       '- Tier = how time-sensitive/complex; department = who does it. They are separate (a T0 towel is HOUSEKEEPING; a T0 invoice is FRONT_OFFICE).',
-      '- CRITICAL — pick the tier from the WORK REQUIRED, never from the guest\'s TONE. An unhappy',
+      "- CRITICAL — pick the tier from the WORK REQUIRED, never from the guest's TONE. An unhappy",
       '  message is not automatically a "complaint". "The floor was not cleaned properly" and "the',
       '  room is dirty" need CLEANING done, so they are T1. "The AC is not working" needs a repair,',
       '  so it is T2 — even phrased as "I want to complain about the AC". T0-complaint is only the',
@@ -227,7 +229,9 @@ export class LlmService {
 
       if (!res.ok) {
         const body = await res.text().catch(() => '');
-        this.logger.error(`OpenAI classify failed (${res.status}): ${body.slice(0, 200)}`);
+        this.logger.error(
+          `OpenAI classify failed (${res.status}): ${body.slice(0, 200)}`,
+        );
         return this.fallback(text);
       }
 
@@ -241,12 +245,16 @@ export class LlmService {
         catalog.some((c) => c.id === parsed.product_id)
           ? parsed.product_id
           : null;
-      const department = ['HOUSEKEEPING', 'MAINTENANCE', 'FRONT_OFFICE'].includes(
-        parsed.department,
-      )
+      const department = [
+        'HOUSEKEEPING',
+        'MAINTENANCE',
+        'FRONT_OFFICE',
+      ].includes(parsed.department)
         ? parsed.department
         : 'FRONT_OFFICE';
-      const task_category: TaskClass = TASK_CATEGORIES.includes(parsed.task_category)
+      const task_category: TaskClass = TASK_CATEGORIES.includes(
+        parsed.task_category,
+      )
         ? (parsed.task_category as TaskClass)
         : DEFAULT_CLASS;
 
@@ -286,7 +294,7 @@ export class LlmService {
       "You split a hotel guest's WhatsApp message into DISTINCT actionable service requests.",
       'Return STRICT JSON: { "requests": string[] }.',
       'Rules:',
-      '- Each array item = ONE separate thing the guest wants done, in the guest\'s own words (trimmed).',
+      "- Each array item = ONE separate thing the guest wants done, in the guest's own words (trimmed).",
       '- SPLIT whenever the message names two or more DIFFERENT items or actions — even when they',
       '  share a verb or are joined by "and"/"&"/","/"also"/"plus". A different item OR a different',
       '  action = a separate request.',
@@ -348,7 +356,10 @@ export class LlmService {
       const timeout = setTimeout(() => controller.abort(), 10_000);
       const res = await fetch('https://api.openai.com/v1/chat/completions', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${key}` },
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${key}`,
+        },
         body: JSON.stringify({
           model: this.model,
           temperature: 0,
@@ -399,7 +410,9 @@ export class LlmService {
       }
       return real.length >= 2 ? real.slice(0, 5) : [clean];
     } catch (err) {
-      this.logger.error(`OpenAI splitServiceRequests error: ${(err as Error).message}`);
+      this.logger.error(
+        `OpenAI splitServiceRequests error: ${(err as Error).message}`,
+      );
       return [clean];
     }
   }
@@ -410,19 +423,93 @@ export class LlmService {
    * is not.
    */
   private static readonly FOLLOW_UP_VERBS = new Set([
-    'check', 'look', 'see', 'fix', 'do', 'sort', 'resolve', 'handle', 'attend', 'help',
-    'let', 'know', 'update', 'inform', 'revert', 'confirm', 'take', 'have', 'follow',
-    'send', 'bring', 'get', 'arrange', 'note', 'ensure',
+    'check',
+    'look',
+    'see',
+    'fix',
+    'do',
+    'sort',
+    'resolve',
+    'handle',
+    'attend',
+    'help',
+    'let',
+    'know',
+    'update',
+    'inform',
+    'revert',
+    'confirm',
+    'take',
+    'have',
+    'follow',
+    'send',
+    'bring',
+    'get',
+    'arrange',
+    'note',
+    'ensure',
   ]);
 
   /** Words that carry no request of their own — politeness, pronouns, urgency, glue. */
   private static readonly FOLLOW_UP_FILLER = new Set([
-    'can', 'could', 'would', 'will', 'shall', 'you', 'u', 'please', 'pls', 'plz', 'kindly',
-    'it', 'this', 'that', 'the', 'a', 'an', 'to', 'into', 'on', 'in', 'at', 'out', 'up',
-    'over', 'me', 'my', 'we', 'us', 'asap', 'fast', 'quick', 'quickly', 'soon', 'urgent',
-    'urgently', 'now', 'once', 'again', 'and', 'also', 'so', 'but', 'then', 'needful',
-    'if', 'possible', 'about', 'for', 'is', 'not', 'yet', 'still', 'done', 'sir', 'madam',
-    'ok', 'okay',
+    'can',
+    'could',
+    'would',
+    'will',
+    'shall',
+    'you',
+    'u',
+    'please',
+    'pls',
+    'plz',
+    'kindly',
+    'it',
+    'this',
+    'that',
+    'the',
+    'a',
+    'an',
+    'to',
+    'into',
+    'on',
+    'in',
+    'at',
+    'out',
+    'up',
+    'over',
+    'me',
+    'my',
+    'we',
+    'us',
+    'asap',
+    'fast',
+    'quick',
+    'quickly',
+    'soon',
+    'urgent',
+    'urgently',
+    'now',
+    'once',
+    'again',
+    'and',
+    'also',
+    'so',
+    'but',
+    'then',
+    'needful',
+    'if',
+    'possible',
+    'about',
+    'for',
+    'is',
+    'not',
+    'yet',
+    'still',
+    'done',
+    'sir',
+    'madam',
+    'ok',
+    'okay',
   ]);
   // NB: "room" is deliberately NOT filler — "clean the room" is a real request, and treating
   // "room" as noise would let this helper swallow it.
@@ -435,7 +522,10 @@ export class LlmService {
    * leaves today's behaviour, a false positive would swallow a real request.
    */
   static isFollowUpOnly(segment: string): boolean {
-    const tokens = (segment || '').toLowerCase().split(/[^a-z]+/).filter(Boolean);
+    const tokens = (segment || '')
+      .toLowerCase()
+      .split(/[^a-z]+/)
+      .filter(Boolean);
     if (tokens.length === 0 || tokens.length > 8) return false;
     let sawVerb = false;
     for (const t of tokens) {
@@ -490,7 +580,10 @@ export class LlmService {
       const timeout = setTimeout(() => controller.abort(), 10_000);
       const res = await fetch('https://api.openai.com/v1/chat/completions', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${key}` },
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${key}`,
+        },
         body: JSON.stringify({
           model: this.model,
           temperature: 0,
@@ -513,14 +606,18 @@ export class LlmService {
       const parsed = JSON.parse(content);
       const idx = Number(parsed.match_index);
       const ticket_id =
-        Number.isInteger(idx) && idx >= 1 && idx <= tickets.length ? tickets[idx - 1].id : null;
+        Number.isInteger(idx) && idx >= 1 && idx <= tickets.length
+          ? tickets[idx - 1].id
+          : null;
       const item =
         typeof parsed.item === 'string' && parsed.item.trim()
           ? parsed.item.trim().slice(0, 60)
           : null;
       return { ticket_id, item };
     } catch (err) {
-      this.logger.error(`OpenAI matchUpdateTarget error: ${(err as Error).message}`);
+      this.logger.error(
+        `OpenAI matchUpdateTarget error: ${(err as Error).message}`,
+      );
       return { ticket_id: null, item: null };
     }
   }
@@ -561,7 +658,10 @@ export class LlmService {
       const timeout = setTimeout(() => controller.abort(), 8000);
       const res = await fetch('https://api.openai.com/v1/chat/completions', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${key}` },
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${key}`,
+        },
         body: JSON.stringify({
           model: this.model,
           temperature: 0,
@@ -581,7 +681,9 @@ export class LlmService {
       const parsed = JSON.parse(content);
       return parsed.kind === 'status' ? 'status' : 'review';
     } catch (err) {
-      this.logger.error(`OpenAI classifyFeedbackFollowup error: ${(err as Error).message}`);
+      this.logger.error(
+        `OpenAI classifyFeedbackFollowup error: ${(err as Error).message}`,
+      );
       return this.followupHeuristic(text);
     }
   }
@@ -603,7 +705,9 @@ export class LlmService {
    * (KEEP unless the text is clearly non-lexical) when the LLM is absent/errors, so real
    * feedback is never lost just because the model was unreachable.
    */
-  async classifyFeedbackRemark(text: string): Promise<'meaningful' | 'gibberish'> {
+  async classifyFeedbackRemark(
+    text: string,
+  ): Promise<'meaningful' | 'gibberish'> {
     const key = process.env.OPENAI_API_KEY_SF;
     if (!key) return this.remarkHeuristic(text);
 
@@ -622,7 +726,10 @@ export class LlmService {
       const timeout = setTimeout(() => controller.abort(), 8000);
       const res = await fetch('https://api.openai.com/v1/chat/completions', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${key}` },
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${key}`,
+        },
         body: JSON.stringify({
           model: this.model,
           temperature: 0,
@@ -642,7 +749,9 @@ export class LlmService {
       const parsed = JSON.parse(content);
       return parsed.kind === 'gibberish' ? 'gibberish' : 'meaningful';
     } catch (err) {
-      this.logger.error(`OpenAI classifyFeedbackRemark error: ${(err as Error).message}`);
+      this.logger.error(
+        `OpenAI classifyFeedbackRemark error: ${(err as Error).message}`,
+      );
       return this.remarkHeuristic(text);
     }
   }
@@ -672,7 +781,9 @@ export class LlmService {
    *                   routed to the property chatbot, else reception.
    * Falls back to a keyword heuristic when the OpenAI key is absent or the call fails.
    */
-  async classifyProspectMessage(text: string): Promise<'greeting' | 'booking' | 'question' | 'service'> {
+  async classifyProspectMessage(
+    text: string,
+  ): Promise<'greeting' | 'booking' | 'question' | 'service'> {
     const key = process.env.OPENAI_API_KEY_SF;
     if (!key) return this.prospectHeuristic(text);
 
@@ -698,7 +809,10 @@ export class LlmService {
       const timeout = setTimeout(() => controller.abort(), 8000);
       const res = await fetch('https://api.openai.com/v1/chat/completions', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${key}` },
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${key}`,
+        },
         body: JSON.stringify({
           model: this.model,
           temperature: 0,
@@ -716,27 +830,47 @@ export class LlmService {
       const content = json?.choices?.[0]?.message?.content;
       if (!content) return this.prospectHeuristic(text);
       const parsed = JSON.parse(content);
-      if (parsed.intent === 'greeting' || parsed.intent === 'booking' || parsed.intent === 'service') {
+      if (
+        parsed.intent === 'greeting' ||
+        parsed.intent === 'booking' ||
+        parsed.intent === 'service'
+      ) {
         return parsed.intent;
       }
       return 'question';
     } catch (err) {
-      this.logger.error(`OpenAI classifyProspectMessage error: ${(err as Error).message}`);
+      this.logger.error(
+        `OpenAI classifyProspectMessage error: ${(err as Error).message}`,
+      );
       return this.prospectHeuristic(text);
     }
   }
 
   /** Fallback for classifyProspectMessage: greetings, obvious booking asks, obvious service asks; else question. */
-  private prospectHeuristic(text: string): 'greeting' | 'booking' | 'question' | 'service' {
+  private prospectHeuristic(
+    text: string,
+  ): 'greeting' | 'booking' | 'question' | 'service' {
     const t = (text || '').trim().toLowerCase();
-    if (/^(hi|hii+|hey|hello|helo|good (morning|afternoon|evening)|ok|okay|thanks|thank you|thx|ty|namaste|yo)[!.\s]*$/.test(t)) {
+    if (
+      /^(hi|hii+|hey|hello|helo|good (morning|afternoon|evening)|ok|okay|thanks|thank you|thx|ty|namaste|yo)[!.\s]*$/.test(
+        t,
+      )
+    ) {
       return 'greeting';
     }
-    if (/\b(book|booking|reserve|reservation|availab|vacan|room type|per night|tariff|rate|price|check[- ]?in date)\b/.test(t)) {
+    if (
+      /\b(book|booking|reserve|reservation|availab|vacan|room type|per night|tariff|rate|price|check[- ]?in date)\b/.test(
+        t,
+      )
+    ) {
       return 'booking';
     }
     // Explicit "bring/fix me X" service asks → straight to a human (L1), never the chatbot.
-    if (/\b(towel|water|toilet(ry|ries)|soap|shampoo|toothbrush|blanket|pillow|bedsheet|linen|clean(ing)?|housekeeping|laundry|iron|dryer|room service|repair|fix|not working|broken|leak|plumb|electric)\b/.test(t)) {
+    if (
+      /\b(towel|water|toilet(ry|ries)|soap|shampoo|toothbrush|blanket|pillow|bedsheet|linen|clean(ing)?|housekeeping|laundry|iron|dryer|room service|repair|fix|not working|broken|leak|plumb|electric)\b/.test(
+        t,
+      )
+    ) {
       return 'service';
     }
     return 'question';

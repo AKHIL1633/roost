@@ -25,7 +25,9 @@ export class DashboardQueryDto {
 
   @IsOptional()
   @IsString()
-  @Matches(/^[0-9]+$/, { message: 'property_id must be the numeric eZee hotel code' })
+  @Matches(/^[0-9]+$/, {
+    message: 'property_id must be the numeric eZee hotel code',
+  })
   property_id?: string;
 
   @IsOptional()

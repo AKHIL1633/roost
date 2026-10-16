@@ -47,7 +47,9 @@ export class FlowLogService {
         },
       });
     } catch (e) {
-      this.logger.warn(`flow_log write failed (${entry.module}): ${(e as Error).message}`);
+      this.logger.warn(
+        `flow_log write failed (${entry.module}): ${(e as Error).message}`,
+      );
     }
   }
 
@@ -56,7 +58,13 @@ export class FlowLogService {
    * Re-throws the original error so control flow is unchanged.
    */
   async timed<T>(
-    ctx: { trace_id: string; ticket_id?: string | null; brand?: string | null; module: string; input?: string | null },
+    ctx: {
+      trace_id: string;
+      ticket_id?: string | null;
+      brand?: string | null;
+      module: string;
+      input?: string | null;
+    },
     fn: () => Promise<T>,
     describe?: (result: T) => string,
   ): Promise<T> {
@@ -71,7 +79,12 @@ export class FlowLogService {
       });
       return result;
     } catch (e) {
-      await this.log({ ...ctx, error: (e as Error).message, latency_ms: Date.now() - start, status: 'ERROR' });
+      await this.log({
+        ...ctx,
+        error: (e as Error).message,
+        latency_ms: Date.now() - start,
+        status: 'ERROR',
+      });
       throw e;
     }
   }

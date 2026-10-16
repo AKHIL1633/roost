@@ -33,6 +33,9 @@ export class CreateAdminUserDto {
   @IsArray()
   @ArrayNotEmpty()
   @IsString({ each: true })
-  @Matches(/^[0-9]+$/, { each: true, message: 'property_ids entries must be numeric eZee hotel codes' })
+  @Matches(/^[0-9]+$/, {
+    each: true,
+    message: 'property_ids entries must be numeric eZee hotel codes',
+  })
   property_ids: string[];
 }

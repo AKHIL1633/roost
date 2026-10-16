@@ -18,7 +18,11 @@ import { FeedbackModule } from '../feedback/feedback.module';
  */
 @Module({
   imports: [FeedbackModule],
-  controllers: [TicketsController, StaffActionsController, ZohoWebhookController],
+  controllers: [
+    TicketsController,
+    StaffActionsController,
+    ZohoWebhookController,
+  ],
   providers: [TicketsService, SlaWatchdogService, ZohoSyncService],
   exports: [TicketsService],
 })

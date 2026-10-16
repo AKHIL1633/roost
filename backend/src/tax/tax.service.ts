@@ -35,7 +35,8 @@ export class TaxService {
       where: { id: propertyId },
       select: { tax_rate_pct: true },
     });
-    if (!property) throw new NotFoundException(`Property ${propertyId} not found`);
+    if (!property)
+      throw new NotFoundException(`Property ${propertyId} not found`);
     return Number(property.tax_rate_pct);
   }
 

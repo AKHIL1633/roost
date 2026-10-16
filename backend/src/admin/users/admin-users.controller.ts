@@ -71,19 +71,13 @@ export class AdminUsersController {
 
   @Patch(':id/deactivate')
   @RequirePermission('admin.manage')
-  deactivate(
-    @Param('id') id: string,
-    @CurrentAdmin() actor: AdminJwtPayload,
-  ) {
+  deactivate(@Param('id') id: string, @CurrentAdmin() actor: AdminJwtPayload) {
     return this.adminUsersService.deactivate(id, actor);
   }
 
   @Delete(':id')
   @RequirePermission('admin.manage')
-  remove(
-    @Param('id') id: string,
-    @CurrentAdmin() actor: AdminJwtPayload,
-  ) {
+  remove(@Param('id') id: string, @CurrentAdmin() actor: AdminJwtPayload) {
     return this.adminUsersService.remove(id, actor);
   }
 }

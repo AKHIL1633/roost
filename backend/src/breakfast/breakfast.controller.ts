@@ -1,4 +1,12 @@
-import { Body, Controller, Get, HttpCode, Param, Post, ValidationPipe } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Get,
+  HttpCode,
+  Param,
+  Post,
+  ValidationPipe,
+} from '@nestjs/common';
 import { BreakfastService, BreakfastPageView } from './breakfast.service';
 import { SubmitBreakfastOrderDto } from './dto/submit-breakfast-order.dto';
 
@@ -10,7 +18,10 @@ import { SubmitBreakfastOrderDto } from './dto/submit-breakfast-order.dto';
  * be submitted. Strip unknown keys here instead of rejecting — `whitelist` still drops them, so
  * nothing unvalidated reaches the service.
  */
-const ECHO_TOLERANT = new ValidationPipe({ whitelist: true, forbidNonWhitelisted: false });
+const ECHO_TOLERANT = new ValidationPipe({
+  whitelist: true,
+  forbidNonWhitelisted: false,
+});
 
 /**
  * Guest-facing breakfast ordering page — PUBLIC (no JWT). The per-stay opaque token IS

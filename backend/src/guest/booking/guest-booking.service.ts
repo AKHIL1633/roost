@@ -135,7 +135,11 @@ export class GuestBookingService {
     });
 
     if (existingAccess) {
-      const slots = await this.ensureSlots(eri, guestId, booking.no_of_guests ?? 1);
+      const slots = await this.ensureSlots(
+        eri,
+        guestId,
+        booking.no_of_guests ?? 1,
+      );
       return {
         message: 'Already linked to this booking',
         access: { role: existingAccess.role, status: existingAccess.status },
@@ -172,7 +176,11 @@ export class GuestBookingService {
     this.logger.log(`Guest ${guestId} linked to ${eri} as ${role}`);
 
     // Ensure slots exist and assign guest to first unassigned
-    const slots = await this.ensureSlots(eri, guestId, booking.no_of_guests ?? 1);
+    const slots = await this.ensureSlots(
+      eri,
+      guestId,
+      booking.no_of_guests ?? 1,
+    );
 
     return {
       message: `Successfully linked as ${role}`,
@@ -225,7 +233,12 @@ export class GuestBookingService {
           is_active: booking.is_active,
           // Server-computed bucket so the FE doesn't have to mirror our
           // status semantics. Drives the UPCOMING / ACTIVE / PAST tabs.
-          bucket: this.bookingBucket(bookingStatus, booking.checkin_date, booking.checkout_date, today),
+          bucket: this.bookingBucket(
+            bookingStatus,
+            booking.checkin_date,
+            booking.checkout_date,
+            today,
+          ),
           // Backwards-compat: previous `status` was the access linkage state
           // (always 'APPROVED' since we filter on it). Renamed so FE can
           // tell the two apart if needed.
@@ -241,7 +254,8 @@ export class GuestBookingService {
           last_updated_at: booking.fetched_at,
           total_slots: slots.length,
           kyc_completed_slots: slots.filter(
-            (s) => s.kyc_status === 'PRE_VERIFIED' || s.kyc_status === 'VERIFIED',
+            (s) =>
+              s.kyc_status === 'PRE_VERIFIED' || s.kyc_status === 'VERIFIED',
           ).length,
         };
       }),
@@ -262,7 +276,11 @@ export class GuestBookingService {
     checkout: Date | null,
     today: Date,
   ): 'UPCOMING' | 'ACTIVE' | 'PAST' {
-    if (status === 'CANCELLED' || status === 'NO_SHOW' || status === 'CHECKED_OUT') {
+    if (
+      status === 'CANCELLED' ||
+      status === 'NO_SHOW' ||
+      status === 'CHECKED_OUT'
+    ) {
       return 'PAST';
     }
     if (status === 'CHECKED_IN') {
@@ -298,13 +316,19 @@ export class GuestBookingService {
     }
 
     // ── eZee is source of truth for what room types exist ────────────────
-    let ezeeRooms: { roomId: string; roomName: string; physicalRoomNos: string[] }[] = [];
+    let ezeeRooms: {
+      roomId: string;
+      roomName: string;
+      physicalRoomNos: string[];
+    }[] = [];
     try {
       const catalog = await this.ezee.getPhysicalRooms(propertyId);
       ezeeRooms = catalog.rooms;
       this.logger.debug(`eZee get_rooms: ${catalog.rooms.length} room type(s)`);
     } catch (err) {
-      this.logger.warn(`eZee get_rooms unavailable, falling back to DB: ${(err as Error).message}`);
+      this.logger.warn(
+        `eZee get_rooms unavailable, falling back to DB: ${(err as Error).message}`,
+      );
     }
 
     // ── DB provides enrichment (slugs, amenities, pricing, type) ─────────
@@ -340,7 +364,9 @@ export class GuestBookingService {
 
     if (dbRoomTypes.length > 0) {
       roomTypes = dbRoomTypes.map((rt) => {
-        const ez = rt.ezee_room_type_id ? ezeeByRoomTypeId.get(rt.ezee_room_type_id) : undefined;
+        const ez = rt.ezee_room_type_id
+          ? ezeeByRoomTypeId.get(rt.ezee_room_type_id)
+          : undefined;
         return {
           id: rt.id,
           name: rt.name,
@@ -409,9 +435,17 @@ export class GuestBookingService {
   // Frontend use: date picker confirmed, before payment
   // ═══════════════════════════════════════════════════════════════════════════
 
-  async getRoomAvailability(propertyId: string, checkinDate: string, checkoutDate: string) {
+  async getRoomAvailability(
+    propertyId: string,
+    checkinDate: string,
+    checkoutDate: string,
+  ) {
     // Check cache first
-    const cacheKey = CacheService.roomAvailabilityKey(propertyId, checkinDate, checkoutDate);
+    const cacheKey = CacheService.roomAvailabilityKey(
+      propertyId,
+      checkinDate,
+      checkoutDate,
+    );
     const cached = await this.cache.get<any>(cacheKey);
     if (cached) {
       this.logger.debug(`Room availability cache hit: ${cacheKey}`);
@@ -476,18 +510,31 @@ export class GuestBookingService {
     };
 
     // ── eZee: live rates and availability — source of truth ───────────────
-    let ezeeInventory: { roomTypeId: string; roomTypeName: string; availability: number; ratePerNight: number; ratePlanId: string; rateTypeId: string }[] = [];
+    let ezeeInventory: {
+      roomTypeId: string;
+      roomTypeName: string;
+      availability: number;
+      ratePerNight: number;
+      ratePlanId: string;
+      rateTypeId: string;
+    }[] = [];
     let availabilitySource: 'ezee_live' | 'local_db_estimate' = 'ezee_live';
 
     try {
-      const inventory = await this.ezee.getRoomInventory(propertyId, checkinDate, checkoutDate);
+      const inventory = await this.ezee.getRoomInventory(
+        propertyId,
+        checkinDate,
+        checkoutDate,
+      );
       ezeeInventory = inventory.rooms;
       this.logger.debug(
         `eZee RoomList: ${inventory.rooms.length} type(s) for ${checkinDate}→${checkoutDate}`,
       );
     } catch (err) {
       availabilitySource = 'local_db_estimate';
-      this.logger.warn(`eZee unavailable, falling back to DB estimate: ${(err as Error).message}`);
+      this.logger.warn(
+        `eZee unavailable, falling back to DB estimate: ${(err as Error).message}`,
+      );
     }
 
     let resultRoomTypes: any[];
@@ -498,7 +545,8 @@ export class GuestBookingService {
         const db = resolveDbRow(room.roomTypeId, room.ratePlanId);
         const available = room.availability;
         // || not ?? — eZee returns 0 for unconfigured rate plans, fall back to DB price
-        const ratePerNight = room.ratePerNight || (db ? Number(db.base_price_per_night) : 0);
+        const ratePerNight =
+          room.ratePerNight || (db ? Number(db.base_price_per_night) : 0);
         const nameLower = room.roomTypeName.toLowerCase();
 
         return {
@@ -507,7 +555,12 @@ export class GuestBookingService {
           slug: db?.slug ?? nameLower.replace(/\s+/g, '-'),
           type: db?.type ?? (nameLower.includes('dorm') ? 'DORM' : 'PRIVATE'),
           available_beds: available,
-          inventory_state: available <= 0 ? 'sold_out' : available <= 2 ? 'limited' : 'available',
+          inventory_state:
+            available <= 0
+              ? 'sold_out'
+              : available <= 2
+                ? 'limited'
+                : 'available',
           base_price_per_night: ratePerNight,
           total_price: ratePerNight * noOfNights,
           amenities: (db?.amenities as string[]) ?? [],
@@ -528,12 +581,26 @@ export class GuestBookingService {
       });
     } else if (dbRoomTypes.length > 0) {
       // ── eZee unavailable — DB-estimated availability ─────────────────────
-      const { checkin, checkout } = this.parseDateRange(checkinDate, checkoutDate);
-      const bookedMap = await this.getBookedBedsMap(propertyId, checkin, checkout, dbRoomTypes);
+      const { checkin, checkout } = this.parseDateRange(
+        checkinDate,
+        checkoutDate,
+      );
+      const bookedMap = await this.getBookedBedsMap(
+        propertyId,
+        checkin,
+        checkout,
+        dbRoomTypes,
+      );
       resultRoomTypes = dbRoomTypes
-        .sort((a, b) => Number(a.base_price_per_night) - Number(b.base_price_per_night))
+        .sort(
+          (a, b) =>
+            Number(a.base_price_per_night) - Number(b.base_price_per_night),
+        )
         .map((rt) => {
-          const available = Math.max(0, rt.total_beds - (bookedMap.get(rt.id) ?? 0));
+          const available = Math.max(
+            0,
+            rt.total_beds - (bookedMap.get(rt.id) ?? 0),
+          );
           const ratePerNight = Number(rt.base_price_per_night);
           return {
             id: rt.id,
@@ -541,7 +608,12 @@ export class GuestBookingService {
             slug: rt.slug,
             type: rt.type,
             available_beds: available,
-            inventory_state: available <= 0 ? 'sold_out' : available <= 2 ? 'limited' : 'available',
+            inventory_state:
+              available <= 0
+                ? 'sold_out'
+                : available <= 2
+                  ? 'limited'
+                  : 'available',
             base_price_per_night: ratePerNight,
             total_price: ratePerNight * noOfNights,
             amenities: (rt.amenities as string[]) ?? [],
@@ -578,29 +650,46 @@ export class GuestBookingService {
   // ═══════════════════════════════════════════════════════════════════════════
 
   async createBookingOrder(guestId: string, dto: CreateBookingOrderDto) {
-    const { checkin, checkout, noOfNights } = this.parseDateRange(dto.checkin_date, dto.checkout_date);
+    const { checkin, checkout, noOfNights } = this.parseDateRange(
+      dto.checkin_date,
+      dto.checkout_date,
+    );
 
     if (!dto.rooms || dto.rooms.length === 0) {
       throw new BadRequestException('At least one room selection is required');
     }
 
-    const property = await this.prisma.properties.findUnique({ where: { id: dto.property_id } });
+    const property = await this.prisma.properties.findUnique({
+      where: { id: dto.property_id },
+    });
     if (!property) throw new NotFoundException('Property not found');
 
     // Invalidate cache so we get fresh availability before booking
-    const cacheKey = CacheService.roomAvailabilityKey(dto.property_id, dto.checkin_date, dto.checkout_date);
+    const cacheKey = CacheService.roomAvailabilityKey(
+      dto.property_id,
+      dto.checkin_date,
+      dto.checkout_date,
+    );
     await this.cache.del(cacheKey);
 
     // Validate rooms (will fetch fresh data from eZee + DB)
-    const availability = await this.getRoomAvailability(dto.property_id, dto.checkin_date, dto.checkout_date);
+    const availability = await this.getRoomAvailability(
+      dto.property_id,
+      dto.checkin_date,
+      dto.checkout_date,
+    );
     const { validatedRooms, roomTotal, totalGuests, adults, children } =
       this.validateRoomSelections(
-        dto.rooms, availability.room_types, noOfNights, dto.occupancy,
+        dto.rooms,
+        availability.room_types,
+        noOfNights,
+        dto.occupancy,
       );
 
     // Validate addons
     const { validatedAddons, addonTotal } = await this.validateAddonSelections(
-      dto.addons ?? [], dto.property_id,
+      dto.addons ?? [],
+      dto.property_id,
     );
 
     const subtotal = roomTotal + addonTotal;
@@ -623,11 +712,16 @@ export class GuestBookingService {
 
     // Snapshot the property's tax rate at order-creation time so the booking
     // total stays stable even if ops edits the rate later (see TaxService).
-    const taxBreakdown = this.tax.applyRate(preTaxTotal, Number(property.tax_rate_pct));
+    const taxBreakdown = this.tax.applyRate(
+      preTaxTotal,
+      Number(property.tax_rate_pct),
+    );
     const grandTotal = taxBreakdown.total_with_tax;
 
     const eri = this.generateERI(property.id);
-    const roomTypeSummary = validatedRooms.map((r) => `${r.roomType.name} x${r.quantity}`).join(', ');
+    const roomTypeSummary = validatedRooms
+      .map((r) => `${r.roomType.name} x${r.quantity}`)
+      .join(', ');
 
     // payment_token authenticates the subsequent /payment/* calls when the
     // booker has no guest JWT (anonymous BUTEAK flow). Always generated —
@@ -637,7 +731,8 @@ export class GuestBookingService {
 
     // Source string mirrors the brand; anonymous + logged-in bookings funnel
     // through the same path so this is the only place we set it.
-    const sourceLabel = property.brand === 'BUTEAK' ? 'Buteak' : 'The Daily Social';
+    const sourceLabel =
+      property.brand === 'BUTEAK' ? 'Buteak' : 'The Daily Social';
 
     // Persist everything in a transaction
     const result = await this.prisma.$transaction(async (tx) => {
@@ -751,7 +846,9 @@ export class GuestBookingService {
     // Invalidate cache after booking so next caller gets fresh availability
     await this.cache.del(cacheKey);
 
-    this.logger.log(`Booking order: ERI=${eri}, rooms=${roomTypeSummary}, total=₹${grandTotal}, occupancy=${adults}A/${children}C`);
+    this.logger.log(
+      `Booking order: ERI=${eri}, rooms=${roomTypeSummary}, total=₹${grandTotal}, occupancy=${adults}A/${children}C`,
+    );
 
     // Derive per-room split for the response so the FE can echo what backend
     // actually accepted. Expand `rooms[].quantity` into a flat list of booked
@@ -769,8 +866,14 @@ export class GuestBookingService {
     // Capacity-aware split so a mixed booking (e.g. one 2BHK + one 1BHK) never
     // lands more guests in a unit than its physical cap. Same algorithm the
     // eZee sync worker runs off the persisted caps, so response and folio agree.
-    const adultsAlloc = this.distributeCapped(adults, flatUnits.map((u) => u.max_adults));
-    const childrenAlloc = this.distributeCapped(children, flatUnits.map((u) => u.max_children));
+    const adultsAlloc = this.distributeCapped(
+      adults,
+      flatUnits.map((u) => u.max_adults),
+    );
+    const childrenAlloc = this.distributeCapped(
+      children,
+      flatUnits.map((u) => u.max_children),
+    );
     const roomOccupancy = flatUnits.map((u, i) => ({
       room_type_id: u.room_type_id,
       room_type_name: u.room_type_name,
@@ -882,14 +985,24 @@ export class GuestBookingService {
    * to render a live "you saved ₹X" badge as the guest fills the checkout form.
    */
   async previewCoupons(guestId: string, dto: PreviewCouponDto) {
-    const { noOfNights } = this.parseDateRange(dto.checkin_date, dto.checkout_date);
+    const { noOfNights } = this.parseDateRange(
+      dto.checkin_date,
+      dto.checkout_date,
+    );
     const availability = await this.getRoomAvailability(
       dto.property_id,
       dto.checkin_date,
       dto.checkout_date,
     );
-    const { roomTotal } = this.validateRoomSelections(dto.rooms, availability.room_types, noOfNights);
-    const { addonTotal } = await this.validateAddonSelections(dto.addons ?? [], dto.property_id);
+    const { roomTotal } = this.validateRoomSelections(
+      dto.rooms,
+      availability.room_types,
+      noOfNights,
+    );
+    const { addonTotal } = await this.validateAddonSelections(
+      dto.addons ?? [],
+      dto.property_id,
+    );
     const subtotal = roomTotal + addonTotal;
 
     const result = await this.coupons.findApplicableForBooking({
@@ -905,7 +1018,10 @@ export class GuestBookingService {
     const discountCode = result.code?.discount ?? 0;
     const discountTotal = Math.min(subtotal, discountAuto + discountCode);
     const preTaxTotal = Math.max(0, subtotal - discountTotal);
-    const taxBreakdown = await this.tax.computeTax(dto.property_id, preTaxTotal);
+    const taxBreakdown = await this.tax.computeTax(
+      dto.property_id,
+      preTaxTotal,
+    );
 
     return {
       property_id: dto.property_id,
@@ -953,12 +1069,24 @@ export class GuestBookingService {
 
   private buildCouponsAppliedPayload(result: {
     auto: {
-      coupon: { id: string; code: string | null; name: string | null; description: string | null; type: string };
+      coupon: {
+        id: string;
+        code: string | null;
+        name: string | null;
+        description: string | null;
+        type: string;
+      };
       discount: number;
       label: string;
     } | null;
     code: {
-      coupon: { id: string; code: string | null; name: string | null; description: string | null; type: string };
+      coupon: {
+        id: string;
+        code: string | null;
+        name: string | null;
+        description: string | null;
+        type: string;
+      };
       discount: number;
       label: string;
     } | null;
@@ -978,7 +1106,13 @@ export class GuestBookingService {
     const toEntry = (
       kind: 'AUTO' | 'CODE',
       r: {
-        coupon: { id: string; code: string | null; name: string | null; description: string | null; type: string };
+        coupon: {
+          id: string;
+          code: string | null;
+          name: string | null;
+          description: string | null;
+          type: string;
+        };
         discount: number;
         label: string;
       },
@@ -1010,9 +1144,15 @@ export class GuestBookingService {
 
     await this.prisma.$transaction(async (tx) => {
       await this.releaseAddonInventory(tx, eri, booking.property_id);
-      await tx.kyc_submissions.deleteMany({ where: { ezee_reservation_id: eri } });
-      await tx.booking_slots.deleteMany({ where: { ezee_reservation_id: eri } });
-      await tx.booking_guest_access.deleteMany({ where: { ezee_reservation_id: eri } });
+      await tx.kyc_submissions.deleteMany({
+        where: { ezee_reservation_id: eri },
+      });
+      await tx.booking_slots.deleteMany({
+        where: { ezee_reservation_id: eri },
+      });
+      await tx.booking_guest_access.deleteMany({
+        where: { ezee_reservation_id: eri },
+      });
       await tx.ezee_booking_cache.update({
         where: { ezee_reservation_id: eri },
         data: { status: 'CANCELLED', is_active: false },
@@ -1081,7 +1221,9 @@ export class GuestBookingService {
   async flushRoomCache(propertyId: string): Promise<{ flushed: string[] }> {
     const keys = [CacheService.roomCatalogKey(propertyId)];
     await Promise.all(keys.map((k) => this.cache.del(k)));
-    this.logger.log(`Admin flushed room cache for property ${propertyId}: ${keys.join(', ')}`);
+    this.logger.log(
+      `Admin flushed room cache for property ${propertyId}: ${keys.join(', ')}`,
+    );
     return { flushed: keys };
   }
 
@@ -1108,7 +1250,9 @@ export class GuestBookingService {
   // ─── Booked beds map ──────────────────────────────────────────────────────
 
   private async getBookedBedsMap(
-    propertyId: string, checkin: Date, checkout: Date,
+    propertyId: string,
+    checkin: Date,
+    checkout: Date,
     roomTypes: { id: string; name: string }[],
   ) {
     const overlapping = await this.prisma.ezee_booking_cache.findMany({
@@ -1123,15 +1267,23 @@ export class GuestBookingService {
 
     const map = new Map<string, number>();
     for (const b of overlapping) {
-      if (Array.isArray(b.booking_rooms_json) && (b.booking_rooms_json as any[]).length > 0) {
+      if (
+        Array.isArray(b.booking_rooms_json) &&
+        (b.booking_rooms_json as any[]).length > 0
+      ) {
         for (const item of b.booking_rooms_json as any[]) {
           if (item?.room_type_id) {
-            map.set(item.room_type_id, (map.get(item.room_type_id) ?? 0) + (item.quantity ?? 1));
+            map.set(
+              item.room_type_id,
+              (map.get(item.room_type_id) ?? 0) + (item.quantity ?? 1),
+            );
           }
         }
       } else {
         const rt = roomTypes.find(
-          (r) => r.name === b.room_type_name || (b.room_type_name && b.room_type_name.startsWith(r.name)),
+          (r) =>
+            r.name === b.room_type_name ||
+            (b.room_type_name && b.room_type_name.startsWith(r.name)),
         );
         if (rt) {
           map.set(rt.id, (map.get(rt.id) ?? 0) + (b.no_of_guests ?? 1));
@@ -1175,7 +1327,9 @@ export class GuestBookingService {
         data: { guest_id: guestId },
       });
       unassigned.guest_id = guestId;
-      this.logger.log(`Assigned guest ${guestId} to slot ${unassigned.slot_number}`);
+      this.logger.log(
+        `Assigned guest ${guestId} to slot ${unassigned.slot_number}`,
+      );
     }
 
     return slots;
@@ -1183,7 +1337,9 @@ export class GuestBookingService {
 
   private async createBookingSlots(
     tx: Parameters<Parameters<PrismaService['$transaction']>[0]>[0],
-    eri: string, totalGuests: number, primaryGuestId: string,
+    eri: string,
+    totalGuests: number,
+    primaryGuestId: string,
   ) {
     for (let i = 1; i <= totalGuests; i++) {
       await tx.booking_slots.create({
@@ -1202,14 +1358,29 @@ export class GuestBookingService {
   // ─── Room validation ──────────────────────────────────────────────────────
 
   private validateRoomSelections(
-    selections: { room_type_id: string; quantity: number; guests?: { first_name: string; last_name: string; gender?: string }[] }[],
-    availableRooms: { id: string; name: string; available_beds: number; base_price_per_night: number; ezee_room_type_id: string | null; ezee_rate_plan_id: string | null; ezee_rate_type_id: string | null; occupancy_limits?: OccupancyLimits }[],
+    selections: {
+      room_type_id: string;
+      quantity: number;
+      guests?: { first_name: string; last_name: string; gender?: string }[];
+    }[],
+    availableRooms: {
+      id: string;
+      name: string;
+      available_beds: number;
+      base_price_per_night: number;
+      ezee_room_type_id: string | null;
+      ezee_rate_plan_id: string | null;
+      ezee_rate_type_id: string | null;
+      occupancy_limits?: OccupancyLimits;
+    }[],
     noOfNights: number,
     occupancy?: { adults: number; children: number },
   ) {
     const totalRequested = selections.reduce((sum, s) => sum + s.quantity, 0);
     if (totalRequested > 6) {
-      throw new BadRequestException('Cannot book more than 6 units in a single order');
+      throw new BadRequestException(
+        'Cannot book more than 6 units in a single order',
+      );
     }
 
     let roomTotal = 0;
@@ -1222,7 +1393,10 @@ export class GuestBookingService {
 
     for (const sel of selections) {
       const rt = availableRooms.find((r) => r.id === sel.room_type_id);
-      if (!rt) throw new NotFoundException(`Room type "${sel.room_type_id}" not found`);
+      if (!rt)
+        throw new NotFoundException(
+          `Room type "${sel.room_type_id}" not found`,
+        );
 
       if (sel.quantity > rt.available_beds) {
         throw new BadRequestException(
@@ -1326,7 +1500,10 @@ export class GuestBookingService {
     }
     const allocAdults = this.spread(adults, numRooms);
     const allocChildren = this.spread(children, numRooms);
-    return allocAdults.map((a, i) => ({ adults: a, children: allocChildren[i] }));
+    return allocAdults.map((a, i) => ({
+      adults: a,
+      children: allocChildren[i],
+    }));
   }
 
   /**
@@ -1349,12 +1526,14 @@ export class GuestBookingService {
    * `max_adults`/`max_children` resolve to the same 6-per-unit ceiling the old
    * `× 6` cap enforced.
    */
-  private resolveOccupancyLimits(row?: {
-    base_adults?: number | null;
-    base_children?: number | null;
-    max_adults?: number | null;
-    max_children?: number | null;
-  } | null): OccupancyLimits {
+  private resolveOccupancyLimits(
+    row?: {
+      base_adults?: number | null;
+      base_children?: number | null;
+      max_adults?: number | null;
+      max_children?: number | null;
+    } | null,
+  ): OccupancyLimits {
     return {
       base_adults: row?.base_adults ?? 1,
       base_children: row?.base_children ?? 0,
@@ -1409,15 +1588,24 @@ export class GuestBookingService {
 
     for (const addon of addons) {
       const product = await this.prisma.product_catalog.findFirst({
-        where: { id: addon.product_id, property_id: propertyId, is_active: true },
+        where: {
+          id: addon.product_id,
+          property_id: propertyId,
+          is_active: true,
+        },
       });
 
-      if (!product) throw new NotFoundException(`Product "${addon.product_id}" not found`);
+      if (!product)
+        throw new NotFoundException(`Product "${addon.product_id}" not found`);
       if (product.category === 'BORROWABLE') {
-        throw new BadRequestException('Borrowable items cannot be added to booking cart');
+        throw new BadRequestException(
+          'Borrowable items cannot be added to booking cart',
+        );
       }
       if (Number(product.base_price) === 0) {
-        throw new BadRequestException(`"${product.name}" is a free service — no need to add to cart`);
+        throw new BadRequestException(
+          `"${product.name}" is a free service — no need to add to cart`,
+        );
       }
 
       // RETURNABLE items: no stock reservation at booking (allocated at check-in)
@@ -1436,7 +1624,12 @@ export class GuestBookingService {
       const lineTotal = Number(product.base_price) * addon.quantity;
       addonTotal += lineTotal;
       validatedAddons.push({
-        product: { id: product.id, name: product.name, category: product.category, base_price: Number(product.base_price) },
+        product: {
+          id: product.id,
+          name: product.name,
+          category: product.category,
+          base_price: Number(product.base_price),
+        },
         quantity: addon.quantity,
         lineTotal,
       });
@@ -1449,7 +1642,8 @@ export class GuestBookingService {
 
   private async reserveAddonInventory(
     tx: Parameters<Parameters<PrismaService['$transaction']>[0]>[0],
-    addons: ValidatedAddon[], propertyId: string,
+    addons: ValidatedAddon[],
+    propertyId: string,
   ) {
     for (const addon of addons) {
       if (addon.product.category === 'COMMODITY') {
@@ -1466,7 +1660,8 @@ export class GuestBookingService {
 
   private async releaseAddonInventory(
     tx: Parameters<Parameters<PrismaService['$transaction']>[0]>[0],
-    eri: string, propertyId: string,
+    eri: string,
+    propertyId: string,
   ) {
     const addonOrder = await tx.addon_orders.findFirst({
       where: { ezee_reservation_id: eri, status: 'PENDING' },
@@ -1487,13 +1682,16 @@ export class GuestBookingService {
       }
     }
 
-    await tx.addon_order_items.deleteMany({ where: { addon_order_id: addonOrder.id } });
+    await tx.addon_order_items.deleteMany({
+      where: { addon_order_id: addonOrder.id },
+    });
     await tx.addon_orders.delete({ where: { id: addonOrder.id } });
   }
 
   private async finalizeAddonInventory(
     tx: Parameters<Parameters<PrismaService['$transaction']>[0]>[0],
-    eri: string, propertyId: string,
+    eri: string,
+    propertyId: string,
   ) {
     const addonOrder = await tx.addon_orders.findFirst({
       where: { ezee_reservation_id: eri, status: 'PENDING' },
@@ -1561,7 +1759,11 @@ export class GuestBookingService {
     }
 
     const access = await this.prisma.booking_guest_access.findFirst({
-      where: { ezee_reservation_id: bookingId, guest_id: guestId, status: 'APPROVED' },
+      where: {
+        ezee_reservation_id: bookingId,
+        guest_id: guestId,
+        status: 'APPROVED',
+      },
     });
 
     if (!access) {

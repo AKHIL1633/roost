@@ -27,7 +27,9 @@ export class CreateCouponDto {
   @ValidateIf((o) => o.type === 'ONE_TIME_CODE')
   @IsString()
   @MaxLength(50)
-  @Matches(/^[A-Z0-9_-]+$/, { message: 'code must be uppercase alphanumeric (- and _ allowed)' })
+  @Matches(/^[A-Z0-9_-]+$/, {
+    message: 'code must be uppercase alphanumeric (- and _ allowed)',
+  })
   code?: string;
 
   /**
@@ -97,7 +99,10 @@ export class CreateCouponDto {
   @IsArray()
   @ArrayMinSize(1)
   @IsString({ each: true })
-  @Matches(/^[0-9]+$/, { each: true, message: 'property_ids entries must be numeric eZee hotel codes' })
+  @Matches(/^[0-9]+$/, {
+    each: true,
+    message: 'property_ids entries must be numeric eZee hotel codes',
+  })
   property_ids?: string[];
 
   @IsOptional()

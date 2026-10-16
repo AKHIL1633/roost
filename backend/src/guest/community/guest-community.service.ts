@@ -123,24 +123,32 @@ export class GuestCommunityService {
   async toggleLike(guest: GuestJwtPayload, eri: string, postId: string) {
     const propertyId = await this.resolveProperty(guest.guest_id, eri);
 
-    const post = await this.prisma.community_posts.findUnique({ where: { id: postId } });
+    const post = await this.prisma.community_posts.findUnique({
+      where: { id: postId },
+    });
     if (!post || post.property_id !== propertyId) {
       throw new NotFoundException('Post not found');
     }
 
     const existing = await this.prisma.community_post_likes.findUnique({
-      where: { uq_community_post_like: { post_id: postId, guest_id: guest.guest_id } },
+      where: {
+        uq_community_post_like: { post_id: postId, guest_id: guest.guest_id },
+      },
     });
 
     if (existing) {
-      await this.prisma.community_post_likes.delete({ where: { id: existing.id } });
+      await this.prisma.community_post_likes.delete({
+        where: { id: existing.id },
+      });
     } else {
       await this.prisma.community_post_likes.create({
         data: { id: uuidv4(), post_id: postId, guest_id: guest.guest_id },
       });
     }
 
-    const like_count = await this.prisma.community_post_likes.count({ where: { post_id: postId } });
+    const like_count = await this.prisma.community_post_likes.count({
+      where: { post_id: postId },
+    });
 
     return { liked_by_me: !existing, like_count };
   }
@@ -150,7 +158,9 @@ export class GuestCommunityService {
   async deletePost(guest: GuestJwtPayload, eri: string, postId: string) {
     const propertyId = await this.resolveProperty(guest.guest_id, eri);
 
-    const post = await this.prisma.community_posts.findUnique({ where: { id: postId } });
+    const post = await this.prisma.community_posts.findUnique({
+      where: { id: postId },
+    });
     if (!post || post.property_id !== propertyId) {
       throw new NotFoundException('Post not found');
     }

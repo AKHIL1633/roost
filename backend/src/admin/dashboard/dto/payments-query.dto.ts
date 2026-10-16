@@ -22,7 +22,9 @@ export class ListPaymentsQueryDto extends DashboardQueryDto {
 
   @IsOptional()
   @Transform(({ value }) =>
-    value === undefined || value === null || value === '' ? undefined : parseInt(value, 10),
+    value === undefined || value === null || value === ''
+      ? undefined
+      : parseInt(value, 10),
   )
   @IsInt()
   @Min(1)
@@ -30,7 +32,9 @@ export class ListPaymentsQueryDto extends DashboardQueryDto {
 
   @IsOptional()
   @Transform(({ value }) =>
-    value === undefined || value === null || value === '' ? undefined : parseInt(value, 10),
+    value === undefined || value === null || value === ''
+      ? undefined
+      : parseInt(value, 10),
   )
   @IsInt()
   @Min(1)
@@ -42,7 +46,9 @@ export class ListPaymentsQueryDto extends DashboardQueryDto {
 export class CouponsWidgetQueryDto extends DashboardQueryDto {
   @IsOptional()
   @Transform(({ value }) =>
-    value === undefined || value === null || value === '' ? undefined : parseInt(value, 10),
+    value === undefined || value === null || value === ''
+      ? undefined
+      : parseInt(value, 10),
   )
   @IsInt()
   @Min(1)

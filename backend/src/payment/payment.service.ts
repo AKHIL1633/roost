@@ -49,7 +49,11 @@ export class PaymentService {
     },
   ): Promise<number> {
     let roomTotal = 0;
-    if (booking.checkin_date && booking.checkout_date && Array.isArray(booking.booking_rooms_json)) {
+    if (
+      booking.checkin_date &&
+      booking.checkout_date &&
+      Array.isArray(booking.booking_rooms_json)
+    ) {
       const nights = Math.max(
         1,
         Math.round(
@@ -57,7 +61,7 @@ export class PaymentService {
             (1000 * 60 * 60 * 24),
         ),
       );
-      for (const r of booking.booking_rooms_json as any[]) {
+      for (const r of booking.booking_rooms_json) {
         const price = Number(r?.price_per_night ?? 0);
         const qty = Number(r?.quantity ?? 0);
         roomTotal += price * qty * nights;
@@ -140,7 +144,10 @@ export class PaymentService {
     for (const item of cart.addon_order_items) {
       if (item.product_catalog.category === 'COMMODITY') {
         const inv = await this.prisma.inventory.findFirst({
-          where: { product_id: item.product_id, property_id: booking.property_id },
+          where: {
+            product_id: item.product_id,
+            property_id: booking.property_id,
+          },
         });
         if (!inv || inv.available_stock < item.quantity) {
           throw new BadRequestException(
@@ -161,7 +168,10 @@ export class PaymentService {
     const propertyName = property?.name ?? `Property ${booking.property_id}`;
     const brand = property?.brand ?? 'TDS';
     const paymentMode = this.razorpay.modeForBrand(brand);
-    const itemCount = cart.addon_order_items.reduce((n, i) => n + i.quantity, 0);
+    const itemCount = cart.addon_order_items.reduce(
+      (n, i) => n + i.quantity,
+      0,
+    );
 
     // Create Razorpay order (amount in paise) on the brand's Razorpay account.
     const rzpOrder = await this.razorpay.forBrand(brand).orders.create({
@@ -283,7 +293,10 @@ export class PaymentService {
     // Prevents the FE from passing an arbitrarily small `grandTotal` to bypass
     // coupons or invent discounts. (Pre-coupon-feature behavior trusted FE
     // implicitly; this is the fix for that.)
-    const serverTotal = await this.computeServerAuthoritativeTotal(eri, booking);
+    const serverTotal = await this.computeServerAuthoritativeTotal(
+      eri,
+      booking,
+    );
     if (Math.abs(serverTotal - grandTotal) > 1) {
       this.logger.error(
         `Total mismatch for ${eri}: server=${serverTotal} fe=${grandTotal} discount=${booking.discount_total}`,
@@ -300,13 +313,13 @@ export class PaymentService {
         ? Math.max(
             1,
             Math.round(
-              (booking.checkout_date.getTime() - booking.checkin_date.getTime()) /
+              (booking.checkout_date.getTime() -
+                booking.checkin_date.getTime()) /
                 (1000 * 60 * 60 * 24),
             ),
           )
         : 1;
-    const purposeLabel =
-      `Booking — ${booking.room_type_name ?? 'room'} × ${booking.no_of_guests ?? 1}, ${nights} night${nights === 1 ? '' : 's'}`;
+    const purposeLabel = `Booking — ${booking.room_type_name ?? 'room'} × ${booking.no_of_guests ?? 1}, ${nights} night${nights === 1 ? '' : 's'}`;
 
     // Build coupon-aware Razorpay notes. Razorpay's notes panel surfaces these
     // in the dashboard, so ops can filter captured payments by coupon code.
@@ -316,7 +329,8 @@ export class PaymentService {
     const discountAmount = Number(booking.discount_total);
     const taxRatePct = Number(booking.tax_rate_pct ?? 0);
     const taxAmount = Number(booking.tax_total ?? 0);
-    const preTaxTotal = Math.round((authoritativeTotal - taxAmount) * 100) / 100;
+    const preTaxTotal =
+      Math.round((authoritativeTotal - taxAmount) * 100) / 100;
     // Brand drives which Razorpay account this booking is charged against.
     const brand = booking.properties?.brand ?? 'TDS';
     const paymentMode = this.razorpay.modeForBrand(brand);
@@ -328,7 +342,8 @@ export class PaymentService {
       receipt: eri,
       notes: {
         property_id: booking.property_id,
-        property_name: booking.properties?.name ?? `Property ${booking.property_id}`,
+        property_name:
+          booking.properties?.name ?? `Property ${booking.property_id}`,
         brand,
         payment_mode: paymentMode,
         purpose: 'booking',
@@ -449,7 +464,11 @@ export class PaymentService {
       // attaching a guest.
       throw new BadRequestException('Booking is missing a guest record');
     }
-    return { guest_id: cache.guest_id, brand: cache.properties.brand, property_id: cache.property_id };
+    return {
+      guest_id: cache.guest_id,
+      brand: cache.properties.brand,
+      property_id: cache.property_id,
+    };
   }
 
   async createBookingPaymentAnonymous(
@@ -458,7 +477,10 @@ export class PaymentService {
     paymentToken: string,
     addonOrderId: string | null,
   ) {
-    const { guest_id, brand } = await this.validatePaymentTokenForBooking(eri, paymentToken);
+    const { guest_id, brand } = await this.validatePaymentTokenForBooking(
+      eri,
+      paymentToken,
+    );
     const guest = await this.prisma.guests.findUnique({
       where: { id: guest_id },
       select: { id: true, email: true },
@@ -485,7 +507,10 @@ export class PaymentService {
     razorpay_signature: string,
     paymentToken: string,
   ) {
-    const { guest_id, brand } = await this.validatePaymentTokenForBooking(eri, paymentToken);
+    const { guest_id, brand } = await this.validatePaymentTokenForBooking(
+      eri,
+      paymentToken,
+    );
 
     // Razorpay signature must verify under the brand's secret. Reuse the same
     // logic as verifyPayment (find payment, check sig, fulfil) but skip the
@@ -503,11 +528,16 @@ export class PaymentService {
       // happen, but refuse rather than fulfil under the wrong identity.
       throw new ForbiddenException('Booking / payment guest mismatch');
     }
-    const expectedSig = createHmac('sha256', this.razorpay.apiSecretForBrand(brand as any))
+    const expectedSig = createHmac(
+      'sha256',
+      this.razorpay.apiSecretForBrand(brand as any),
+    )
       .update(`${razorpay_order_id}|${razorpay_payment_id}`)
       .digest('hex');
     if (expectedSig !== razorpay_signature) {
-      this.logger.warn(`Invalid anonymous payment signature for order ${razorpay_order_id} (brand=${brand})`);
+      this.logger.warn(
+        `Invalid anonymous payment signature for order ${razorpay_order_id} (brand=${brand})`,
+      );
       throw new BadRequestException('Invalid payment signature');
     }
     if (payment.status === 'CAPTURED') {
@@ -549,12 +579,17 @@ export class PaymentService {
         })
       : null;
     const brand = property?.brand ?? 'TDS';
-    const expectedSig = createHmac('sha256', this.razorpay.apiSecretForBrand(brand))
+    const expectedSig = createHmac(
+      'sha256',
+      this.razorpay.apiSecretForBrand(brand),
+    )
       .update(`${razorpay_order_id}|${razorpay_payment_id}`)
       .digest('hex');
 
     if (expectedSig !== razorpay_signature) {
-      this.logger.warn(`Invalid payment signature for order ${razorpay_order_id} (brand=${brand})`);
+      this.logger.warn(
+        `Invalid payment signature for order ${razorpay_order_id} (brand=${brand})`,
+      );
       throw new BadRequestException('Invalid payment signature');
     }
 
@@ -590,10 +625,13 @@ export class PaymentService {
     }
     const signed = secrets.some(
       (secret) =>
-        createHmac('sha256', secret).update(rawBody).digest('hex') === signature,
+        createHmac('sha256', secret).update(rawBody).digest('hex') ===
+        signature,
     );
     if (!signed) {
-      this.logger.warn('Razorpay webhook signature did not match any configured brand secret');
+      this.logger.warn(
+        'Razorpay webhook signature did not match any configured brand secret',
+      );
       throw new BadRequestException('Invalid webhook signature');
     }
 
@@ -620,7 +658,9 @@ export class PaymentService {
         });
 
         if (!payment) {
-          this.logger.warn(`No payment record for razorpay order ${rzpOrderId}`);
+          this.logger.warn(
+            `No payment record for razorpay order ${rzpOrderId}`,
+          );
           return { status: 'ignored', reason: 'payment not found' };
         }
 
@@ -642,7 +682,11 @@ export class PaymentService {
           this.logger.warn('payment_link.paid missing reference_id');
           return { status: 'ignored', reason: 'missing reference_id' };
         }
-        return this.fulfilWhatsappService(referenceId, rzpOrderId, rzpPaymentId);
+        return this.fulfilWhatsappService(
+          referenceId,
+          rzpOrderId,
+          rzpPaymentId,
+        );
       }
 
       case 'payment_link.cancelled':
@@ -679,7 +723,9 @@ export class PaymentService {
    */
   async devSimulateCapture(razorpay_order_id: string) {
     if (process.env.NODE_ENV !== 'development') {
-      throw new BadRequestException('Dev simulate only available in development');
+      throw new BadRequestException(
+        'Dev simulate only available in development',
+      );
     }
 
     const payment = await this.prisma.payments.findUnique({
@@ -712,11 +758,17 @@ export class PaymentService {
     if (!payment) throw new NotFoundException('Payment record not found');
 
     if (payment.status === 'CAPTURED') {
-      return { message: 'Payment already captured — cannot mark as failed', payment_id: payment.id };
+      return {
+        message: 'Payment already captured — cannot mark as failed',
+        payment_id: payment.id,
+      };
     }
 
     if (payment.status === 'FAILED') {
-      return { message: 'Payment already marked as failed', payment_id: payment.id };
+      return {
+        message: 'Payment already marked as failed',
+        payment_id: payment.id,
+      };
     }
 
     // Mark payment as FAILED
@@ -741,9 +793,12 @@ export class PaymentService {
           eri: payment.ezee_reservation_id,
         },
       });
-      this.logger.log(`Booking payment ${payment.id} failed — pending booking ${payment.ezee_reservation_id} rolled back`);
+      this.logger.log(
+        `Booking payment ${payment.id} failed — pending booking ${payment.ezee_reservation_id} rolled back`,
+      );
       return {
-        message: 'Booking payment failed. Pending booking rolled back. You can try again.',
+        message:
+          'Booking payment failed. Pending booking rolled back. You can try again.',
         payment_id: payment.id,
         razorpay_order_id,
       };
@@ -768,7 +823,9 @@ export class PaymentService {
       },
     });
 
-    this.logger.log(`Payment ${payment.id} (${razorpay_order_id}) marked FAILED, order unlinked for retry`);
+    this.logger.log(
+      `Payment ${payment.id} (${razorpay_order_id}) marked FAILED, order unlinked for retry`,
+    );
 
     return {
       message: 'Payment failed. Cart is available for retry.',
@@ -782,7 +839,9 @@ export class PaymentService {
    */
   async devSimulateFail(razorpay_order_id: string) {
     if (process.env.NODE_ENV !== 'development') {
-      throw new BadRequestException('Dev simulate only available in development');
+      throw new BadRequestException(
+        'Dev simulate only available in development',
+      );
     }
     return this.handlePaymentFailure(razorpay_order_id);
   }
@@ -815,13 +874,16 @@ export class PaymentService {
 
     // ─── BOOKING PAYMENT (rooms + addons) ───
     if (payment.purpose === 'booking') {
-      return this.fulfilBookingOrder({
-        id: payment.id,
-        ezee_reservation_id: payment.ezee_reservation_id,
-        guest_id: payment.guest_id ?? '',
-        razorpay_order_id: payment.razorpay_order_id ?? '',
-        amount: payment.amount,
-      }, razorpayPaymentId);
+      return this.fulfilBookingOrder(
+        {
+          id: payment.id,
+          ezee_reservation_id: payment.ezee_reservation_id,
+          guest_id: payment.guest_id ?? '',
+          razorpay_order_id: payment.razorpay_order_id ?? '',
+          amount: payment.amount,
+        },
+        razorpayPaymentId,
+      );
     }
 
     // ─── ADDON PAYMENT (post-booking upsell) ───
@@ -847,94 +909,103 @@ export class PaymentService {
     );
 
     // Run everything inside a serializable transaction with row-level locks
-    const result = await this.prisma.$transaction(async (tx) => {
-      // STEP 1: Lock inventory rows with SELECT ... FOR UPDATE
-      // This prevents other transactions from reading/modifying these rows
-      // until this transaction commits.
-      if (commodityItems.length > 0) {
-        const productIds = commodityItems.map((i) => i.product_id);
+    const result = await this.prisma.$transaction(
+      async (tx) => {
+        // STEP 1: Lock inventory rows with SELECT ... FOR UPDATE
+        // This prevents other transactions from reading/modifying these rows
+        // until this transaction commits.
+        if (commodityItems.length > 0) {
+          const productIds = commodityItems.map((i) => i.product_id);
 
-        // Raw query for FOR UPDATE — Prisma doesn't support it natively
-        const lockedRows: { product_id: string; available_stock: number }[] =
-          await tx.$queryRawUnsafe(
-            `SELECT product_id, available_stock FROM inventory
+          // Raw query for FOR UPDATE — Prisma doesn't support it natively
+          const lockedRows: { product_id: string; available_stock: number }[] =
+            await tx.$queryRawUnsafe(
+              `SELECT product_id, available_stock FROM inventory
              WHERE property_id = $1 AND product_id = ANY($2::text[])
              FOR UPDATE`,
-            booking.property_id,
-            productIds,
-          );
-
-        // STEP 2: Validate stock under the lock
-        const stockMap = new Map(lockedRows.map((r) => [r.product_id, r.available_stock]));
-
-        for (const item of commodityItems) {
-          const available = stockMap.get(item.product_id) ?? 0;
-          if (available < item.quantity) {
-            // Stock insufficient — payment was captured by Razorpay but we can't fulfil.
-            // Mark payment as REFUND_NEEDED (manual intervention required).
-            await tx.payments.update({
-              where: { id: paymentId },
-              data: {
-                razorpay_payment_id: razorpayPaymentId,
-                status: 'REFUND_NEEDED',
-                updated_at: new Date(),
-              },
-            });
-
-            await tx.addon_orders.update({
-              where: { id: order.id },
-              data: { status: 'FAILED_STOCK' },
-            });
-
-            this.logger.error(
-              `STOCK CONFLICT: "${item.product_catalog.name}" — needed ${item.quantity}, available ${available}. Payment ${paymentId} marked REFUND_NEEDED.`,
+              booking.property_id,
+              productIds,
             );
 
-            return {
-              message: 'Payment received but insufficient stock. Refund will be processed.',
-              payment_id: paymentId,
-              order_id: order.id,
-              conflict_item: item.product_catalog.name,
-              needed: item.quantity,
-              available,
-              status: 'REFUND_NEEDED',
-            };
+          // STEP 2: Validate stock under the lock
+          const stockMap = new Map(
+            lockedRows.map((r) => [r.product_id, r.available_stock]),
+          );
+
+          for (const item of commodityItems) {
+            const available = stockMap.get(item.product_id) ?? 0;
+            if (available < item.quantity) {
+              // Stock insufficient — payment was captured by Razorpay but we can't fulfil.
+              // Mark payment as REFUND_NEEDED (manual intervention required).
+              await tx.payments.update({
+                where: { id: paymentId },
+                data: {
+                  razorpay_payment_id: razorpayPaymentId,
+                  status: 'REFUND_NEEDED',
+                  updated_at: new Date(),
+                },
+              });
+
+              await tx.addon_orders.update({
+                where: { id: order.id },
+                data: { status: 'FAILED_STOCK' },
+              });
+
+              this.logger.error(
+                `STOCK CONFLICT: "${item.product_catalog.name}" — needed ${item.quantity}, available ${available}. Payment ${paymentId} marked REFUND_NEEDED.`,
+              );
+
+              return {
+                message:
+                  'Payment received but insufficient stock. Refund will be processed.',
+                payment_id: paymentId,
+                order_id: order.id,
+                conflict_item: item.product_catalog.name,
+                needed: item.quantity,
+                available,
+                status: 'REFUND_NEEDED',
+              };
+            }
+          }
+
+          // STEP 3: Decrement stock (still under lock)
+          for (const item of commodityItems) {
+            await tx.inventory.updateMany({
+              where: {
+                product_id: item.product_id,
+                property_id: booking.property_id,
+              },
+              data: {
+                available_stock: { decrement: item.quantity },
+                sold_count: { increment: item.quantity },
+              },
+            });
           }
         }
 
-        // STEP 3: Decrement stock (still under lock)
-        for (const item of commodityItems) {
-          await tx.inventory.updateMany({
-            where: { product_id: item.product_id, property_id: booking.property_id },
-            data: {
-              available_stock: { decrement: item.quantity },
-              sold_count: { increment: item.quantity },
-            },
-          });
-        }
-      }
+        // STEP 4: Mark payment CAPTURED + order PAID
+        await tx.payments.update({
+          where: { id: paymentId },
+          data: {
+            razorpay_payment_id: razorpayPaymentId,
+            status: 'CAPTURED',
+            updated_at: new Date(),
+          },
+        });
 
-      // STEP 4: Mark payment CAPTURED + order PAID
-      await tx.payments.update({
-        where: { id: paymentId },
-        data: {
-          razorpay_payment_id: razorpayPaymentId,
-          status: 'CAPTURED',
-          updated_at: new Date(),
-        },
-      });
+        await tx.addon_orders.update({
+          where: { id: order.id },
+          data: { status: 'PAID' },
+        });
 
-      await tx.addon_orders.update({
-        where: { id: order.id },
-        data: { status: 'PAID' },
-      });
+        // STEP 5: Audit log moved outside transaction (goes to SQS)
 
-      // STEP 5: Audit log moved outside transaction (goes to SQS)
-
-      return null; // success — no conflict
-    }, {
-      timeout: 10000, // 10 second timeout for the transaction
-    });
+        return null; // success — no conflict
+      },
+      {
+        timeout: 10000, // 10 second timeout for the transaction
+      },
+    );
 
     // If the transaction returned a conflict result, return it
     if (result) return result;
@@ -998,7 +1069,9 @@ export class PaymentService {
       );
     }
 
-    this.logger.log(`Order ${order.id} fulfilled — payment ${paymentId} captured`);
+    this.logger.log(
+      `Order ${order.id} fulfilled — payment ${paymentId} captured`,
+    );
 
     return {
       message: 'Payment captured, order fulfilled',
@@ -1019,9 +1092,16 @@ export class PaymentService {
       id: string;
       ezee_reservation_id: string;
       guest_id: string;
-      addon_order_items: { quantity: number; product_catalog: { name: string; category: string } }[];
+      addon_order_items: {
+        quantity: number;
+        product_catalog: { name: string; category: string };
+      }[];
     },
-    booking: { property_id: string; room_number: string | null; unit_code: string | null },
+    booking: {
+      property_id: string;
+      room_number: string | null;
+      unit_code: string | null;
+    },
   ) {
     if (order.addon_order_items.length === 0) return;
     const guest = await this.prisma.guests.findUnique({
@@ -1029,7 +1109,9 @@ export class PaymentService {
       select: { phone: true },
     });
     const hasPhysical = order.addon_order_items.some((i) =>
-      ['COMMODITY', 'RETURNABLE', 'BORROWABLE'].includes(i.product_catalog.category),
+      ['COMMODITY', 'RETURNABLE', 'BORROWABLE'].includes(
+        i.product_catalog.category,
+      ),
     );
     const summary = order.addon_order_items
       .map((i) => `${i.product_catalog.name} x${i.quantity}`)
@@ -1075,7 +1157,10 @@ export class PaymentService {
         for (const item of addonOrder.addon_order_items) {
           if (item.product_catalog.category === 'COMMODITY') {
             await tx.inventory.updateMany({
-              where: { product_id: item.product_id, property_id: booking.property_id },
+              where: {
+                product_id: item.product_id,
+                property_id: booking.property_id,
+              },
               data: {
                 available_stock: { increment: item.quantity },
                 reserved_stock: { decrement: item.quantity },
@@ -1083,13 +1168,21 @@ export class PaymentService {
             });
           }
         }
-        await tx.addon_order_items.deleteMany({ where: { addon_order_id: addonOrder.id } });
+        await tx.addon_order_items.deleteMany({
+          where: { addon_order_id: addonOrder.id },
+        });
         await tx.addon_orders.delete({ where: { id: addonOrder.id } });
       }
 
-      await tx.kyc_submissions.deleteMany({ where: { ezee_reservation_id: eri } });
-      await tx.booking_slots.deleteMany({ where: { ezee_reservation_id: eri } });
-      await tx.booking_guest_access.deleteMany({ where: { ezee_reservation_id: eri } });
+      await tx.kyc_submissions.deleteMany({
+        where: { ezee_reservation_id: eri },
+      });
+      await tx.booking_slots.deleteMany({
+        where: { ezee_reservation_id: eri },
+      });
+      await tx.booking_guest_access.deleteMany({
+        where: { ezee_reservation_id: eri },
+      });
       // Don't delete ezee_booking_cache — payments FK references it.
       // Mark as CANCELLED instead.
       await tx.ezee_booking_cache.update({
@@ -1110,7 +1203,13 @@ export class PaymentService {
    * 3. Marks payment CAPTURED, addon order PAID
    */
   private async fulfilBookingOrder(
-    payment: { id: string; ezee_reservation_id: string; guest_id: string; razorpay_order_id: string; amount: any },
+    payment: {
+      id: string;
+      ezee_reservation_id: string;
+      guest_id: string;
+      razorpay_order_id: string;
+      amount: any;
+    },
     razorpayPaymentId: string,
   ) {
     const eri = payment.ezee_reservation_id;
@@ -1135,56 +1234,72 @@ export class PaymentService {
     if (booking.status === 'CONFIRMED') {
       await this.prisma.payments.update({
         where: { id: payment.id },
-        data: { razorpay_payment_id: razorpayPaymentId, status: 'CAPTURED', updated_at: new Date() },
-      });
-      return { message: 'Booking already confirmed', payment_id: payment.id, eri };
-    }
-
-    await this.prisma.$transaction(async (tx) => {
-      // 1. Confirm booking + invalidate payment_token (single-use; anonymous
-      //    BUTEAK path uses it as auth for /payment/anonymous/* — once
-      //    captured, no further actions are needed on the booking).
-      await tx.ezee_booking_cache.update({
-        where: { ezee_reservation_id: eri },
-        data: { status: 'CONFIRMED', payment_token: null },
-      });
-
-      // 2. Finalize addon inventory (reserved → sold)
-      const addonOrder = await tx.addon_orders.findFirst({
-        where: { ezee_reservation_id: eri, status: 'PENDING' },
-        include: { addon_order_items: { include: { product_catalog: true } } },
-      });
-
-      if (addonOrder) {
-        for (const item of addonOrder.addon_order_items) {
-          if (item.product_catalog.category === 'COMMODITY') {
-            await tx.inventory.updateMany({
-              where: { product_id: item.product_id, property_id: booking.property_id },
-              data: {
-                reserved_stock: { decrement: item.quantity },
-                sold_count: { increment: item.quantity },
-              },
-            });
-          }
-        }
-        await tx.addon_orders.update({
-          where: { id: addonOrder.id },
-          data: { status: 'PAID' },
-        });
-      }
-
-      // 3. Mark payment CAPTURED
-      await tx.payments.update({
-        where: { id: payment.id },
         data: {
           razorpay_payment_id: razorpayPaymentId,
           status: 'CAPTURED',
           updated_at: new Date(),
         },
       });
+      return {
+        message: 'Booking already confirmed',
+        payment_id: payment.id,
+        eri,
+      };
+    }
 
-      // 4. Audit log moved outside transaction (goes to SQS)
-    }, { timeout: 10000 });
+    await this.prisma.$transaction(
+      async (tx) => {
+        // 1. Confirm booking + invalidate payment_token (single-use; anonymous
+        //    BUTEAK path uses it as auth for /payment/anonymous/* — once
+        //    captured, no further actions are needed on the booking).
+        await tx.ezee_booking_cache.update({
+          where: { ezee_reservation_id: eri },
+          data: { status: 'CONFIRMED', payment_token: null },
+        });
+
+        // 2. Finalize addon inventory (reserved → sold)
+        const addonOrder = await tx.addon_orders.findFirst({
+          where: { ezee_reservation_id: eri, status: 'PENDING' },
+          include: {
+            addon_order_items: { include: { product_catalog: true } },
+          },
+        });
+
+        if (addonOrder) {
+          for (const item of addonOrder.addon_order_items) {
+            if (item.product_catalog.category === 'COMMODITY') {
+              await tx.inventory.updateMany({
+                where: {
+                  product_id: item.product_id,
+                  property_id: booking.property_id,
+                },
+                data: {
+                  reserved_stock: { decrement: item.quantity },
+                  sold_count: { increment: item.quantity },
+                },
+              });
+            }
+          }
+          await tx.addon_orders.update({
+            where: { id: addonOrder.id },
+            data: { status: 'PAID' },
+          });
+        }
+
+        // 3. Mark payment CAPTURED
+        await tx.payments.update({
+          where: { id: payment.id },
+          data: {
+            razorpay_payment_id: razorpayPaymentId,
+            status: 'CAPTURED',
+            updated_at: new Date(),
+          },
+        });
+
+        // 4. Audit log moved outside transaction (goes to SQS)
+      },
+      { timeout: 10000 },
+    );
 
     // Invalidate cache
     await this.cacheService.invalidatePropertyCache(booking.property_id);
@@ -1222,7 +1337,8 @@ export class PaymentService {
         ? Math.max(
             1,
             Math.round(
-              (booking.checkout_date.getTime() - booking.checkin_date.getTime()) /
+              (booking.checkout_date.getTime() -
+                booking.checkin_date.getTime()) /
                 (1000 * 60 * 60 * 24),
             ),
           )
@@ -1234,8 +1350,14 @@ export class PaymentService {
     // tables. Prefer admin-set `name` (e.g. "WELCOME"), fall back to `code`
     // (typed codes like "TEST91"). Stacked = "WELCOME+TEST91".
     const couponParts: string[] = [];
-    if (booking.coupon_auto) couponParts.push(booking.coupon_auto.name ?? booking.coupon_auto.code ?? '');
-    if (booking.coupon_code) couponParts.push(booking.coupon_code.name ?? booking.coupon_code.code ?? '');
+    if (booking.coupon_auto)
+      couponParts.push(
+        booking.coupon_auto.name ?? booking.coupon_auto.code ?? '',
+      );
+    if (booking.coupon_code)
+      couponParts.push(
+        booking.coupon_code.name ?? booking.coupon_code.code ?? '',
+      );
     const couponSummary = couponParts.filter(Boolean).join('+') || undefined;
 
     // Emit to eZee sync queue — creates booking in eZee PMS. Includes
@@ -1251,7 +1373,8 @@ export class PaymentService {
       checkout: booking.checkout_date?.toISOString().split('T')[0] ?? null,
       amount: Number(payment.amount),
       razorpay_payment_id: razorpayPaymentId,
-      property_name: booking.properties?.name ?? `Property ${booking.property_id}`,
+      property_name:
+        booking.properties?.name ?? `Property ${booking.property_id}`,
       purpose_label: purposeLabel,
       discount_total: Number(booking.discount_total ?? 0),
       coupon_summary: couponSummary,
@@ -1268,12 +1391,17 @@ export class PaymentService {
       // single indexed query.) The split is what the engine returns now;
       // amount mismatches due to coupon state changes between create-order and
       // capture are rare but the audit row reflects "what we'd give today".
-      const stayNights = booking.checkin_date && booking.checkout_date
-        ? Math.max(1, Math.round(
-            (booking.checkout_date.getTime() - booking.checkin_date.getTime()) /
-              (1000 * 60 * 60 * 24),
-          ))
-        : 1;
+      const stayNights =
+        booking.checkin_date && booking.checkout_date
+          ? Math.max(
+              1,
+              Math.round(
+                (booking.checkout_date.getTime() -
+                  booking.checkin_date.getTime()) /
+                  (1000 * 60 * 60 * 24),
+              ),
+            )
+          : 1;
       // Approximate subtotal = payment.amount + discount_total
       const approxSubtotal = Number(payment.amount) + totalDiscount;
 
@@ -1307,7 +1435,9 @@ export class PaymentService {
       }
     }
 
-    this.logger.log(`Booking ${eri} confirmed — payment ${payment.id} captured`);
+    this.logger.log(
+      `Booking ${eri} confirmed — payment ${payment.id} captured`,
+    );
 
     return {
       message: 'Booking confirmed, payment captured',
@@ -1358,9 +1488,15 @@ export class PaymentService {
     amount: number;
     addon_order_id: string;
     wa_service_request_id: string;
-  }): Promise<{ payment_id: string; short_url: string | null; plink_id: string | null }> {
+  }): Promise<{
+    payment_id: string;
+    short_url: string | null;
+    plink_id: string | null;
+  }> {
     if (input.amount <= 0) {
-      throw new BadRequestException('WhatsApp service amount must be greater than zero');
+      throw new BadRequestException(
+        'WhatsApp service amount must be greater than zero',
+      );
     }
     const brand = input.brand || 'TDS';
     const paymentId = uuidv4();
@@ -1393,7 +1529,9 @@ export class PaymentService {
     let shortUrl: string | null = null;
     let plinkId: string | null = null;
     try {
-      const plink: any = await (this.razorpay.forBrand(brand) as any).paymentLink.create({
+      const plink: any = await (
+        this.razorpay.forBrand(brand) as any
+      ).paymentLink.create({
         amount: Math.round(input.amount * 100),
         currency: 'INR',
         accept_partial: false,
@@ -1404,7 +1542,9 @@ export class PaymentService {
         description: `${input.product_name} (Room service)`.slice(0, 2048),
         customer: {
           name: input.guest_name,
-          contact: input.guest_phone.startsWith('+') ? input.guest_phone : `+${input.guest_phone}`,
+          contact: input.guest_phone.startsWith('+')
+            ? input.guest_phone
+            : `+${input.guest_phone}`,
         },
         notify: { sms: false, email: false }, // we deliver the link ourselves over WhatsApp
         reminder_enable: false,
@@ -1439,7 +1579,9 @@ export class PaymentService {
     razorpayOrderId: string | null,
     razorpayPaymentId: string,
   ) {
-    const payment = await this.prisma.payments.findUnique({ where: { id: paymentId } });
+    const payment = await this.prisma.payments.findUnique({
+      where: { id: paymentId },
+    });
     if (!payment) {
       this.logger.warn(`fulfilWhatsappService: payment ${paymentId} not found`);
       return { status: 'ignored', reason: 'payment not found' };
@@ -1472,7 +1614,9 @@ export class PaymentService {
     });
     if (!wa || wa.ticket_id) return; // unknown or already ticketed
     const product = wa.product_id
-      ? await this.prisma.product_catalog.findUnique({ where: { id: wa.product_id } })
+      ? await this.prisma.product_catalog.findUnique({
+          where: { id: wa.product_id },
+        })
       : null;
     const booking = wa.ezee_reservation_id
       ? await this.prisma.ezee_booking_cache.findUnique({
@@ -1481,7 +1625,10 @@ export class PaymentService {
         })
       : null;
     const guest = wa.guest_id
-      ? await this.prisma.guests.findUnique({ where: { id: wa.guest_id }, select: { name: true, phone: true } })
+      ? await this.prisma.guests.findUnique({
+          where: { id: wa.guest_id },
+          select: { name: true, phone: true },
+        })
       : null;
     const paymentRow = await this.prisma.payments.findUnique({
       where: { id: paymentId },
@@ -1489,7 +1636,9 @@ export class PaymentService {
     });
 
     if (!wa.guest_id || !wa.ezee_reservation_id || !wa.property_id) {
-      this.logger.warn(`createTicketForWhatsappService: wa_service_request ${wa.id} missing guest/booking context`);
+      this.logger.warn(
+        `createTicketForWhatsappService: wa_service_request ${wa.id} missing guest/booking context`,
+      );
       return;
     }
 
@@ -1532,7 +1681,9 @@ export class PaymentService {
       },
     });
 
-    this.logger.log(`WhatsApp paid service ${wa.id} → ticket ${ticket.id} created after capture`);
+    this.logger.log(
+      `WhatsApp paid service ${wa.id} → ticket ${ticket.id} created after capture`,
+    );
   }
 
   /**
@@ -1542,7 +1693,9 @@ export class PaymentService {
    * /wati/pay/retry?rid={{1}}). Idempotent: skips if already FAILED or CAPTURED.
    */
   async failWhatsappService(paymentId: string, reason: string) {
-    const payment = await this.prisma.payments.findUnique({ where: { id: paymentId } });
+    const payment = await this.prisma.payments.findUnique({
+      where: { id: paymentId },
+    });
     if (!payment) return { status: 'ignored', reason: 'payment not found' };
     if (payment.status === 'CAPTURED') return { status: 'already_captured' };
     if (payment.status === 'FAILED') return { status: 'already_failed' }; // dedupe repeat events
@@ -1552,13 +1705,20 @@ export class PaymentService {
       data: { status: 'FAILED', updated_at: new Date() },
     });
 
-    const wa = await this.prisma.wa_service_request.findFirst({ where: { payment_id: paymentId } });
+    const wa = await this.prisma.wa_service_request.findFirst({
+      where: { payment_id: paymentId },
+    });
     if (wa && wa.status !== 'TICKETED') {
       const product = wa.product_id
-        ? await this.prisma.product_catalog.findUnique({ where: { id: wa.product_id } })
+        ? await this.prisma.product_catalog.findUnique({
+            where: { id: wa.product_id },
+          })
         : null;
       const guest = wa.guest_id
-        ? await this.prisma.guests.findUnique({ where: { id: wa.guest_id }, select: { name: true, phone: true } })
+        ? await this.prisma.guests.findUnique({
+            where: { id: wa.guest_id },
+            select: { name: true, phone: true },
+          })
         : null;
       await this.sqsProducer.sendNotifyGuest({
         guest_id: wa.guest_id ?? '',
@@ -1573,7 +1733,9 @@ export class PaymentService {
         },
       });
     }
-    this.logger.log(`WhatsApp paid service payment ${paymentId} marked FAILED (${reason})`);
+    this.logger.log(
+      `WhatsApp paid service payment ${paymentId} marked FAILED (${reason})`,
+    );
     return { status: 'failed_notified', reason };
   }
 
@@ -1602,7 +1764,9 @@ export class PaymentService {
 
     if (!draft) throw new NotFoundException('Colive draft booking not found');
     if (draft.guest_id && draft.guest_id !== guest.guest_id) {
-      throw new BadRequestException('This draft booking does not belong to you');
+      throw new BadRequestException(
+        'This draft booking does not belong to you',
+      );
     }
     if (draft.status === 'confirmed') {
       throw new BadRequestException('This booking is already confirmed');
@@ -1619,7 +1783,8 @@ export class PaymentService {
       receipt: draft.booking_reference,
       notes: {
         property_id: draft.property_id,
-        property_name: draft.properties?.name ?? `Property ${draft.property_id}`,
+        property_name:
+          draft.properties?.name ?? `Property ${draft.property_id}`,
         purpose: 'colive',
         purpose_label: colivePurposeLabel,
         draft_booking_id: draftBookingId,
@@ -1694,12 +1859,17 @@ export class PaymentService {
     });
 
     const brand = draft?.properties?.brand ?? 'TDS';
-    const expectedSig = createHmac('sha256', this.razorpay.apiSecretForBrand(brand))
+    const expectedSig = createHmac(
+      'sha256',
+      this.razorpay.apiSecretForBrand(brand),
+    )
       .update(`${razorpay_order_id}|${razorpay_payment_id}`)
       .digest('hex');
 
     if (expectedSig !== razorpay_signature) {
-      this.logger.warn(`Invalid colive payment signature for order ${razorpay_order_id} (brand=${brand})`);
+      this.logger.warn(
+        `Invalid colive payment signature for order ${razorpay_order_id} (brand=${brand})`,
+      );
       throw new BadRequestException('Invalid payment signature');
     }
 
@@ -1734,10 +1904,13 @@ export class PaymentService {
       : Number(roomType?.base_price_per_night ?? 0);
 
     const moveIn = new Date(draft.move_in_date);
-    const moveOut = draft.estimated_checkout ?? this.addColiveDays(moveIn, draft.duration_days);
-    const totalNights = Math.max(1, Math.ceil(
-      (moveOut.getTime() - moveIn.getTime()) / (1000 * 60 * 60 * 24),
-    ));
+    const moveOut =
+      draft.estimated_checkout ??
+      this.addColiveDays(moveIn, draft.duration_days);
+    const totalNights = Math.max(
+      1,
+      Math.ceil((moveOut.getTime() - moveIn.getTime()) / (1000 * 60 * 60 * 24)),
+    );
 
     // Confirm the draft booking
     const paymentRecordId = uuidv4();
@@ -1813,4 +1986,3 @@ export class PaymentService {
     return date.toISOString().split('T')[0];
   }
 }
-

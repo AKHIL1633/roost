@@ -14,13 +14,17 @@ export class AdminLoginDto {
 
   @IsNotEmpty()
   @IsString()
-  @Matches(/^[0-9]+$/, { message: 'property_id must be a numeric eZee hotel code' })
+  @Matches(/^[0-9]+$/, {
+    message: 'property_id must be a numeric eZee hotel code',
+  })
   property_id: string;
 }
 
 export class SwitchPropertyDto {
   @IsNotEmpty()
   @IsString()
-  @Matches(/^[0-9]+$/, { message: 'property_id must be a numeric eZee hotel code' })
+  @Matches(/^[0-9]+$/, {
+    message: 'property_id must be a numeric eZee hotel code',
+  })
   property_id: string;
 }

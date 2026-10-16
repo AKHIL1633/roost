@@ -97,7 +97,10 @@ export class AdminBookingsController {
    */
   @Post('test')
   @RequirePermission('bookings.create')
-  createTestBooking(@Body() dto: CreateTestBookingDto, @CurrentAdmin() admin: AdminJwtPayload) {
+  createTestBooking(
+    @Body() dto: CreateTestBookingDto,
+    @CurrentAdmin() admin: AdminJwtPayload,
+  ) {
     return this.bookingsService.createTestBooking(dto, admin);
   }
 
@@ -116,7 +119,10 @@ export class AdminBookingsController {
    */
   @Delete('test/:eri')
   @RequirePermission('bookings.create')
-  deleteTestBooking(@Param('eri') eri: string, @CurrentAdmin() admin: AdminJwtPayload) {
+  deleteTestBooking(
+    @Param('eri') eri: string,
+    @CurrentAdmin() admin: AdminJwtPayload,
+  ) {
     return this.bookingsService.deleteTestBooking(eri, admin);
   }
 

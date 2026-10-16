@@ -81,7 +81,10 @@ export class FeedbackService {
     return createHash('sha256').update(token).digest('hex');
   }
 
-  private stateOf(row: { submitted_at: Date | null; expires_at: Date }): FeedbackState {
+  private stateOf(row: {
+    submitted_at: Date | null;
+    expires_at: Date;
+  }): FeedbackState {
     if (row.submitted_at) return 'used';
     if (row.expires_at.getTime() < Date.now()) return 'expired';
     return 'valid';
@@ -112,7 +115,9 @@ export class FeedbackService {
 
       const token = randomBytes(32).toString('hex'); // 256-bit, URL-safe (hex)
       const now = new Date();
-      const expires = new Date(now.getTime() + this.ttlDays() * 24 * 60 * 60_000);
+      const expires = new Date(
+        now.getTime() + this.ttlDays() * 24 * 60 * 60_000,
+      );
 
       await this.prisma.ticket_feedback.create({
         data: {
@@ -151,7 +156,9 @@ export class FeedbackService {
         output: `feedback link queued → ${phone} (expires ${toIstString(expires)})`,
       });
     } catch (err) {
-      this.logger.warn(`issueInvite failed for ticket ${ticket.id}: ${(err as Error).message}`);
+      this.logger.warn(
+        `issueInvite failed for ticket ${ticket.id}: ${(err as Error).message}`,
+      );
     }
   }
 
@@ -200,7 +207,9 @@ export class FeedbackService {
       if (!ticket.guest_id || !phone) return;
 
       const now = new Date();
-      const expires = new Date(now.getTime() + this.ttlDays() * 24 * 60 * 60_000);
+      const expires = new Date(
+        now.getTime() + this.ttlDays() * 24 * 60 * 60_000,
+      );
 
       await this.prisma.ticket_feedback.create({
         data: {
@@ -238,7 +247,9 @@ export class FeedbackService {
         output: `Good/Bad prompt queued → ${phone}`,
       });
     } catch (err) {
-      this.logger.warn(`issueButtonInvite failed for ticket ${ticket.id}: ${(err as Error).message}`);
+      this.logger.warn(
+        `issueButtonInvite failed for ticket ${ticket.id}: ${(err as Error).message}`,
+      );
     }
   }
 
@@ -250,9 +261,19 @@ export class FeedbackService {
   async findPendingForGuest(guestId: string): Promise<PendingFeedback | null> {
     try {
       const row = await this.prisma.ticket_feedback.findFirst({
-        where: { guest_id: guestId, submitted_at: null, expires_at: { gt: new Date() } },
+        where: {
+          guest_id: guestId,
+          submitted_at: null,
+          expires_at: { gt: new Date() },
+        },
         orderBy: { created_at: 'desc' },
-        select: { id: true, ticket_id: true, brand: true, sentiment: true, rated_at: true },
+        select: {
+          id: true,
+          ticket_id: true,
+          brand: true,
+          sentiment: true,
+          rated_at: true,
+        },
       });
       if (!row) return null;
       return {
@@ -263,7 +284,9 @@ export class FeedbackService {
         rated_at: row.rated_at,
       };
     } catch (err) {
-      this.logger.warn(`findPendingForGuest failed for ${guestId}: ${(err as Error).message}`);
+      this.logger.warn(
+        `findPendingForGuest failed for ${guestId}: ${(err as Error).message}`,
+      );
       return null;
     }
   }
@@ -271,7 +294,10 @@ export class FeedbackService {
   /** True while the guest's next reply after tapping should still be captured as a review. */
   commentWindowOpen(pending: PendingFeedback): boolean {
     if (pending.stage !== 'comment' || !pending.rated_at) return false;
-    return Date.now() - pending.rated_at.getTime() <= this.commentWindowMin() * 60_000;
+    return (
+      Date.now() - pending.rated_at.getTime() <=
+      this.commentWindowMin() * 60_000
+    );
   }
 
   /**
@@ -280,7 +306,10 @@ export class FeedbackService {
    * Leaves submitted_at null: the row now awaits an optional review remark.
    * Returns false if it was already rated (a duplicate tap) or gone.
    */
-  async recordSentiment(feedbackId: string, sentiment: 'Good' | 'Bad'): Promise<boolean> {
+  async recordSentiment(
+    feedbackId: string,
+    sentiment: 'Good' | 'Bad',
+  ): Promise<boolean> {
     const claim = await this.prisma.ticket_feedback.updateMany({
       where: { id: feedbackId, sentiment: null, submitted_at: null },
       data: { sentiment, rated_at: new Date() },
@@ -299,10 +328,16 @@ export class FeedbackService {
       // tickets showed a remark and a rating over an empty sentiment column.
       const ratingValue = ratingForSentiment(sentiment) ?? 0;
       const patched = await this.zohoDesk
-        .updateTicket(zohoTicketId, { customFields: feedbackCustomFields({ sentiment }) })
+        .updateTicket(zohoTicketId, {
+          customFields: feedbackCustomFields({ sentiment }),
+        })
         .catch(() => false);
       await this.zohoDesk
-        .addComment(zohoTicketId, `WhatsApp guest feedback: ${sentiment === 'Good' ? '👍' : '👎'} ${sentiment} (rating ${ratingValue}/5)`, false)
+        .addComment(
+          zohoTicketId,
+          `WhatsApp guest feedback: ${sentiment === 'Good' ? '👍' : '👎'} ${sentiment} (rating ${ratingValue}/5)`,
+          false,
+        )
         .catch(() => undefined);
       if (patched) {
         await this.prisma.ticket_feedback
@@ -331,15 +366,25 @@ export class FeedbackService {
    * this was the FIRST line (so the caller only thanks once). Does NOT set submitted_at
    * — the window is closed by finalizeWithoutComment (new ask) or by simply expiring.
    */
-  async recordRemark(feedbackId: string, comment: string): Promise<{ recorded: boolean; first: boolean }> {
+  async recordRemark(
+    feedbackId: string,
+    comment: string,
+  ): Promise<{ recorded: boolean; first: boolean }> {
     const add = comment.trim().slice(0, 1900);
     if (!add) return { recorded: false, first: false };
 
     const before = await this.prisma.ticket_feedback.findUnique({
       where: { id: feedbackId },
-      select: { comment: true, submitted_at: true, ticket_id: true, brand: true, sentiment: true },
+      select: {
+        comment: true,
+        submitted_at: true,
+        ticket_id: true,
+        brand: true,
+        sentiment: true,
+      },
     });
-    if (!before || before.submitted_at) return { recorded: false, first: false }; // window closed
+    if (!before || before.submitted_at)
+      return { recorded: false, first: false }; // window closed
     const first = !before.comment;
 
     // Atomic append: prepend a newline only when there is existing text; hard-cap 2000.
@@ -366,11 +411,18 @@ export class FeedbackService {
       // while the remark (written later, against the real id) went in fine.
       await this.zohoDesk
         .updateTicket(zohoTicketId, {
-          customFields: feedbackCustomFields({ sentiment: before.sentiment, comment: full }),
+          customFields: feedbackCustomFields({
+            sentiment: before.sentiment,
+            comment: full,
+          }),
         })
         .catch(() => undefined);
       await this.zohoDesk
-        .addComment(zohoTicketId, `WhatsApp guest review${before.sentiment ? ` (${before.sentiment})` : ''}: "${add}"`, false)
+        .addComment(
+          zohoTicketId,
+          `WhatsApp guest review${before.sentiment ? ` (${before.sentiment})` : ''}: "${add}"`,
+          false,
+        )
         .catch(() => undefined);
     }
     await this.flowLog.log({
@@ -386,7 +438,10 @@ export class FeedbackService {
   /** Close a rated feedback with no review (the guest moved on to a new request). */
   async finalizeWithoutComment(feedbackId: string): Promise<void> {
     await this.prisma.ticket_feedback
-      .updateMany({ where: { id: feedbackId, submitted_at: null }, data: { submitted_at: new Date() } })
+      .updateMany({
+        where: { id: feedbackId, submitted_at: null },
+        data: { submitted_at: new Date() },
+      })
       .catch(() => undefined);
   }
 
@@ -394,7 +449,9 @@ export class FeedbackService {
    * Resolve the LIVE Zoho id from the ticket row (not the invite-time snapshot) so a
    * fast request→complete race that froze a "SVC-" placeholder doesn't no-op the write.
    */
-  private async liveZohoId(ticketId: string | undefined | null): Promise<string | null> {
+  private async liveZohoId(
+    ticketId: string | undefined | null,
+  ): Promise<string | null> {
     if (!ticketId) return null;
     const ref = await this.prisma.zoho_ticket_ref.findUnique({
       where: { id: ticketId },
@@ -506,7 +563,10 @@ export class FeedbackService {
         (dto.comment ? ` — ${dto.comment}` : '');
       const patched = await this.zohoDesk
         .updateTicket(zohoTicketId, {
-          customFields: feedbackCustomFields({ rating: dto.rating, comment: dto.comment }),
+          customFields: feedbackCustomFields({
+            rating: dto.rating,
+            comment: dto.comment,
+          }),
         })
         .catch(() => false);
       const commented = await this.zohoDesk
@@ -571,7 +631,12 @@ export class FeedbackService {
       submitted_at_ist: string | null;
       created_at: string;
     }>;
-    pagination: { page: number; limit: number; total: number; total_pages: number };
+    pagination: {
+      page: number;
+      limit: number;
+      total: number;
+      total_pages: number;
+    };
   }> {
     const page = Math.max(1, filters.page ?? 1);
     const limit = Math.min(100, Math.max(1, filters.limit ?? 20));
@@ -637,14 +702,22 @@ export class FeedbackService {
 
     const [total_feedback, total_submitted, submittedRows] = await Promise.all([
       this.prisma.ticket_feedback.count({ where: brandFilter }),
-      this.prisma.ticket_feedback.count({ where: { ...brandFilter, ...submittedFilter } }),
+      this.prisma.ticket_feedback.count({
+        where: { ...brandFilter, ...submittedFilter },
+      }),
       this.prisma.ticket_feedback.findMany({
         where: { ...brandFilter, ...submittedFilter },
         select: { rating: true, sentiment: true },
       }),
     ]);
 
-    const star_breakdown: Record<string, number> = { '1': 0, '2': 0, '3': 0, '4': 0, '5': 0 };
+    const star_breakdown: Record<string, number> = {
+      '1': 0,
+      '2': 0,
+      '3': 0,
+      '4': 0,
+      '5': 0,
+    };
     let rating_sum = 0;
     let rating_count = 0;
     let good_count = 0;
@@ -663,11 +736,25 @@ export class FeedbackService {
       if (row.sentiment === 'Bad') bad_count++;
     }
 
-    const avg_rating = rating_count > 0 ? Math.round((rating_sum / rating_count) * 100) / 100 : null;
+    const avg_rating =
+      rating_count > 0
+        ? Math.round((rating_sum / rating_count) * 100) / 100
+        : null;
     const csat_denominator = good_count + bad_count;
-    const csat_score_pct = csat_denominator > 0 ? Math.round((good_count / csat_denominator) * 10000) / 100 : null;
+    const csat_score_pct =
+      csat_denominator > 0
+        ? Math.round((good_count / csat_denominator) * 10000) / 100
+        : null;
 
-    return { total_feedback, total_submitted, avg_rating, csat_score_pct, star_breakdown, good_count, bad_count };
+    return {
+      total_feedback,
+      total_submitted,
+      avg_rating,
+      csat_score_pct,
+      star_breakdown,
+      good_count,
+      bad_count,
+    };
   }
 
   /**
@@ -678,10 +765,21 @@ export class FeedbackService {
   async generateTokenForTicket(
     ticketId: string,
     ttlDays?: number,
-  ): Promise<{ id: string; token: string; expires_at: string; feedback_url: string }> {
+  ): Promise<{
+    id: string;
+    token: string;
+    expires_at: string;
+    feedback_url: string;
+  }> {
     const ticket = await this.prisma.zoho_ticket_ref.findUnique({
       where: { id: ticketId },
-      select: { id: true, zoho_ticket_id: true, guest_id: true, room_number: true, subject: true },
+      select: {
+        id: true,
+        zoho_ticket_id: true,
+        guest_id: true,
+        room_number: true,
+        subject: true,
+      },
     });
     if (!ticket) throw new Error(`Ticket ${ticketId} not found`);
 

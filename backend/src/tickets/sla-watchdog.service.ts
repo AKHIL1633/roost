@@ -1,4 +1,9 @@
-import { Injectable, Logger, OnModuleInit, OnModuleDestroy } from '@nestjs/common';
+import {
+  Injectable,
+  Logger,
+  OnModuleInit,
+  OnModuleDestroy,
+} from '@nestjs/common';
 import { TicketsService } from './tickets.service';
 
 /**
@@ -31,7 +36,9 @@ export class SlaWatchdogService implements OnModuleInit, OnModuleDestroy {
 
   onModuleInit(): void {
     if (!this.enabled) {
-      this.logger.log('SLA watchdog disabled (set SLA_WATCHDOG_ENABLED=true to enable).');
+      this.logger.log(
+        'SLA watchdog disabled (set SLA_WATCHDOG_ENABLED=true to enable).',
+      );
       return;
     }
     const intervalMs = Number(process.env.SLA_WATCHDOG_INTERVAL_MS ?? 30_000);

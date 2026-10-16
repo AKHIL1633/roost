@@ -26,9 +26,15 @@ export class StaffActionsController {
     if (!jobId) return this.page('Missing job id', false);
     try {
       await this.tickets.acknowledge(jobId);
-      return this.page('Acknowledged ✓ — thank you, the guest has been informed.', true);
+      return this.page(
+        'Acknowledged ✓ — thank you, the guest has been informed.',
+        true,
+      );
     } catch {
-      return this.page('Could not find this request (it may be closed).', false);
+      return this.page(
+        'Could not find this request (it may be closed).',
+        false,
+      );
     }
   }
 
@@ -40,7 +46,10 @@ export class StaffActionsController {
       await this.tickets.complete(jobId);
       return this.page('Marked Completed ✓ — thank you!', true);
     } catch {
-      return this.page('Could not find this request (it may be closed).', false);
+      return this.page(
+        'Could not find this request (it may be closed).',
+        false,
+      );
     }
   }
 

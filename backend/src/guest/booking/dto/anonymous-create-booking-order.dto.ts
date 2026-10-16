@@ -30,6 +30,8 @@ export class AnonymousCreateBookingOrderDto extends CreateBookingOrderDto {
   @IsString()
   @IsNotEmpty()
   @MaxLength(20)
-  @Matches(/^\+?[0-9 \-]{7,20}$/, { message: 'phone must be 7–20 digits, optional + prefix' })
+  @Matches(/^\+?[0-9 \-]{7,20}$/, {
+    message: 'phone must be 7–20 digits, optional + prefix',
+  })
   phone: string;
 }

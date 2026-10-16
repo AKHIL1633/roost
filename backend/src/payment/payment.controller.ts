@@ -46,7 +46,12 @@ export class PaymentController {
   @Post('payment/create-booking-order')
   createBookingPayment(
     @CurrentGuest() guest: GuestJwtPayload,
-    @Body() dto: { ezee_reservation_id: string; grand_total: number; addon_order_id?: string },
+    @Body()
+    dto: {
+      ezee_reservation_id: string;
+      grand_total: number;
+      addon_order_id?: string;
+    },
   ) {
     return this.paymentService.createBookingPayment(
       guest,
@@ -193,7 +198,8 @@ export class PaymentController {
   @Post('payment/create-colive-order')
   createColiveOrder(
     @CurrentGuest() guest: GuestJwtPayload,
-    @Body() dto: { draft_booking_id: string; grand_total: number; currency?: string },
+    @Body()
+    dto: { draft_booking_id: string; grand_total: number; currency?: string },
   ) {
     return this.paymentService.createColiveOrder(
       guest,
@@ -212,7 +218,8 @@ export class PaymentController {
   @Post('payment/verify-colive')
   verifyColivePayment(
     @CurrentGuest() guest: GuestJwtPayload,
-    @Body() dto: {
+    @Body()
+    dto: {
       draft_booking_id: string;
       razorpay_order_id: string;
       razorpay_payment_id: string;

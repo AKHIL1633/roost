@@ -47,25 +47,30 @@ function buttonTitleOf(raw: WatiInboundRaw): string {
  * Returns the normalised guest message, or null if this event is not an
  * actionable inbound guest text (echoes, status callbacks, empty bodies, etc.).
  */
-export function parseWatiInbound(raw: WatiInboundRaw | null | undefined): WatiInboundMessage | null {
+export function parseWatiInbound(
+  raw: WatiInboundRaw | null | undefined,
+): WatiInboundMessage | null {
   if (!raw || typeof raw !== 'object') return null;
 
   // Ignore business-sent echoes and non-message events.
   if (raw.owner === true) return null;
   if (raw.eventType && raw.eventType !== 'message') return null;
 
-  const waId = typeof raw.waId === 'string' ? raw.waId.replace(/[^0-9]/g, '') : '';
+  const waId =
+    typeof raw.waId === 'string' ? raw.waId.replace(/[^0-9]/g, '') : '';
   // Button/quick-reply taps usually arrive with the title in `text`, but some WATI
   // interactive payloads nest it under buttonReply/interactiveButtonReply/listReply —
   // fall back to those so a Good/Bad tap is never silently dropped for an empty `text`.
-  const text = (typeof raw.text === 'string' ? raw.text.trim() : '') || buttonTitleOf(raw);
+  const text =
+    (typeof raw.text === 'string' ? raw.text.trim() : '') || buttonTitleOf(raw);
   if (!waId || !text) return null;
 
   // Plain text plus quick-reply button taps (Good/Bad feedback): WATI delivers a
   // tapped quick-reply as type "button"/"interactive" with the button title. Other
   // types (image, location, status callbacks) aren't actionable here.
   const type = typeof raw.type === 'string' ? raw.type : 'text';
-  if (type !== 'text' && type !== 'button' && type !== 'interactive') return null;
+  if (type !== 'text' && type !== 'button' && type !== 'interactive')
+    return null;
 
   return {
     messageId:

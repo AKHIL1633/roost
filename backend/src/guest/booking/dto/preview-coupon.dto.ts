@@ -9,7 +9,10 @@ import {
   MaxLength,
 } from 'class-validator';
 import { Type } from 'class-transformer';
-import { RoomSelectionDto, AddonSelectionDto } from './create-booking-order.dto';
+import {
+  RoomSelectionDto,
+  AddonSelectionDto,
+} from './create-booking-order.dto';
 
 export class PreviewCouponDto {
   @IsString()

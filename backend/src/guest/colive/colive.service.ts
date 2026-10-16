@@ -55,7 +55,9 @@ export class ColiveService {
           currency: dto.currency ?? 'INR',
         },
       })
-      .catch((err) => this.logger.warn(`Search session persist failed: ${err.message}`));
+      .catch((err) =>
+        this.logger.warn(`Search session persist failed: ${err.message}`),
+      );
 
     // Fetch active property content for this location
     const contents = await this.prisma.colive_property_content.findMany({
@@ -81,7 +83,11 @@ export class ColiveService {
         });
 
         // Fetch eZee pricing with Redis caching
-        const rates = await this.getEzeePricing(content.property_id, checkinStr, checkoutStr);
+        const rates = await this.getEzeePricing(
+          content.property_id,
+          checkinStr,
+          checkoutStr,
+        );
         const totalNights = this.calcNights(moveIn, moveOut);
 
         // Build a map of eZee roomTypeId → rate data for O(1) lookup
@@ -94,7 +100,9 @@ export class ColiveService {
         for (const opt of roomOptions) {
           const ezeeId = opt.room_types.ezee_room_type_id;
           const ezeeRoom = ezeeId ? rateMap.get(ezeeId) : undefined;
-          const ratePerNight = ezeeRoom?.ratePerNight ?? Number(opt.room_types.base_price_per_night);
+          const ratePerNight =
+            ezeeRoom?.ratePerNight ??
+            Number(opt.room_types.base_price_per_night);
           // Colive monthly price: use configured colive_price_month; fall back to nightly × 30
           const coliveMonthly = opt.room_types.colive_price_month
             ? Number(opt.room_types.colive_price_month)
@@ -111,7 +119,10 @@ export class ColiveService {
         const availabilities = roomOptions.map((opt) => {
           const ezeeKey = opt.room_types.ezee_room_type_id || opt.room_types.id;
           const ezeeRoom = rateMap.get(ezeeKey);
-          return ezeeRoom?.availability ?? (opt.room_types.total_beds || opt.room_types.total_rooms || 10);
+          return (
+            ezeeRoom?.availability ??
+            (opt.room_types.total_beds || opt.room_types.total_rooms || 10)
+          );
         });
         const totalAvail = availabilities.reduce((acc, v) => acc + v, 0);
         const inventoryState = this.calcInventoryState(totalAvail);
@@ -146,7 +157,8 @@ export class ColiveService {
           microcopy: content.microcopy ?? '',
           hero_image_url: content.hero_image_url ?? '',
           secondary_image_url: content.secondary_image_url ?? undefined,
-          price_from_monthly: priceFrom === Infinity ? 0 : Math.round(priceFrom),
+          price_from_monthly:
+            priceFrom === Infinity ? 0 : Math.round(priceFrom),
           strike_price_from_monthly: strikeFrom,
           rating: content.rating ? Number(content.rating) : undefined,
           rating_label: content.rating_label ?? undefined,
@@ -188,7 +200,9 @@ export class ColiveService {
     });
 
     if (!content) {
-      throw new NotFoundException(`No colive content found for property ${propertyId}`);
+      throw new NotFoundException(
+        `No colive content found for property ${propertyId}`,
+      );
     }
 
     const moveIn = new Date(moveInDate);
@@ -196,7 +210,11 @@ export class ColiveService {
     const checkinStr = this.formatDate(moveIn);
     const checkoutStr = this.formatDate(moveOut);
 
-    const rates = await this.getEzeePricing(propertyId, checkinStr, checkoutStr);
+    const rates = await this.getEzeePricing(
+      propertyId,
+      checkinStr,
+      checkoutStr,
+    );
 
     const roomOptions = await this.prisma.colive_room_options.findMany({
       where: { property_id: propertyId, is_active: true },
@@ -207,14 +225,17 @@ export class ColiveService {
     const roomOptionCards = roomOptions.map((opt) => {
       const ezeeKey = opt.room_types.ezee_room_type_id || opt.room_types.id;
       const ezeeRoom = rates.find((r) => r.roomTypeId === ezeeKey);
-      const ratePerNight = ezeeRoom?.ratePerNight ?? Number(opt.room_types.base_price_per_night);
+      const ratePerNight =
+        ezeeRoom?.ratePerNight ?? Number(opt.room_types.base_price_per_night);
       // Colive monthly price: configured colive_price_month or fall back to nightly × 30
       const monthlyPrice = opt.room_types.colive_price_month
         ? Number(opt.room_types.colive_price_month)
         : Math.round(ratePerNight * 30);
       // Strike = eZee nightly × 30 (short-stay equivalent / "MRP")
       const strikeMonthly = Math.round(ratePerNight * 30);
-      const availableUnits = ezeeRoom?.availability ?? (opt.room_types.total_beds || opt.room_types.total_rooms || 10);
+      const availableUnits =
+        ezeeRoom?.availability ??
+        (opt.room_types.total_beds || opt.room_types.total_rooms || 10);
 
       // Couple filter
       if (stayType === 'couple' && (opt.max_guests ?? 1) < 2) return null;
@@ -225,7 +246,8 @@ export class ColiveService {
         name: opt.name,
         description: opt.description ?? '',
         monthly_price: monthlyPrice,
-        strike_monthly_price: strikeMonthly > monthlyPrice ? strikeMonthly : undefined,
+        strike_monthly_price:
+          strikeMonthly > monthlyPrice ? strikeMonthly : undefined,
         available_units: availableUnits,
         inventory_message: this.inventoryMessage(availableUnits),
         feature_points: (opt.feature_points as string[]) ?? [],
@@ -245,7 +267,8 @@ export class ColiveService {
       description: content.description ?? '',
       hero_gallery: {
         main_image_url: content.hero_image_url ?? '',
-        supporting_image_urls: (content.supporting_image_urls as string[]) ?? [],
+        supporting_image_urls:
+          (content.supporting_image_urls as string[]) ?? [],
         gallery_count: content.gallery_count ?? undefined,
       },
       tags: {
@@ -303,10 +326,15 @@ export class ColiveService {
 
     // Find room option for this room_type + property
     const roomOption = await this.prisma.colive_room_options.findFirst({
-      where: { property_id: dto.property_id, room_type_id: dto.room_type_id, is_active: true },
+      where: {
+        property_id: dto.property_id,
+        room_type_id: dto.room_type_id,
+        is_active: true,
+      },
       include: { room_types: true },
     });
-    if (!roomOption) throw new NotFoundException('Room option not found for this property');
+    if (!roomOption)
+      throw new NotFoundException('Room option not found for this property');
 
     // duration_days breakdown
     const months = Math.floor(dto.duration_days / 30);
@@ -323,14 +351,24 @@ export class ColiveService {
     const checkinStr = this.formatDate(moveIn);
     const checkoutStr = this.formatDate(moveOut);
 
-    const rates = await this.getEzeePricing(dto.property_id, checkinStr, checkoutStr);
-    const ezeeRoom = rates.find((r) => r.roomTypeId === roomOption.room_types.ezee_room_type_id);
+    const rates = await this.getEzeePricing(
+      dto.property_id,
+      checkinStr,
+      checkoutStr,
+    );
+    const ezeeRoom = rates.find(
+      (r) => r.roomTypeId === roomOption.room_types.ezee_room_type_id,
+    );
 
     // eZee rate used for extra days and savings comparison
-    const ratePerNight = ezeeRoom?.ratePerNight || Number(roomOption.room_types.base_price_per_night);
+    const ratePerNight =
+      ezeeRoom?.ratePerNight ||
+      Number(roomOption.room_types.base_price_per_night);
 
     // New formula: months × colive_price_month + remaining_days × ratePerNight
-    const roomLineTotal = Math.round(months * coliveMonthlyPrice + remainingDays * ratePerNight);
+    const roomLineTotal = Math.round(
+      months * coliveMonthlyPrice + remainingDays * ratePerNight,
+    );
     const roomSubtotal = roomLineTotal;
 
     // Process addons — per_month multiplied by months (floor)
@@ -340,7 +378,11 @@ export class ColiveService {
     if (dto.addons?.length > 0) {
       const addonIds = dto.addons.map((a) => a.addon_id);
       const addonRecords = await this.prisma.colive_addons.findMany({
-        where: { id: { in: addonIds }, property_id: dto.property_id, is_active: true },
+        where: {
+          id: { in: addonIds },
+          property_id: dto.property_id,
+          is_active: true,
+        },
       });
 
       for (const input of dto.addons) {
@@ -348,7 +390,10 @@ export class ColiveService {
         const addon = addonRecords.find((a) => a.id === input.addon_id);
         if (!addon || !addon.is_available) continue;
 
-        const qty = Math.min(input.quantity, addon.max_quantity ?? input.quantity);
+        const qty = Math.min(
+          input.quantity,
+          addon.max_quantity ?? input.quantity,
+        );
         const unitPrice = Number(addon.unit_price);
         // per_month addons multiply by whole months; one_time are flat
         const lineTotal =
@@ -370,9 +415,24 @@ export class ColiveService {
 
     // Included items (free things bundled with stay)
     const includedItems = [
-      { id: 'wifi', label: 'High-Speed WiFi', type: 'included', display_value: 'Included' },
-      { id: 'housekeeping', label: 'Weekly Housekeeping', type: 'included', display_value: 'Included' },
-      { id: 'deposit', label: 'Security Deposit', type: 'included', display_value: '₹0' },
+      {
+        id: 'wifi',
+        label: 'High-Speed WiFi',
+        type: 'included',
+        display_value: 'Included',
+      },
+      {
+        id: 'housekeeping',
+        label: 'Weekly Housekeeping',
+        type: 'included',
+        display_value: 'Included',
+      },
+      {
+        id: 'deposit',
+        label: 'Security Deposit',
+        type: 'included',
+        display_value: '₹0',
+      },
     ];
 
     // Pricing
@@ -388,9 +448,10 @@ export class ColiveService {
     // Strike price = eZee nightly × 30 (short-stay MRP)
     const strikeMonthly = Math.round(ratePerNight * 30);
 
-    const extraDaysNote = remainingDays > 0
-      ? ` + ${remainingDays} day${remainingDays > 1 ? 's' : ''} at ₹${ratePerNight}/night`
-      : '';
+    const extraDaysNote =
+      remainingDays > 0
+        ? ` + ${remainingDays} day${remainingDays > 1 ? 's' : ''} at ₹${ratePerNight}/night`
+        : '';
     const pricingNotes = [
       `Pricing includes ${dto.duration_days} days (${months} month${months !== 1 ? 's' : ''}${extraDaysNote})`,
       'GST @ 5% applied on room + addons',
@@ -436,7 +497,8 @@ export class ColiveService {
         room_type_id: dto.room_type_id,
         name: roomOption.name,
         colive_monthly_price: coliveMonthlyPrice,
-        strike_monthly_price: strikeMonthly > coliveMonthlyPrice ? strikeMonthly : undefined,
+        strike_monthly_price:
+          strikeMonthly > coliveMonthlyPrice ? strikeMonthly : undefined,
         duration_days: dto.duration_days,
         months,
         remaining_days: remainingDays,
@@ -474,7 +536,11 @@ export class ColiveService {
 
     // Validate room option
     const roomOption = await this.prisma.colive_room_options.findFirst({
-      where: { property_id: dto.property_id, room_type_id: dto.room_type_id, is_active: true },
+      where: {
+        property_id: dto.property_id,
+        room_type_id: dto.room_type_id,
+        is_active: true,
+      },
       include: { room_types: true },
     });
     if (!roomOption) throw new NotFoundException('Room option not found');
@@ -492,19 +558,31 @@ export class ColiveService {
     let addonSubtotal = 0;
 
     if (dto.addons?.length > 0) {
-      const addonIds = dto.addons.filter((a) => a.quantity > 0).map((a) => a.addon_id);
+      const addonIds = dto.addons
+        .filter((a) => a.quantity > 0)
+        .map((a) => a.addon_id);
       const addonRecords = await this.prisma.colive_addons.findMany({
-        where: { id: { in: addonIds }, property_id: dto.property_id, is_active: true },
+        where: {
+          id: { in: addonIds },
+          property_id: dto.property_id,
+          is_active: true,
+        },
       });
 
       for (const input of dto.addons) {
         if (input.quantity === 0) continue;
         const addon = addonRecords.find((a) => a.id === input.addon_id);
-        if (!addon) throw new BadRequestException(`Addon ${input.addon_id} not found`);
+        if (!addon)
+          throw new BadRequestException(`Addon ${input.addon_id} not found`);
         if (!addon.is_available) {
-          throw new BadRequestException(`Addon "${addon.name}" is currently unavailable`);
+          throw new BadRequestException(
+            `Addon "${addon.name}" is currently unavailable`,
+          );
         }
-        const qty = Math.min(input.quantity, addon.max_quantity ?? input.quantity);
+        const qty = Math.min(
+          input.quantity,
+          addon.max_quantity ?? input.quantity,
+        );
         const unitPrice = Number(addon.unit_price);
         const lineTotal =
           addon.pricing_model === 'per_month'
@@ -664,13 +742,19 @@ export class ColiveService {
     propertyId: string,
     checkin: string,
     checkout: string,
-  ): Promise<Array<{ roomTypeId: string; availability: number; ratePerNight: number }>> {
+  ): Promise<
+    Array<{ roomTypeId: string; availability: number; ratePerNight: number }>
+  > {
     const cacheKey = `colive:rates:${propertyId}:${checkin}:${checkout}`;
     const cached = await this.cache.get<any[]>(cacheKey);
     if (cached) return cached;
 
     try {
-      const result = await this.ezee.getRoomInventory(propertyId, checkin, checkout);
+      const result = await this.ezee.getRoomInventory(
+        propertyId,
+        checkin,
+        checkout,
+      );
       const rates = result.rooms.map((r) => ({
         roomTypeId: r.roomTypeId,
         availability: r.availability,
@@ -681,7 +765,9 @@ export class ColiveService {
         return rates;
       }
     } catch (err) {
-      this.logger.warn(`eZee pricing fetch failed for ${propertyId}: ${(err as Error).message} — falling back to local room types`);
+      this.logger.warn(
+        `eZee pricing fetch failed for ${propertyId}: ${(err as Error).message} — falling back to local room types`,
+      );
     }
 
     const localRates = await this.getLocalEstimate(propertyId);
@@ -693,7 +779,9 @@ export class ColiveService {
 
   private async getLocalEstimate(
     propertyId: string,
-  ): Promise<Array<{ roomTypeId: string; availability: number; ratePerNight: number }>> {
+  ): Promise<
+    Array<{ roomTypeId: string; availability: number; ratePerNight: number }>
+  > {
     const roomTypes = await this.prisma.room_types.findMany({
       where: { property_id: propertyId, is_active: true },
     });

@@ -19,16 +19,25 @@ export class CreateSlaConfigDto {
   @IsIn(TASK_CLASSES as readonly string[])
   task_category: TaskClass;
 
-  @IsInt() @Min(0) @Max(100_000)
+  @IsInt()
+  @Min(0)
+  @Max(100_000)
   completion_timeout_min: number;
 
-  @IsInt() @Min(0) @Max(100)
+  @IsInt()
+  @Min(0)
+  @Max(100)
   ack_percent: number;
 
-  @IsInt() @Min(0) @Max(100_000)
+  @IsInt()
+  @Min(0)
+  @Max(100_000)
   escalation_gap_min: number;
 
-  @IsOptional() @IsInt() @Min(1) @Max(100)
+  @IsOptional()
+  @IsInt()
+  @Min(1)
+  @Max(100)
   snooze_percent?: number;
 
   @IsOptional()

@@ -101,13 +101,17 @@ export class GuestStoreService {
         })
       : [];
 
-    const stockMap = new Map(inventoryRows.map((i) => [i.product_id, i.available_stock]));
+    const stockMap = new Map(
+      inventoryRows.map((i) => [i.product_id, i.available_stock]),
+    );
 
     const result = products.map((p) => ({
       ...p,
       base_price: Number(p.base_price),
-      in_stock: p.category === 'COMMODITY' ? (stockMap.get(p.id) ?? 0) > 0 : true,
-      available_stock: p.category === 'COMMODITY' ? stockMap.get(p.id) ?? 0 : null,
+      in_stock:
+        p.category === 'COMMODITY' ? (stockMap.get(p.id) ?? 0) > 0 : true,
+      available_stock:
+        p.category === 'COMMODITY' ? (stockMap.get(p.id) ?? 0) : null,
     }));
 
     // Write to cache
@@ -238,9 +242,13 @@ export class GuestStoreService {
 
     if (!product) throw new NotFoundException('Product not found');
     if (product.category === 'BORROWABLE')
-      throw new BadRequestException('Borrowable items cannot be added to cart. Use the borrow endpoint instead.');
+      throw new BadRequestException(
+        'Borrowable items cannot be added to cart. Use the borrow endpoint instead.',
+      );
     if (Number(product.base_price) === 0)
-      throw new BadRequestException('Free services cannot be added to cart. Use the service request endpoint instead.');
+      throw new BadRequestException(
+        'Free services cannot be added to cart. Use the service request endpoint instead.',
+      );
 
     // Check stock for COMMODITY
     if (product.category === 'COMMODITY') {
@@ -379,7 +387,9 @@ export class GuestStoreService {
         where: { product_id: item.product_id },
       });
       if (inv && inv.available_stock < dto.quantity) {
-        throw new BadRequestException(`Insufficient stock. Available: ${inv.available_stock}`);
+        throw new BadRequestException(
+          `Insufficient stock. Available: ${inv.available_stock}`,
+        );
       }
     }
 
@@ -451,7 +461,8 @@ export class GuestStoreService {
     );
 
     return {
-      message: 'Cart ready for payment. Call POST /payment/create-order to proceed.',
+      message:
+        'Cart ready for payment. Call POST /payment/create-order to proceed.',
       order_id: cart.id,
       ezee_reservation_id: eri,
       total,
@@ -463,7 +474,8 @@ export class GuestStoreService {
         unit_price: Number(i.unit_price),
         total_price: Number(i.total_price),
       })),
-      next_step: 'POST /payment/create-order { "ezee_reservation_id": "' + eri + '" }',
+      next_step:
+        'POST /payment/create-order { "ezee_reservation_id": "' + eri + '" }',
     };
   }
 
@@ -496,7 +508,9 @@ export class GuestStoreService {
     });
 
     if (!inventory) {
-      throw new BadRequestException(`"${product.name}" is currently unavailable`);
+      throw new BadRequestException(
+        `"${product.name}" is currently unavailable`,
+      );
     }
 
     // Check if guest already has this item checked out for this booking
@@ -510,11 +524,15 @@ export class GuestStoreService {
     });
 
     if (existingCheckout) {
-      throw new BadRequestException(`You already have a "${product.name}" checked out`);
+      throw new BadRequestException(
+        `You already have a "${product.name}" checked out`,
+      );
     }
 
     if (inventory.available_stock <= 0) {
-      throw new BadRequestException(`"${product.name}" is currently unavailable`);
+      throw new BadRequestException(
+        `"${product.name}" is currently unavailable`,
+      );
     }
 
     // Create checkout record + decrement stock atomically.
@@ -525,13 +543,17 @@ export class GuestStoreService {
     const checkout = await this.prisma.$transaction(async (tx) => {
       // Re-read with a row-level lock — any concurrent transaction touching this
       // inventory row will block here until we commit.
-      const locked = await tx.$queryRawUnsafe<{ id: string; available_stock: number }[]>(
+      const locked = await tx.$queryRawUnsafe<
+        { id: string; available_stock: number }[]
+      >(
         `SELECT id, available_stock FROM inventory WHERE id = $1 FOR UPDATE`,
         inventory.id,
       );
 
       if (!locked[0] || locked[0].available_stock <= 0) {
-        throw new BadRequestException(`"${product.name}" is currently unavailable`);
+        throw new BadRequestException(
+          `"${product.name}" is currently unavailable`,
+        );
       }
 
       const created = await tx.borrowable_checkouts.create({

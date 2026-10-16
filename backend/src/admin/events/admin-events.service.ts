@@ -1,4 +1,8 @@
-import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import { S3Service } from '../../aws/s3.service';
 import { CreateEventDto } from './dto/create-event.dto';
@@ -20,7 +24,9 @@ export class AdminEventsService {
     // authorised properties.)
     const requested = dto.property_id ?? actor.property_id;
     if (!requested) {
-      throw new BadRequestException('Active property missing from session — log in again');
+      throw new BadRequestException(
+        'Active property missing from session — log in again',
+      );
     }
     if (!actor.property_ids.includes(requested)) {
       throw new BadRequestException('You are not authorised for this property');
@@ -59,7 +65,9 @@ export class AdminEventsService {
     });
 
     const today = new Date();
-    const utcToday = new Date(Date.UTC(today.getFullYear(), today.getMonth(), today.getDate()));
+    const utcToday = new Date(
+      Date.UTC(today.getFullYear(), today.getMonth(), today.getDate()),
+    );
 
     return events.map((e) => ({
       ...e,
@@ -75,7 +83,9 @@ export class AdminEventsService {
     }
 
     const today = new Date();
-    const utcToday = new Date(Date.UTC(today.getFullYear(), today.getMonth(), today.getDate()));
+    const utcToday = new Date(
+      Date.UTC(today.getFullYear(), today.getMonth(), today.getDate()),
+    );
 
     return { ...event, is_upcoming: new Date(event.date) >= utcToday };
   }
@@ -124,7 +134,9 @@ export class AdminEventsService {
 
   async uploadPoster(file: Express.Multer.File, actor: AdminJwtPayload) {
     if (!actor.property_id) {
-      throw new BadRequestException('Active property missing from session — log in again');
+      throw new BadRequestException(
+        'Active property missing from session — log in again',
+      );
     }
     return this.s3.uploadFile(
       `events/${actor.property_id}`,
@@ -138,7 +150,9 @@ export class AdminEventsService {
 
   async listPublicEvents(propertyId: string, filter?: string) {
     const today = new Date();
-    const utcToday = new Date(Date.UTC(today.getFullYear(), today.getMonth(), today.getDate()));
+    const utcToday = new Date(
+      Date.UTC(today.getFullYear(), today.getMonth(), today.getDate()),
+    );
 
     const where: Record<string, unknown> = {
       property_id: propertyId,
@@ -197,7 +211,9 @@ export class AdminEventsService {
     if (!event) throw new NotFoundException('Event not found');
 
     const today = new Date();
-    const utcToday = new Date(Date.UTC(today.getFullYear(), today.getMonth(), today.getDate()));
+    const utcToday = new Date(
+      Date.UTC(today.getFullYear(), today.getMonth(), today.getDate()),
+    );
     return { ...event, is_upcoming: new Date(event.date) >= utcToday };
   }
 
@@ -217,10 +233,16 @@ export class AdminEventsService {
           action,
           entity_type: 'events',
           entity_id: entityId,
-          old_value: oldValue ? JSON.parse(JSON.stringify(oldValue)) : undefined,
-          new_value: newValue ? JSON.parse(JSON.stringify(newValue)) : undefined,
+          old_value: oldValue
+            ? JSON.parse(JSON.stringify(oldValue))
+            : undefined,
+          new_value: newValue
+            ? JSON.parse(JSON.stringify(newValue))
+            : undefined,
         },
       });
-    } catch { /* non-critical */ }
+    } catch {
+      /* non-critical */
+    }
   }
 }

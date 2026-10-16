@@ -1,11 +1,21 @@
-import { IsString, IsOptional, IsDateString, IsInt, MaxLength, Min, Matches } from 'class-validator';
+import {
+  IsString,
+  IsOptional,
+  IsDateString,
+  IsInt,
+  MaxLength,
+  Min,
+  Matches,
+} from 'class-validator';
 
 export class CreateEventDto {
   // Optional: when the actor is a multi-property owner without a default property,
   // they must specify which property this event belongs to.
   @IsOptional()
   @IsString()
-  @Matches(/^[0-9]+$/, { message: 'property_id must be the numeric eZee hotel code' })
+  @Matches(/^[0-9]+$/, {
+    message: 'property_id must be the numeric eZee hotel code',
+  })
   property_id?: string;
 
   @IsString()

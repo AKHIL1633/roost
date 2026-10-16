@@ -110,7 +110,9 @@ export class TextractService {
       const frontBytes = await this.downloadFromS3(frontImageKey);
       const lines = await this.detectText(frontBytes);
       rawLines.push(...lines);
-      this.logger.log(`Textract front (${frontImageKey}): ${lines.length} lines`);
+      this.logger.log(
+        `Textract front (${frontImageKey}): ${lines.length} lines`,
+      );
     } catch (err) {
       this.logger.warn(`Textract front failed: ${(err as Error).message}`);
     }
@@ -121,14 +123,18 @@ export class TextractService {
         const backBytes = await this.downloadFromS3(backImageKey);
         const lines = await this.detectText(backBytes);
         rawLines.push(...lines);
-        this.logger.log(`Textract back (${backImageKey}): ${lines.length} lines`);
+        this.logger.log(
+          `Textract back (${backImageKey}): ${lines.length} lines`,
+        );
       } catch (err) {
         this.logger.warn(`Textract back failed: ${(err as Error).message}`);
       }
     }
 
     if (rawLines.length === 0) {
-      this.logger.warn('No text extracted via AWS — falling back to mock OCR result');
+      this.logger.warn(
+        'No text extracted via AWS — falling back to mock OCR result',
+      );
       return this.generateMockResult(frontImageKey, backImageKey);
     }
 
@@ -152,11 +158,15 @@ export class TextractService {
     let diskSample = '';
     if (fileExists) {
       try {
-        diskSample = fs.readFileSync(localPath, 'utf8').substring(0, 500).toLowerCase();
+        diskSample = fs
+          .readFileSync(localPath, 'utf8')
+          .substring(0, 500)
+          .toLowerCase();
       } catch {}
     }
 
-    const combinedKey = `${frontImageKey} ${backImageKey || ''} ${diskSample}`.toLowerCase();
+    const combinedKey =
+      `${frontImageKey} ${backImageKey || ''} ${diskSample}`.toLowerCase();
 
     this.logger.log(
       `Mock OCR analyzing: key="${frontImageKey}", fileOnDisk=${fileExists}`,
@@ -166,7 +176,8 @@ export class TextractService {
     let idNumber = '987654321098';
     let name = 'Arjun Sharma';
     const dob = '1995-05-15';
-    const address = 'Flat 402, Sunshine Heights, Bandra West, Mumbai, Maharashtra 400050';
+    const address =
+      'Flat 402, Sunshine Heights, Bandra West, Mumbai, Maharashtra 400050';
 
     if (combinedKey.includes('passport') || combinedKey.includes('pass')) {
       idType = 'PASSPORT';
@@ -227,13 +238,17 @@ export class TextractService {
 
   private extractLines(blocks: Block[]): string[] {
     return blocks
-      .filter((b) => b.BlockType === 'LINE' && b.Text && b.Text.trim().length > 0)
+      .filter(
+        (b) => b.BlockType === 'LINE' && b.Text && b.Text.trim().length > 0,
+      )
       .map((b) => b.Text!.trim());
   }
 
   private async extractWithGpt(rawLines: string[]): Promise<OcrResult> {
     if (!this.openai) {
-      this.logger.warn('OpenAI API key not configured; skipping GPT-based OCR extraction');
+      this.logger.warn(
+        'OpenAI API key not configured; skipping GPT-based OCR extraction',
+      );
       return this.emptyResult();
     }
     const rawText = rawLines.join('\n');
@@ -251,7 +266,9 @@ export class TextractService {
       });
 
       const raw = completion.choices[0]?.message?.content?.trim() ?? '{}';
-      const jsonStr = raw.replace(/^```(?:json)?\n?/, '').replace(/\n?```$/, '');
+      const jsonStr = raw
+        .replace(/^```(?:json)?\n?/, '')
+        .replace(/\n?```$/, '');
       const parsed = JSON.parse(jsonStr);
 
       this.logger.log(

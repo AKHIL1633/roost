@@ -32,7 +32,10 @@ export class AdminCouponsController {
 
   @Get()
   @RequirePermission('coupons.view')
-  list(@Query() query: ListCouponsQueryDto, @CurrentAdmin() actor: AdminJwtPayload) {
+  list(
+    @Query() query: ListCouponsQueryDto,
+    @CurrentAdmin() actor: AdminJwtPayload,
+  ) {
     return this.couponsService.list(query, actor);
   }
 

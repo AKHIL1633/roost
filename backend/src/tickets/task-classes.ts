@@ -39,5 +39,7 @@ export const UNFULFILLED_CLASS: TaskClass = 'T-1';
 export const DEFAULT_CLASS: TaskClass = 'T0';
 
 export function isTaskClass(v: unknown): v is TaskClass {
-  return typeof v === 'string' && (TASK_CLASSES as readonly string[]).includes(v);
+  return (
+    typeof v === 'string' && (TASK_CLASSES as readonly string[]).includes(v)
+  );
 }

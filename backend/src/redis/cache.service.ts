@@ -14,25 +14,27 @@ export class CacheService {
   private readonly logger = new Logger(CacheService.name);
 
   // ── TTL constants (ms) ───────────────────────────────────────────────
-  static readonly TTL_CATALOG           = 10 * 60 * 1000;  // 10 min
-  static readonly TTL_JWT               = 60 * 1000;       // 60 sec
-  static readonly TTL_ROOM_AVAILABILITY = 30 * 60 * 1000;  // 30 min
+  static readonly TTL_CATALOG = 10 * 60 * 1000; // 10 min
+  static readonly TTL_JWT = 60 * 1000; // 60 sec
+  static readonly TTL_ROOM_AVAILABILITY = 30 * 60 * 1000; // 30 min
 
   // Using 'any' type for cache manager to avoid TS1272 with emitDecoratorMetadata
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+
   constructor(@Inject(CACHE_MANAGER) private readonly cache: any) {}
 
   // ── Core operations ──────────────────────────────────────────────────
 
   async get<T>(key: string): Promise<T | undefined> {
     try {
-      const val = await this.cache.get(key) as T | undefined | null;
+      const val = (await this.cache.get(key)) as T | undefined | null;
       if (val !== undefined && val !== null) {
         this.logger.debug(`Cache HIT: ${key}`);
       }
       return val ?? undefined;
     } catch (err) {
-      this.logger.warn(`Cache GET failed for ${key}: ${(err as Error).message}`);
+      this.logger.warn(
+        `Cache GET failed for ${key}: ${(err as Error).message}`,
+      );
       return undefined;
     }
   }
@@ -42,7 +44,9 @@ export class CacheService {
       await this.cache.set(key, value, ttlMs);
       this.logger.debug(`Cache SET: ${key} (TTL: ${ttlMs ?? 'default'}ms)`);
     } catch (err) {
-      this.logger.warn(`Cache SET failed for ${key}: ${(err as Error).message}`);
+      this.logger.warn(
+        `Cache SET failed for ${key}: ${(err as Error).message}`,
+      );
     }
   }
 
@@ -51,7 +55,9 @@ export class CacheService {
       await this.cache.del(key);
       this.logger.debug(`Cache DEL: ${key}`);
     } catch (err) {
-      this.logger.warn(`Cache DEL failed for ${key}: ${(err as Error).message}`);
+      this.logger.warn(
+        `Cache DEL failed for ${key}: ${(err as Error).message}`,
+      );
     }
   }
 
@@ -124,7 +130,11 @@ export class CacheService {
     return `jwt:guest:${guestId}`;
   }
 
-  static roomAvailabilityKey(propertyId: string, checkin: string, checkout: string): string {
+  static roomAvailabilityKey(
+    propertyId: string,
+    checkin: string,
+    checkout: string,
+  ): string {
     return `rooms:${propertyId}:${checkin}:${checkout}`;
   }
 }

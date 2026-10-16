@@ -16,7 +16,10 @@ const ELLIPSIS = String.fromCharCode(0x2026);
  * four spaces. Every assertion below ultimately reduces to this predicate, so
  * it is worth stating once.
  */
-const isAcceptable = (v: string) => !/[\r\n\t]/.test(v) && !/ {5,}/.test(v) && !new RegExp('[' + NEL + LS + PS + ']').test(v);
+const isAcceptable = (v: string) =>
+  !/[\r\n\t]/.test(v) &&
+  !/ {5,}/.test(v) &&
+  !new RegExp('[' + NEL + LS + PS + ']').test(v);
 
 describe('flattenForWhatsAppParam', () => {
   describe('the reported case', () => {
@@ -28,7 +31,9 @@ describe('flattenForWhatsAppParam', () => {
 
     it('rescues the #477/#478 Swiggy escalation text', () => {
       const subject = 'Guest has ordered food from Swiggy\nto Room 505';
-      expect(flat(subject)).toBe('Guest has ordered food from Swiggy. to Room 505');
+      expect(flat(subject)).toBe(
+        'Guest has ordered food from Swiggy. to Room 505',
+      );
       expect(isAcceptable(flat(subject))).toBe(true);
     });
   });
@@ -46,11 +51,15 @@ describe('flattenForWhatsAppParam', () => {
     });
 
     it('collapses blank lines instead of emitting empty sentences', () => {
-      expect(flat('AC not working\n\n\nRoom 210')).toBe('AC not working. Room 210');
+      expect(flat('AC not working\n\n\nRoom 210')).toBe(
+        'AC not working. Room 210',
+      );
     });
 
     it('handles a mix of break types in one message', () => {
-      expect(flat(`one\ntwo\r\nthree\rfour${LS}five`)).toBe('one. two. three. four. five');
+      expect(flat(`one\ntwo\r\nthree\rfour${LS}five`)).toBe(
+        'one. two. three. four. five',
+      );
     });
 
     it('flattens a five-line message', () => {
@@ -67,9 +76,12 @@ describe('flattenForWhatsAppParam', () => {
       );
     });
 
-    it.each(['!', '?', ',', ';', ':'])('does not add a stop after "%s"', (p) => {
-      expect(flat(`line one${p}\nline two`)).toBe(`line one${p} line two`);
-    });
+    it.each(['!', '?', ',', ';', ':'])(
+      'does not add a stop after "%s"',
+      (p) => {
+        expect(flat(`line one${p}\nline two`)).toBe(`line one${p} line two`);
+      },
+    );
 
     it('leaves the trailing punctuation of the last line alone', () => {
       expect(flat('is breakfast included?\nRoom 101.')).toBe(
@@ -78,13 +90,15 @@ describe('flattenForWhatsAppParam', () => {
     });
 
     it('adds a stop after an emoji-terminated line', () => {
-      expect(flat('Thanks a lot ' + String.fromCodePoint(0x1f64f) + '\nRoom 404')).toBe(
-        'Thanks a lot ' + String.fromCodePoint(0x1f64f) + '. Room 404',
-      );
+      expect(
+        flat('Thanks a lot ' + String.fromCodePoint(0x1f64f) + '\nRoom 404'),
+      ).toBe('Thanks a lot ' + String.fromCodePoint(0x1f64f) + '. Room 404');
     });
 
     it('keeps a bulleted list legible', () => {
-      expect(flat('Please send:\n- towel\n- soap')).toBe('Please send: - towel. - soap');
+      expect(flat('Please send:\n- towel\n- soap')).toBe(
+        'Please send: - towel. - soap',
+      );
     });
   });
 
@@ -141,7 +155,7 @@ describe('flattenForWhatsAppParam', () => {
       ['\n\n\n', ''],
       ['\t', ''],
     ])('maps %j to %j', (input, expected) => {
-      expect(flat(input as string | null | undefined)).toBe(expected);
+      expect(flat(input)).toBe(expected);
     });
 
     it('trims surrounding whitespace', () => {
@@ -160,7 +174,7 @@ describe('flattenForWhatsAppParam', () => {
     });
 
     it('truncates past the limit and marks it', () => {
-      const v = flat(('word '.repeat(400)).trim());
+      const v = flat('word '.repeat(400).trim());
       expect(v.length).toBeLessThanOrEqual(1000);
       expect(v.endsWith(ELLIPSIS)).toBe(true);
       expect(v.endsWith(' ' + ELLIPSIS)).toBe(false); // no dangling space
@@ -197,7 +211,12 @@ describe('flattenTemplateParams', () => {
       { name: 'roomNo', value: '505' },
       { name: 'userName', value: 'Anita' },
     ]);
-    expect(out.map((p) => p.name)).toEqual(['system', 'text', 'roomNo', 'userName']);
+    expect(out.map((p) => p.name)).toEqual([
+      'system',
+      'text',
+      'roomNo',
+      'userName',
+    ]);
     expect(out[1].value).toBe('Guest ordered food. Room 505');
     expect(out[0].value).toBe('TDS');
     expect(out[2].value).toBe('505');

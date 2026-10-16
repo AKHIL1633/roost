@@ -34,7 +34,10 @@ export class AdminAuthService {
       throw new ForbiddenException('You are not authorised for this role');
     }
 
-    const passwordValid = await bcrypt.compare(dto.password, admin.password_hash);
+    const passwordValid = await bcrypt.compare(
+      dto.password,
+      admin.password_hash,
+    );
     if (!passwordValid) {
       throw new UnauthorizedException('Invalid credentials');
     }

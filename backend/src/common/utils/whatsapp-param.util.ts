@@ -41,7 +41,9 @@ const ch = (...codes: number[]) => String.fromCharCode(...codes);
  * LINE / PARAGRAPH SEPARATOR (U+2028/U+2029). The last three arrive via paste
  * from rich-text apps and are rejected on the same rule as \n.
  */
-const LINE_BREAKS = new RegExp('\\r\\n|[\\r\\n' + ch(0x85, 0x2028, 0x2029) + ']');
+const LINE_BREAKS = new RegExp(
+  '\\r\\n|[\\r\\n' + ch(0x85, 0x2028, 0x2029) + ']',
+);
 
 /**
  * Horizontal whitespace that is either explicitly banned (tab) or that inflates
@@ -87,7 +89,9 @@ const MAX_PARAM_LEN = 1000;
  * have supplied their own fallback ("Service request", "NA", ...) before this
  * point, and inventing content here would hide a missing value.
  */
-export function flattenForWhatsAppParam(input: string | null | undefined): string {
+export function flattenForWhatsAppParam(
+  input: string | null | undefined,
+): string {
   if (input === null || input === undefined) return '';
 
   const segments = String(input)
@@ -107,7 +111,11 @@ export function flattenForWhatsAppParam(input: string | null | undefined): strin
   if (out.length > MAX_PARAM_LEN) {
     const hard = out.slice(0, MAX_PARAM_LEN - 1);
     const lastSpace = hard.lastIndexOf(' ');
-    out = (lastSpace > MAX_PARAM_LEN - 60 ? hard.slice(0, lastSpace) : hard).trimEnd() + ELLIPSIS;
+    out =
+      (lastSpace > MAX_PARAM_LEN - 60
+        ? hard.slice(0, lastSpace)
+        : hard
+      ).trimEnd() + ELLIPSIS;
   }
 
   return out;
@@ -117,5 +125,8 @@ export function flattenForWhatsAppParam(input: string | null | undefined): strin
 export function flattenTemplateParams(
   parameters: { name: string; value: string }[],
 ): { name: string; value: string }[] {
-  return parameters.map((p) => ({ name: p.name, value: flattenForWhatsAppParam(p.value) }));
+  return parameters.map((p) => ({
+    name: p.name,
+    value: flattenForWhatsAppParam(p.value),
+  }));
 }
