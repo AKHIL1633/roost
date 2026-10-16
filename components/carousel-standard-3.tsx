@@ -36,7 +36,7 @@ const Example = () => (
                   className="object-cover"
                   fill
                   sizes="(max-width: 640px) 100vw, 384px"
-                  src="/images/property/hero-1-1600.webp"
+                  src="https://images.unsplash.com/photo-1709805619372-40de3f158e83?q=80&w=1600&auto=format&fit=crop"
                 />
                 {product.badge && (
                   <Badge className="absolute top-4 right-4">

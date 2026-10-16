@@ -84,19 +84,19 @@ export const propertyHero = {
 
 export const propertyGallery = [
   {
-    src: "/images/property/hero-1-1600.webp",
+    src: "https://images.unsplash.com/photo-1709805619372-40de3f158e83?q=80&w=1600&auto=format&fit=crop",
     alt: "Roost dorm interior",
   },
   {
-    src: "/images/property/hero-2-1600.webp",
+    src: "https://images.unsplash.com/photo-1752491027824-e9006cd14046?q=80&w=1600&auto=format&fit=crop",
     alt: "Shared social seating area",
   },
   {
-    src: "/images/property/hero-3-1600.webp",
+    src: "https://images.unsplash.com/photo-1768006372422-54dbbf433252?q=80&w=1600&auto=format&fit=crop",
     alt: "Rooftop city-facing lounge",
   },
   {
-    src: "/images/property/hero-4-1600.webp",
+    src: "https://images.unsplash.com/photo-1758803275226-1bfc87aa6660?q=80&w=1600&auto=format&fit=crop",
     alt: "Private room interior",
   },
 ];

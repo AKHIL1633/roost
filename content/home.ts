@@ -13,10 +13,10 @@ export type HomeSectionId =
   | "cta";
 
 export const heroImages = [
-  "/images/property/hero-1-1600.webp",
-  "/images/property/hero-2-1600.webp",
-  "/images/property/hero-3-1600.webp",
-  "/images/property/hero-4-1600.webp",
+  "https://images.unsplash.com/photo-1709805619372-40de3f158e83?q=80&w=1600&auto=format&fit=crop",
+  "https://images.unsplash.com/photo-1752491027824-e9006cd14046?q=80&w=1600&auto=format&fit=crop",
+  "https://images.unsplash.com/photo-1768006372422-54dbbf433252?q=80&w=1600&auto=format&fit=crop",
+  "https://images.unsplash.com/photo-1758803275226-1bfc87aa6660?q=80&w=1600&auto=format&fit=crop",
 ];
 
 export const assurances = [

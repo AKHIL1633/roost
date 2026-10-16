@@ -220,7 +220,7 @@ function HeroStayCard({ booking }: { booking: GuestDashboardBooking | null }) {
           className="h-full min-h-[440px] w-full object-cover"
           height={820}
           priority
-          src={propertyGallery[0]?.src ?? "/images/property/hero-1-1600.webp"}
+          src={propertyGallery[0]?.src ?? "https://images.unsplash.com/photo-1709805619372-40de3f158e83?q=80&w=1600&auto=format&fit=crop"}
           width={980}
         />
         <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(7,7,10,0.18)_0%,rgba(7,7,10,0.84)_74%,#07070a_100%)]" />
