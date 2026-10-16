@@ -1698,7 +1698,7 @@ export function Property({
                       alt="No room availability"
                       className="mx-auto h-56 w-56 object-contain"
                       height={224}
-                      src={encodeURI("/design-guidelines/Property Page/hospital-reception.svg")}
+                      src="/assets/hospital-reception.svg"
                       width={224}
                     />
                     <p className="mt-4 text-base font-semibold text-white">No room types are currently available for this property.</p>
